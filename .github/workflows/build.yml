@@ -1,0 +1,97 @@
+name: Build Flutter Desktop
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.0'
+          channel: stable
+          cache: true
+
+      - name: Write .env
+        run: echo "API_BASE_URL=${{ secrets.API_BASE_URL }}" > .env
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build macOS release
+        run: flutter build macos --release
+
+      - name: Zip app bundle
+        run: |
+          cd build/macos/Build/Products/Release
+          zip -r flutter_pos_macos.zip flutter_pos.app
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter_pos_macos
+          path: build/macos/Build/Products/Release/flutter_pos_macos.zip
+          retention-days: 30
+
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.0'
+          channel: stable
+          cache: true
+
+      - name: Write .env
+        run: echo "API_BASE_URL=${{ secrets.API_BASE_URL }}" > .env
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Windows release
+        run: flutter build windows --release
+
+      - name: Zip release folder
+        run: |
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath flutter_pos_windows.zip
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter_pos_windows
+          path: flutter_pos_windows.zip
+          retention-days: 30
+
+  release:
+    name: Create GitHub Release
+    needs: [build-macos, build-windows]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            flutter_pos_macos/flutter_pos_macos.zip
+            flutter_pos_windows/flutter_pos_windows.zip
+          generate_release_notes: true

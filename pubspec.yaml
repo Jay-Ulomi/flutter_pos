@@ -1,0 +1,72 @@
+name: flutter_pos
+description: "SaaS Multi-Tenant POS Application"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # State Management
+  flutter_bloc: ^9.1.0
+  equatable: ^2.0.7
+
+  # Networking
+  dio: ^5.8.0+1
+  flutter_dotenv: ^5.2.1
+
+  # Offline Database
+  drift: ^2.26.1
+  sqlite3_flutter_libs: ^0.5.31
+
+  # Dependency Injection
+  get_it: ^8.0.3
+
+  # Secure Storage
+  flutter_secure_storage: ^9.2.4
+
+  # Connectivity
+  connectivity_plus: ^6.1.4
+
+  # Navigation
+  go_router: ^15.1.2
+
+  # Formatting
+  intl: ^0.20.2
+
+  # Barcode Scanner
+  mobile_scanner: ^7.0.2
+
+  # JSON serialization
+  json_annotation: ^4.9.0
+
+  # Path provider for DB
+  path_provider: ^2.1.5
+  path: ^1.9.1
+
+  # UUID for offline idempotency keys
+  uuid: ^4.5.1
+
+  # Receipt PDF + native print / share
+  printing: ^5.13.3
+  pdf: ^3.11.1
+  share_plus: ^10.1.2
+  shared_preferences: ^2.5.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  drift_dev: ^2.26.1
+  build_runner: ^2.4.15
+  json_serializable: ^6.9.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - .env
