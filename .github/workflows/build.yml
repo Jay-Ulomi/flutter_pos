@@ -87,17 +87,35 @@ jobs:
     name: Create GitHub Release
     needs: [build-macos, build-windows]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
 
     steps:
+      - name: Generate version tag
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Delete existing 'latest' release
+        if: steps.version.outputs.tag == 'latest'
+        run: gh release delete latest --yes --cleanup-tag || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
 
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag == 'latest' && 'Latest Build' || steps.version.outputs.tag }}
+          prerelease: ${{ steps.version.outputs.tag == 'latest' }}
           files: |
             flutter_pos_macos/flutter_pos_macos.zip
             flutter_pos_windows/flutter_pos_windows.zip
