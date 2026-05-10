@@ -116,29 +116,14 @@ class _LoginScreenState extends State<LoginScreen>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             // ── Logo ──
-                            Container(
+                            Image.asset(
+                              'assets/app_icon.png',
                               width: 72,
                               height: 72,
-                              decoration: BoxDecoration(
-                                color: BrandColors.primary,
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: BrandColors.primary.withValues(alpha: 0.3),
-                                    blurRadius: 24,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.point_of_sale_rounded,
-                                size: 36,
-                                color: Colors.white,
-                              ),
                             ),
                             const SizedBox(height: 20),
                             Text(
-                              'NexPOS',
+                              'Aduinola',
                               style: TextStyle(
                                 fontSize: 28,
                                 fontWeight: FontWeight.w800,
@@ -321,7 +306,7 @@ class _LoginScreenState extends State<LoginScreen>
 
                             // ── Powered by ──
                             Text(
-                              'Powered by NexPOS',
+                              'Powered by Aduinola',
                               style: TextStyle(
                                 fontSize: 11,
                                 color: cs.onSurface.withValues(alpha: 0.3),
