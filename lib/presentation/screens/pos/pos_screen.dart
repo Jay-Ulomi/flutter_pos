@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../../core/theme/brand_colors.dart';
 import '../../../data/models/product_models.dart';
 import '../../blocs/cart/cart_bloc.dart';
 import '../../blocs/cart/cart_event.dart';
@@ -293,12 +294,12 @@ class _PosScreenState extends State<PosScreen> {
     final business = context.watch<BusinessBloc>().state.selected;
     final businessType = business?.type ?? auth.selectedBusinessType ?? '';
     if (businessType.trim().toUpperCase() == 'LAUNDRY') {
-      // Single POS entry point: laundry businesses run the laundry POS layout.
       return const LaundryOrdersScreen();
     }
 
     final theme = Theme.of(context);
     final isWide = MediaQuery.sizeOf(context).width >= 900;
+    final isMobile = MediaQuery.sizeOf(context).width < 720;
 
     final appBar = AppBar(
       title: const Text('POS'),
@@ -327,11 +328,14 @@ class _PosScreenState extends State<PosScreen> {
       ],
     );
 
-    final fab = FloatingActionButton(
-      onPressed: _openScanner,
-      tooltip: Platform.isMacOS ? 'Enter Barcode (manual)' : 'Scan Barcode',
-      child: const Icon(Icons.qr_code_scanner),
-    );
+    final fab = isMobile
+        ? null
+        : FloatingActionButton(
+            onPressed: _openScanner,
+            tooltip:
+                Platform.isMacOS ? 'Enter Barcode (manual)' : 'Scan Barcode',
+            child: const Icon(Icons.qr_code_scanner),
+          );
 
     final body = MultiBlocListener(
       listeners: [
@@ -384,7 +388,7 @@ class _PosScreenState extends State<PosScreen> {
                 ),
               ],
             )
-          : _productsPane(theme, withCart: true),
+          : _mobileLayout(theme),
     );
 
     return Shortcuts(
@@ -421,9 +425,280 @@ class _PosScreenState extends State<PosScreen> {
     );
   }
 
-  // ---- product pane ----
+  // ---- mobile layout: products + sticky bottom cart bar ----
 
-  Widget _productsPane(ThemeData theme, {bool withCart = false}) {
+  Widget _mobileLayout(ThemeData theme) {
+    return Stack(
+      children: [
+        // Products grid fills entire area
+        Column(
+          children: [
+            // Search bar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 44,
+                      child: TextField(
+                        controller: _searchCtrl,
+                        style: const TextStyle(fontSize: 14),
+                        decoration: InputDecoration(
+                          hintText: 'Search products...',
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.qr_code_scanner, size: 20),
+                            onPressed: _openScanner,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
+                          ),
+                          filled: true,
+                          fillColor: theme.colorScheme.surfaceContainerLow,
+                        ),
+                        onChanged: (v) =>
+                            context.read<ProductBloc>().add(ProductSearchChanged(v)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    height: 44,
+                    width: 44,
+                    child: IconButton.filled(
+                      tooltip: 'Add custom item',
+                      onPressed: () async {
+                        final cartBloc = context.read<CartBloc>();
+                        final result = await showCustomItemDialog(context);
+                        if (result != null) {
+                          cartBloc.add(
+                            CartCustomItemAdded(
+                              name: result.name,
+                              price: result.price,
+                              quantity: result.quantity,
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.add, size: 20),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Category chips
+            _categoryChips(),
+            // Products grid — padded at bottom so items aren't hidden behind cart bar
+            Expanded(
+              child: BlocBuilder<ProductBloc, ProductState>(
+                builder: (context, state) {
+                  if (state.status == ProductStatus.loading) {
+                    return const LoadingIndicator();
+                  }
+                  if (state.status == ProductStatus.error) {
+                    return ErrorView(
+                      message: state.errorMessage ?? 'Failed to load products',
+                      onRetry: () => context.read<ProductBloc>().add(
+                        const ProductLoadRequested(),
+                      ),
+                    );
+                  }
+                  if (state.products.isEmpty) {
+                    return const EmptyState(
+                      title: 'No products found',
+                      icon: Icons.inventory_2_outlined,
+                    );
+                  }
+                  return GridView.builder(
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 90),
+                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 160,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      childAspectRatio: 0.78,
+                    ),
+                    itemCount: state.products.length,
+                    itemBuilder: (_, i) {
+                      final p = state.products[i];
+                      return ProductCard(
+                        product: p,
+                        onTap: () => _addProductToCart(context, p),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+        // Sticky bottom cart bar
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: _mobileCartBar(),
+        ),
+      ],
+    );
+  }
+
+  Widget _mobileCartBar() {
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, cart) {
+        if (cart.isEmpty) return const SizedBox.shrink();
+        return Container(
+          margin: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: BrandColors.primary,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: BrandColors.primary.withValues(alpha: 0.35),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => _showCartSheet(context),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                child: Row(
+                  children: [
+                    // Item count badge
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '${cart.lines.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      '${cart.lines.length} ${cart.lines.length == 1 ? 'item' : 'items'} in cart',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const Spacer(),
+                    MoneyText(
+                      cart.total,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Colors.white.withValues(alpha: 0.7),
+                      size: 18,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _categoryChips() {
+    return BlocSelector<
+      ProductBloc,
+      ProductState,
+      ({List<Category> categories, String? selectedId})
+    >(
+      selector: (state) => (
+        categories: state.categories,
+        selectedId: state.selectedCategoryId,
+      ),
+      builder: (context, data) {
+        if (data.categories.isEmpty) return const SizedBox.shrink();
+        return SizedBox(
+          height: 40,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            itemCount: data.categories.length + 1,
+            separatorBuilder: (_, _) => const SizedBox(width: 6),
+            itemBuilder: (context, i) {
+              final cs = Theme.of(context).colorScheme;
+              if (i == 0) {
+                final selected = data.selectedId == null;
+                return FilterChip(
+                  label: const Text('All'),
+                  selected: selected,
+                  selectedColor: cs.primary,
+                  checkmarkColor: cs.onPrimary,
+                  labelStyle: TextStyle(
+                    color: selected ? cs.onPrimary : cs.onSurfaceVariant,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                    fontSize: 12,
+                  ),
+                  side: BorderSide(
+                    color: selected ? cs.primary : cs.outlineVariant,
+                  ),
+                  visualDensity: VisualDensity.compact,
+                  onSelected: (_) => context.read<ProductBloc>().add(
+                    const ProductCategoryChanged(null),
+                  ),
+                );
+              }
+              final cat = data.categories[i - 1];
+              final selected = data.selectedId == cat.id;
+              return FilterChip(
+                label: Text(cat.name),
+                selected: selected,
+                selectedColor: cs.primary,
+                checkmarkColor: cs.onPrimary,
+                labelStyle: TextStyle(
+                  color: selected ? cs.onPrimary : cs.onSurfaceVariant,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                  fontSize: 12,
+                ),
+                side: BorderSide(
+                  color: selected ? cs.primary : cs.outlineVariant,
+                ),
+                visualDensity: VisualDensity.compact,
+                onSelected: (_) => context.read<ProductBloc>().add(
+                  ProductCategoryChanged(cat.id),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  // ---- product pane (desktop only) ----
+
+  Widget _productsPane(ThemeData theme) {
     return Column(
       children: [
         Padding(
@@ -564,12 +839,11 @@ class _PosScreenState extends State<PosScreen> {
             },
           ),
         ),
-        if (withCart) _bottomCartBar(),
       ],
     );
   }
 
-  // ---- cart pane ----
+  // ---- cart pane (desktop sidebar) ----
 
   Widget _cartPane() {
     return BlocBuilder<CartBloc, CartState>(
@@ -772,43 +1046,33 @@ class _PosScreenState extends State<PosScreen> {
     );
   }
 
-  Widget _bottomCartBar() {
-    return BlocBuilder<CartBloc, CartState>(
-      builder: (context, cart) {
-        if (cart.isEmpty) return const SizedBox.shrink();
-        return Material(
-          color: Theme.of(context).colorScheme.primaryContainer,
-          child: InkWell(
-            onTap: () => _showCartSheet(context),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  const Icon(Icons.shopping_cart_outlined),
-                  const SizedBox(width: 8),
-                  Text('${cart.lines.length} items'),
-                  const Spacer(),
-                  MoneyText(
-                    cart.total,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.chevron_right),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   void _showCartSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (_) =>
-          FractionallySizedBox(heightFactor: 0.85, child: _cartPane()),
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            // Drag handle
+            Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 4),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Expanded(child: _cartPane()),
+          ],
+        ),
+      ),
     );
   }
 }
