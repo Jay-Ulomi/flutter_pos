@@ -28,18 +28,47 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Install Apple certificate
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+        run: |
+          CERT_PATH=$RUNNER_TEMP/certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PWD=$(openssl rand -hex 12)
+
+          echo "$MACOS_CERTIFICATE" | base64 --decode > "$CERT_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -P "$MACOS_CERTIFICATE_PWD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PWD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
+
       - name: Build macOS release
         run: flutter build macos --release
 
-      - name: Ad-hoc code sign
+      - name: Code sign with Developer ID
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          codesign --deep --force --sign - \
-            build/macos/Build/Products/Release/flutter_pos.app
+          APP_PATH="build/macos/Build/Products/Release/flutter_pos.app"
+          IDENTITY="Developer ID Application: Dwight Danda ($APPLE_TEAM_ID)"
+
+          # Sign all frameworks and helpers first, then the app
+          find "$APP_PATH" -name "*.framework" -o -name "*.dylib" | while read f; do
+            codesign --deep --force --options runtime --sign "$IDENTITY" "$f"
+          done
+          codesign --deep --force --options runtime --sign "$IDENTITY" "$APP_PATH"
+
+          # Verify
+          codesign --verify --verbose "$APP_PATH"
 
       - name: Zip app bundle
         run: |
           cd build/macos/Build/Products/Release
-          zip -r flutter_pos_macos.zip flutter_pos.app
+          /usr/bin/ditto -c -k --keepParent flutter_pos.app flutter_pos_macos.zip
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
