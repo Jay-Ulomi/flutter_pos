@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../core/utils/formatters.dart';
 import '../../../data/models/product_models.dart';
@@ -33,6 +36,54 @@ class _ProductListScreenState extends State<ProductListScreen> {
     super.dispose();
   }
 
+  void _openScanner() async {
+    if (Platform.isMacOS) {
+      _openMacBarcodeDialog();
+    } else {
+      final barcode = await Navigator.of(context).push<String>(
+        MaterialPageRoute(builder: (_) => const _ScannerPage()),
+      );
+      if (barcode != null && mounted) {
+        _searchCtrl.text = barcode;
+        context.read<ProductBloc>().add(ProductSearchChanged(barcode));
+      }
+    }
+  }
+
+  void _openMacBarcodeDialog() async {
+    final ctrl = TextEditingController();
+    final code = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Enter Barcode'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Scan or type barcode',
+            prefixIcon: Icon(Icons.qr_code_scanner),
+          ),
+          onSubmitted: (v) => Navigator.of(ctx).pop(v.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(ctrl.text.trim()),
+            child: const Text('Search'),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (code != null && code.isNotEmpty && mounted) {
+      _searchCtrl.text = code;
+      context.read<ProductBloc>().add(ProductSearchChanged(code));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -42,6 +93,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
       appBar: AppBar(
         title: const Text('Products'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner),
+            tooltip: 'Scan barcode',
+            onPressed: _openScanner,
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () =>
@@ -55,9 +111,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: TextField(
               controller: _searchCtrl,
-              decoration: const InputDecoration(
-                hintText: 'Search products',
-                prefixIcon: Icon(Icons.search),
+              decoration: InputDecoration(
+                hintText: 'Search products or scan barcode',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.qr_code_scanner),
+                  tooltip: 'Scan barcode',
+                  onPressed: _openScanner,
+                ),
               ),
               onChanged: (v) =>
                   context.read<ProductBloc>().add(ProductSearchChanged(v)),
@@ -188,6 +249,48 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Camera scanner (Android / iOS / other non-macOS)
+// ---------------------------------------------------------------------------
+
+class _ScannerPage extends StatefulWidget {
+  const _ScannerPage();
+
+  @override
+  State<_ScannerPage> createState() => _ScannerPageState();
+}
+
+class _ScannerPageState extends State<_ScannerPage> {
+  final MobileScannerController _controller = MobileScannerController();
+  bool _handled = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Scan Barcode')),
+      body: MobileScanner(
+        controller: _controller,
+        onDetect: (capture) {
+          if (_handled) return;
+          final code = capture.barcodes.firstOrNull?.rawValue;
+          if (code != null && code.isNotEmpty) {
+            _handled = true;
+            Navigator.of(context).pop(code);
+          }
+        },
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 
 class _ProductCard extends StatelessWidget {
   final Product product;
