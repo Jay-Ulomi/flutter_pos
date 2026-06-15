@@ -78,10 +78,11 @@ class _OpenSessionScreenState extends State<OpenSessionScreen> {
                     ],
                     decoration: const InputDecoration(
                       labelText: 'Opening cash',
+                      hintText: '0.00',
                       prefixIcon: Icon(Icons.attach_money),
                     ),
                     validator: (v) {
-                      if (v == null || v.isEmpty) return 'Required';
+                      if (v == null || v.isEmpty) return null; // empty = 0, allowed
                       final n = double.tryParse(v);
                       if (n == null || n < 0) return 'Invalid amount';
                       return null;
