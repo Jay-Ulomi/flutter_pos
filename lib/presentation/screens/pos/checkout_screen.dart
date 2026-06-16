@@ -10,8 +10,11 @@ class CheckoutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Checkout')),
-      body: const CheckoutPanel(),
+      body: SafeArea(
+        child: CheckoutPanel(
+          onBack: () => Navigator.of(context).pop(),
+        ),
+      ),
     );
   }
 }
