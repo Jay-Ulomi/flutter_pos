@@ -203,7 +203,14 @@ class _ShiftReportScreenState extends State<ShiftReportScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: Colors.grey)),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.grey),
+            ),
+          ),
+          const SizedBox(width: 8),
           Text(value),
         ],
       ),
@@ -216,12 +223,16 @@ class _ShiftReportScreenState extends State<ShiftReportScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: emphasize
-                ? const TextStyle(fontWeight: FontWeight.bold)
-                : null,
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: emphasize
+                  ? const TextStyle(fontWeight: FontWeight.bold)
+                  : null,
+            ),
           ),
+          const SizedBox(width: 8),
           MoneyText(
             amount,
             style: emphasize

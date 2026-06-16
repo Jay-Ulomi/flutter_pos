@@ -7,6 +7,8 @@ class CartLine extends Equatable {
   final double quantity;
   final double discount;
   final bool isPercentDiscount;
+  /// Override for the unit selling price (null = use product.sellingPrice).
+  final double? priceOverride;
   /// Serial number for SERIAL-tracked products.
   final String? serialNumber;
   /// Lot number for LOT-tracked products.
@@ -17,11 +19,14 @@ class CartLine extends Equatable {
     required this.quantity,
     this.discount = 0,
     this.isPercentDiscount = false,
+    this.priceOverride,
     this.serialNumber,
     this.lotNumber,
   });
 
-  double get lineSubtotal => product.sellingPrice * quantity;
+  double get effectivePrice => priceOverride ?? product.sellingPrice;
+
+  double get lineSubtotal => effectivePrice * quantity;
 
   double get lineDiscount {
     if (discount <= 0) return 0;
@@ -35,6 +40,7 @@ class CartLine extends Equatable {
   double get lineTotal => lineSubtotal - lineDiscount + lineTax;
 
   bool get hasDiscount => discount > 0;
+  bool get hasPriceOverride => priceOverride != null;
 
   CartLine copyWith({
     Product? product,
@@ -42,6 +48,8 @@ class CartLine extends Equatable {
     double? discount,
     bool? isPercentDiscount,
     bool clearDiscount = false,
+    double? priceOverride,
+    bool clearPriceOverride = false,
     String? serialNumber,
     String? lotNumber,
   }) => CartLine(
@@ -51,6 +59,7 @@ class CartLine extends Equatable {
     isPercentDiscount: clearDiscount
         ? false
         : (isPercentDiscount ?? this.isPercentDiscount),
+    priceOverride: clearPriceOverride ? null : (priceOverride ?? this.priceOverride),
     serialNumber: serialNumber ?? this.serialNumber,
     lotNumber: lotNumber ?? this.lotNumber,
   );
@@ -61,6 +70,7 @@ class CartLine extends Equatable {
     quantity,
     discount,
     isPercentDiscount,
+    priceOverride,
     serialNumber,
     lotNumber,
   ];

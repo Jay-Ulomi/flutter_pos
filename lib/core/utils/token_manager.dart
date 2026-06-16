@@ -8,6 +8,7 @@ class TokenManager {
   static const _refreshTokenKey = 'refresh_token';
   static const _businessIdKey = 'business_id';
   static const _branchIdKey = 'branch_id';
+  static const _businessTypeKey = 'business_type';
   static const _userKey = 'user_json';
 
   TokenManager(this._storage);
@@ -45,6 +46,9 @@ class TokenManager {
 
   Future<void> saveBranchId(String id) => _write(_branchIdKey, id);
   Future<String?> getBranchId() => _read(_branchIdKey);
+
+  Future<void> saveBusinessType(String type) => _write(_businessTypeKey, type);
+  Future<String?> getBusinessType() => _read(_businessTypeKey);
 
   Future<void> saveUserJson(String json) => _write(_userKey, json);
   Future<String?> getUserJson() => _read(_userKey);

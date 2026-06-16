@@ -348,10 +348,13 @@ class _ProductCard extends StatelessWidget {
                   Row(
                     children: [
                       if (product.sku != null)
-                        Text(
-                          product.sku!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
+                        Flexible(
+                          child: Text(
+                            product.sku!,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colors.onSurfaceVariant,
+                            ),
                           ),
                         ),
                       if (product.sku != null && product.categoryName != null)
@@ -362,10 +365,13 @@ class _ProductCard extends StatelessWidget {
                           ),
                         ),
                       if (product.categoryName != null)
-                        Text(
-                          product.categoryName!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
+                        Flexible(
+                          child: Text(
+                            product.categoryName!,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colors.onSurfaceVariant,
+                            ),
                           ),
                         ),
                     ],

@@ -278,8 +278,88 @@ class _PosScreenState extends State<PosScreen> {
     if (isWide) {
       setState(() => _showCheckout = true);
     } else {
-      context.push('/checkout');
+      _showCheckoutSheet(context);
     }
+  }
+
+  void _showCheckoutSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      builder: (sheetCtx) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.92,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 10, bottom: 4),
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD1D5DB),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Expanded(
+                child: CheckoutPanel(
+                  onBack: () => Navigator.of(sheetCtx).pop(),
+                  onSaleCompleted: () {
+                    Navigator.of(sheetCtx).pop();
+                    _showReceiptSheet(context);
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showReceiptSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      isDismissible: false,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.70,
+        minChildSize: 0.50,
+        maxChildSize: 0.92,
+        expand: false,
+        builder: (_, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 10, bottom: 4),
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD1D5DB),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Expanded(
+                child: ReceiptPanel(
+                  onNewSale: () => Navigator.of(context).pop(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _handleCloseModal() {
@@ -321,9 +401,9 @@ class _PosScreenState extends State<PosScreen> {
           },
         ),
         IconButton(
-          icon: const Icon(Icons.refresh),
-          onPressed: () =>
-              context.read<ProductBloc>().add(const ProductSyncRequested()),
+          icon: const Icon(Icons.settings_outlined),
+          tooltip: 'Settings',
+          onPressed: () => context.push('/settings'),
         ),
       ],
     );
@@ -975,6 +1055,9 @@ class _PosScreenState extends State<PosScreen> {
                           onQtyChanged: (q) => context.read<CartBloc>().add(
                             CartItemQtyChanged(line.product.id, q),
                           ),
+                          onPriceChanged: (p) => context.read<CartBloc>().add(
+                            CartItemPriceChanged(line.product.id, p),
+                          ),
                           onRemove: () => context.read<CartBloc>().add(
                             CartItemRemoved(line.product.id),
                           ),
@@ -1219,10 +1302,17 @@ class _CartSheet extends StatefulWidget {
 class _CartSheetState extends State<_CartSheet> {
   final _searchCtrl = TextEditingController();
   bool _hasQuery = false;
+  late final ProductBloc _productBloc;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _productBloc = context.read<ProductBloc>();
+  }
 
   @override
   void dispose() {
-    context.read<ProductBloc>().add(const ProductSearchChanged(''));
+    _productBloc.add(const ProductSearchChanged(''));
     _searchCtrl.dispose();
     super.dispose();
   }
@@ -1390,7 +1480,10 @@ class _CartSheetState extends State<_CartSheet> {
                 style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
               ),
               trailing: GestureDetector(
-                onTap: () => widget.onAddProduct(context, p),
+                onTap: () async {
+                await widget.onAddProduct(context, p);
+                if (mounted) _clearSearch();
+              },
                 child: Container(
                   width: 32,
                   height: 32,

@@ -100,3 +100,11 @@ class CartRestored extends CartEvent {
 class CartCustomerCleared extends CartEvent {
   const CartCustomerCleared();
 }
+
+class CartItemPriceChanged extends CartEvent {
+  final String productId;
+  final double price;
+  const CartItemPriceChanged(this.productId, this.price);
+  @override
+  List<Object?> get props => [productId, price];
+}

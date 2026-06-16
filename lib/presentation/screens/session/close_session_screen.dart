@@ -137,10 +137,12 @@ class _CloseSessionScreenState extends State<CloseSessionScreen> {
                             color: colors.tertiary,
                           ),
                           const SizedBox(width: 6),
-                          Text(
-                            'Summary unavailable \u2014 amounts may be inaccurate offline.',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colors.tertiary,
+                          Expanded(
+                            child: Text(
+                              'Summary unavailable \u2014 amounts may be inaccurate offline.',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colors.tertiary,
+                              ),
                             ),
                           ),
                         ],
@@ -160,18 +162,20 @@ class _CloseSessionScreenState extends State<CloseSessionScreen> {
                     'Cash counted',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
-                  const Spacer(),
-                  SegmentedButton<bool>(
-                    segments: const [
-                      ButtonSegment(value: false, label: Text('Total')),
-                      ButtonSegment(
-                        value: true,
-                        label: Text('By Denomination'),
-                      ),
-                    ],
-                    selected: {_useDenominations},
-                    onSelectionChanged: (s) =>
-                        setState(() => _useDenominations = s.first),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: SegmentedButton<bool>(
+                      segments: const [
+                        ButtonSegment(value: false, label: Text('Total')),
+                        ButtonSegment(
+                          value: true,
+                          label: Text('Denominations'),
+                        ),
+                      ],
+                      selected: {_useDenominations},
+                      onSelectionChanged: (s) =>
+                          setState(() => _useDenominations = s.first),
+                    ),
                   ),
                 ],
               ),
@@ -387,12 +391,16 @@ class _CloseSessionScreenState extends State<CloseSessionScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: emphasize
-                ? const TextStyle(fontWeight: FontWeight.w600)
-                : null,
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: emphasize
+                  ? const TextStyle(fontWeight: FontWeight.w600)
+                  : null,
+            ),
           ),
+          const SizedBox(width: 8),
           MoneyText(
             amount,
             style: emphasize

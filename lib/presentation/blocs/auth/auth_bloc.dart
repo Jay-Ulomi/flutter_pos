@@ -33,11 +33,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     })
   >
   _loadTenantData() async {
-    // Run both calls concurrently — tenant-features for plan feature flags,
-    // subscriptions/current for trial status and expiry date.
+    // Both calls are best-effort — failures (including offline) return empty/null.
     final results = await Future.wait([
       _authRepository.getTenantFeatures().catchError((_) => <TenantFeature>[]),
-      _authRepository.getSubscription(),
+      _authRepository.getSubscription().catchError((_) => null),
     ]);
 
     final featureList = results[0] as List<TenantFeature>;
@@ -83,7 +82,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final savedBranch = await _tokenManager.getBranchId();
 
     // If we have a saved default business+branch, try to re-establish context
-    if (savedBizId != null && savedBranch != null) {
+    if (savedBizId != null && savedBranch != null &&
+        savedBizId.isNotEmpty && savedBranch.isNotEmpty) {
       try {
         final ctx = await _authRepository.switchContext(
           SwitchContextRequest(businessId: savedBizId, branchId: savedBranch),
@@ -99,6 +99,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             }
           }
         } catch (_) {}
+        // Cache businessType for offline use
+        if (businessType != null) {
+          await _tokenManager.saveBusinessType(businessType);
+        }
         emit(
           AuthState(
             status: AuthStatus.authenticated,
@@ -112,8 +116,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           ),
         );
         return;
-      } catch (_) {
-        // Default no longer valid (e.g. branch removed) — clear it and ask user
+      } catch (e) {
+        if (e is NetworkException) {
+          // Offline — resume with cached context so user can still use the app
+          final cachedType = await _tokenManager.getBusinessType();
+          emit(
+            AuthState(
+              status: AuthStatus.authenticated,
+              user: user,
+              businessId: savedBizId,
+              branchId: savedBranch,
+              selectedBusinessType: cachedType,
+              enabledFeatures: const {},
+            ),
+          );
+          return;
+        }
+        // Real server error (branch deleted, business suspended, etc.) — ask user
         await _tokenManager.saveBusinessId('');
         await _tokenManager.saveBranchId('');
       }
@@ -255,9 +274,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       final tenantData = await _loadTenantData();
 
-      // Save as default for next login
+      // Save as default for next startup (including offline resume)
       await _tokenManager.saveBusinessId(ctx.businessId);
       await _tokenManager.saveBranchId(ctx.branchId ?? event.branchId);
+      if (state.selectedBusinessType != null) {
+        await _tokenManager.saveBusinessType(state.selectedBusinessType!);
+      }
 
       emit(
         state.copyWith(

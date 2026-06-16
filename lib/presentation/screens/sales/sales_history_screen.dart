@@ -196,10 +196,13 @@ class _SaleCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          '#$saleLabel',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
+                        Flexible(
+                          child: Text(
+                            '#$saleLabel',
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                         if (isPending) ...[

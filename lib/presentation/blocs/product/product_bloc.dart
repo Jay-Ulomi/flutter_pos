@@ -124,8 +124,14 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     Emitter<ProductState> emit,
   ) async {
     try {
+      // Always clear first so scanning the same barcode twice still triggers the listener
+      emit(state.copyWith(clearScanned: true));
       final product = await _repository.getProductByBarcode(event.barcode);
-      emit(state.copyWith(scannedProduct: product));
+      if (product == null) {
+        emit(state.copyWith(errorMessage: 'No product found for barcode: ${event.barcode}'));
+      } else {
+        emit(state.copyWith(scannedProduct: product));
+      }
     } catch (e) {
       emit(state.copyWith(errorMessage: humanizeError(e)));
     }

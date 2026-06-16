@@ -16,6 +16,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     on<CartRestored>(_onRestored);
     on<CartCustomerSelected>(_onCustomerSelected);
     on<CartCustomerCleared>(_onCustomerCleared);
+    on<CartItemPriceChanged>(_onPriceChanged);
   }
 
   void _onRestored(CartRestored event, Emitter<CartState> emit) {
@@ -122,6 +123,16 @@ class CartBloc extends Bloc<CartEvent, CartState> {
 
   void _onDiscountApplied(CartDiscountApplied event, Emitter<CartState> emit) {
     emit(state.copyWith(discount: event.discount));
+  }
+
+  void _onPriceChanged(CartItemPriceChanged event, Emitter<CartState> emit) {
+    final lines = state.lines.map((l) {
+      if (l.product.id == event.productId) {
+        return l.copyWith(priceOverride: event.price);
+      }
+      return l;
+    }).toList();
+    emit(state.copyWith(lines: lines));
   }
 
   void _onCleared(CartCleared event, Emitter<CartState> emit) {
