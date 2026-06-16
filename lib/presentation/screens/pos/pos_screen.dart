@@ -824,76 +824,150 @@ class _PosScreenState extends State<PosScreen> {
     );
   }
 
-  // ---- cart pane (desktop sidebar) ----
+  // ---- cart pane (desktop sidebar + mobile sheet) ----
 
   Widget _cartPane() {
     return BlocBuilder<CartBloc, CartState>(
       builder: (context, cart) {
-        final theme = Theme.of(context);
         return Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              color: theme.colorScheme.surfaceContainerLow,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+            // ── Header ──
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 12, 10),
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.shopping_cart_outlined),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Cart (${cart.lines.length})',
-                        style: theme.textTheme.titleMedium,
-                      ),
-                      const Spacer(),
-                      BlocBuilder<HeldSalesCubit, List<HeldSale>>(
-                        builder: (context, held) {
-                          if (held.isEmpty) return const SizedBox.shrink();
-                          return TextButton.icon(
-                            onPressed: () => showHeldSalesSheet(context),
-                            icon: Badge(
-                              label: Text('${held.length}'),
-                              child: const Icon(Icons.pause_circle_outline),
-                            ),
-                            label: const Text('Held'),
-                          );
-                        },
-                      ),
-                      if (cart.isNotEmpty) ...[
-                        TextButton.icon(
-                          onPressed: () {
-                            context.read<HeldSalesCubit>().hold(cart);
-                            context.read<CartBloc>().add(const CartCleared());
-                          },
-                          icon: const Icon(Icons.back_hand_outlined),
-                          label: const Text('Hold'),
-                        ),
-                        TextButton.icon(
-                          onPressed: () =>
-                              context.read<CartBloc>().add(const CartCleared()),
-                          icon: const Icon(Icons.delete_outline),
-                          label: const Text('Clear'),
-                        ),
-                      ],
-                    ],
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: BrandColors.primary.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.shopping_bag_outlined,
+                      size: 18,
+                      color: BrandColors.primary,
+                    ),
                   ),
-                  const SizedBox(height: 6),
-                  _customerChip(context, cart),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Cart',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                  if (cart.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: BrandColors.primary,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${cart.lines.length}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                  const Spacer(),
+                  BlocBuilder<HeldSalesCubit, List<HeldSale>>(
+                    builder: (context, held) {
+                      if (held.isEmpty) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: GestureDetector(
+                          onTap: () => showHeldSalesSheet(context),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 9, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEF3C7),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.pause_circle_outline,
+                                    size: 13, color: Color(0xFFD97706)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Held (${held.length})',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFFD97706),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  if (cart.isNotEmpty) ...[
+                    GestureDetector(
+                      onTap: () {
+                        context.read<HeldSalesCubit>().hold(cart);
+                        context.read<CartBloc>().add(const CartCleared());
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3F4F6),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.back_hand_outlined,
+                            size: 15, color: Color(0xFF6B7280)),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    GestureDetector(
+                      onTap: () =>
+                          context.read<CartBloc>().add(const CartCleared()),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEE2E2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.delete_outline,
+                            size: 15, color: Color(0xFFDC2626)),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
+
+            // ── Customer row ──
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+              child: _customerRow(context, cart),
+            ),
+
+            const Divider(height: 1, color: Color(0xFFE5E7EB)),
+
+            // ── Items ──
             Expanded(
               child: cart.isEmpty
                   ? const EmptyState(
                       title: 'Cart is empty',
                       subtitle: 'Tap a product to add',
-                      icon: Icons.shopping_cart_outlined,
+                      icon: Icons.shopping_bag_outlined,
                     )
-                  : ListView.separated(
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
                       itemCount: cart.lines.length,
-                      separatorBuilder: (context, index) =>
-                          const Divider(height: 1),
                       itemBuilder: (_, i) {
                         final line = cart.lines[i];
                         return CartItemTile(
@@ -925,26 +999,57 @@ class _PosScreenState extends State<PosScreen> {
                       },
                     ),
             ),
-            const Divider(height: 1),
-            _totals(cart),
+
+            if (cart.isNotEmpty) ...[
+              const Divider(height: 1, color: Color(0xFFE5E7EB)),
+              _totalsSection(cart),
+            ],
+
+            // ── Checkout button ──
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
               child: SizedBox(
                 height: 52,
                 width: double.infinity,
-                child: FilledButton.icon(
+                child: FilledButton(
                   onPressed: cart.isEmpty ? null : _handleCheckout,
                   style: FilledButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.secondary,
-                    foregroundColor: Theme.of(context).colorScheme.onSecondary,
-                    disabledBackgroundColor:
-                        Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                    backgroundColor: BrandColors.primary,
+                    disabledBackgroundColor: const Color(0xFFD1D5DB),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
                   ),
-                  icon: const Icon(Icons.payment),
-                  label: Text(
-                    Platform.isAndroid || Platform.isIOS
-                        ? 'Checkout'
-                        : 'Checkout  [F4]',
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Checkout',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                      if (cart.isNotEmpty) ...[
+                        const SizedBox(width: 10),
+                        Container(
+                          width: 1,
+                          height: 16,
+                          color: Colors.white.withValues(alpha: 0.4),
+                        ),
+                        const SizedBox(width: 10),
+                        MoneyText(
+                          cart.total,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),
@@ -955,75 +1060,119 @@ class _PosScreenState extends State<PosScreen> {
     );
   }
 
-  Widget _customerChip(BuildContext context, CartState cart) {
-    final theme = Theme.of(context);
-    final label = cart.hasCustomer
-        ? cart.selectedCustomerName ?? 'Customer'
-        : 'Walk-in (no customer)';
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: InputChip(
-        avatar: Icon(
-          cart.hasCustomer ? Icons.person : Icons.person_outline,
-          size: 18,
+  Widget _customerRow(BuildContext context, CartState cart) {
+    final name = cart.hasCustomer
+        ? (cart.selectedCustomerName ?? 'Customer')
+        : 'Add customer';
+    return GestureDetector(
+      onTap: _pickCustomer,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: cart.hasCustomer
+              ? const Color(0xFFDCFCE7)
+              : const Color(0xFFF3F4F6),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: cart.hasCustomer
+                ? const Color(0xFFBBF7D0)
+                : const Color(0xFFE5E7EB),
+          ),
         ),
-        label: Text(label),
-        onPressed: _pickCustomer,
-        onDeleted: cart.hasCustomer
-            ? () => context.read<CartBloc>().add(const CartCustomerCleared())
-            : null,
-        deleteIcon: cart.hasCustomer ? const Icon(Icons.close, size: 16) : null,
-        backgroundColor: cart.hasCustomer
-            ? theme.colorScheme.primaryContainer
-            : null,
+        child: Row(
+          children: [
+            Icon(
+              cart.hasCustomer ? Icons.person_rounded : Icons.person_outline,
+              size: 16,
+              color: cart.hasCustomer
+                  ? BrandColors.primary
+                  : const Color(0xFF9CA3AF),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                name,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight:
+                      cart.hasCustomer ? FontWeight.w600 : FontWeight.w400,
+                  color: cart.hasCustomer
+                      ? const Color(0xFF166534)
+                      : const Color(0xFF9CA3AF),
+                ),
+              ),
+            ),
+            if (cart.hasCustomer)
+              GestureDetector(
+                onTap: () =>
+                    context.read<CartBloc>().add(const CartCustomerCleared()),
+                child: const Icon(Icons.close,
+                    size: 15, color: Color(0xFF9CA3AF)),
+              )
+            else
+              const Icon(Icons.chevron_right,
+                  size: 16, color: Color(0xFF9CA3AF)),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _totals(CartState cart) {
+  Widget _totalsSection(CartState cart) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Column(
         children: [
           _totalRow('Subtotal', cart.subtotal),
+          const SizedBox(height: 4),
           _totalRow('Tax', cart.taxAmount),
-          if (cart.discount > 0) _totalRow('Discount', -cart.discount),
-          const Divider(),
-          _totalRow('Total', cart.total, emphasize: true),
+          if (cart.discount > 0) ...[
+            const SizedBox(height: 4),
+            _totalRow('Discount', -cart.discount,
+                valueColor: const Color(0xFF16A34A)),
+          ],
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Divider(height: 1, color: Color(0xFFE5E7EB)),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Total',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF111827),
+                ),
+              ),
+              MoneyText(
+                cart.total,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: BrandColors.primary,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _totalRow(String label, double amount, {bool emphasize = false}) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: emphasize
-                ? TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                    color: cs.onSurface,
-                  )
-                : TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
-          ),
-          MoneyText(
-            amount,
-            style: emphasize
-                ? TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 18,
-                    color: cs.primary,
-                  )
-                : TextStyle(color: cs.onSurface, fontSize: 13),
-          ),
-        ],
-      ),
+  Widget _totalRow(String label, double amount, {Color? valueColor}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label,
+            style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+        MoneyText(
+          amount,
+          style: TextStyle(
+              fontSize: 13, color: valueColor ?? const Color(0xFF374151)),
+        ),
+      ],
     );
   }
 
@@ -1033,20 +1182,19 @@ class _PosScreenState extends State<PosScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
-        height: MediaQuery.of(context).size.height * 0.85,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        height: MediaQuery.of(context).size.height * 0.88,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           children: [
-            // Drag handle
             Container(
               margin: const EdgeInsets.only(top: 10, bottom: 4),
-              width: 40,
+              width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.outlineVariant,
+                color: const Color(0xFFD1D5DB),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/brand_colors.dart';
 import '../blocs/cart/cart_state.dart';
 import 'money_text.dart';
 
@@ -19,82 +20,181 @@ class CartItemTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Row(
+    final qtyLabel = line.quantity == line.quantity.floorToDouble()
+        ? line.quantity.toInt().toString()
+        : line.quantity.toStringAsFixed(2);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: onTapDiscount,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    line.product.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  MoneyText(
-                    line.product.sellingPrice,
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  if (line.hasDiscount)
-                    Text(
-                      line.isPercentDiscount
-                          ? '-${line.discount.toStringAsFixed(0)}%'
-                          : '-${line.lineDiscount.toStringAsFixed(0)}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.error,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
+          // ── Name row ──
           Row(
-            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                onPressed: () => onQtyChanged(line.quantity - 1),
-                icon: const Icon(Icons.remove_circle_outline),
-              ),
-              SizedBox(
-                width: 28,
+              Expanded(
                 child: Text(
-                  line.quantity.toStringAsFixed(
-                    line.quantity == line.quantity.floor() ? 0 : 2,
+                  line.product.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF111827),
+                    height: 1.3,
                   ),
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.titleSmall,
                 ),
               ),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                onPressed: () => onQtyChanged(line.quantity + 1),
-                icon: const Icon(Icons.add_circle_outline),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: onRemove,
+                child: Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEE2E2),
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: const Icon(
+                    Icons.delete_outline_rounded,
+                    size: 14,
+                    color: Color(0xFFDC2626),
+                  ),
+                ),
               ),
             ],
           ),
-          const SizedBox(width: 6),
-          MoneyText(
-            line.lineTotal,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+
+          const SizedBox(height: 4),
+
+          // ── Unit price + discount ──
+          Row(
+            children: [
+              MoneyText(
+                line.product.sellingPrice,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Color(0xFF9CA3AF),
+                ),
+              ),
+              if (line.hasDiscount) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDCFCE7),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    line.isPercentDiscount
+                        ? '-${line.discount.toStringAsFixed(0)}%'
+                        : '-${line.lineDiscount.toStringAsFixed(0)}',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF16A34A),
+                    ),
+                  ),
+                ),
+              ],
+              if (onTapDiscount != null) ...[
+                const SizedBox(width: 6),
+                GestureDetector(
+                  onTap: onTapDiscount,
+                  child: const Text(
+                    'Discount',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: BrandColors.primary,
+                      decoration: TextDecoration.underline,
+                      decorationColor: BrandColors.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            onPressed: onRemove,
-            icon: Icon(Icons.close, color: theme.colorScheme.error),
+
+          const SizedBox(height: 10),
+
+          // ── Qty controls + line total ──
+          Row(
+            children: [
+              // Minus
+              _QtyButton(
+                icon: Icons.remove,
+                onTap: () => onQtyChanged(line.quantity - 1),
+              ),
+              const SizedBox(width: 8),
+              // Qty label
+              Container(
+                constraints: const BoxConstraints(minWidth: 36),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  qtyLabel,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111827),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Plus
+              _QtyButton(
+                icon: Icons.add,
+                onTap: () => onQtyChanged(line.quantity + 1),
+              ),
+              const Spacer(),
+              // Line total
+              MoneyText(
+                line.lineTotal,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF111827),
+                ),
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _QtyButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _QtyButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+        ),
+        child: Icon(icon, size: 14, color: const Color(0xFF374151)),
       ),
     );
   }
