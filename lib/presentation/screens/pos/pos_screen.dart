@@ -517,7 +517,7 @@ class _PosScreenState extends State<PosScreen> {
                     );
                   }
                   return GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 90),
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 88),
                     gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                       maxCrossAxisExtent: 160,
                       mainAxisSpacing: 10,
@@ -538,90 +538,71 @@ class _PosScreenState extends State<PosScreen> {
             ),
           ],
         ),
-        // Sticky bottom cart bar
+        // Floating cart button
         Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: _mobileCartBar(),
+          right: 16,
+          bottom: 16,
+          child: _mobileCartFab(),
         ),
       ],
     );
   }
 
-  Widget _mobileCartBar() {
+  Widget _mobileCartFab() {
     return BlocBuilder<CartBloc, CartState>(
       builder: (context, cart) {
         if (cart.isEmpty) return const SizedBox.shrink();
-        return Container(
-          margin: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: BrandColors.primary,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: BrandColors.primary.withValues(alpha: 0.35),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // Circular FAB
+            GestureDetector(
               onTap: () => _showCartSheet(context),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                child: Row(
-                  children: [
-                    // Item count badge
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.22),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        '${cart.lines.length}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      '${cart.lines.length} ${cart.lines.length == 1 ? 'item' : 'items'} in cart',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.85),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const Spacer(),
-                    MoneyText(
-                      cart.total,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Icon(
-                      Icons.arrow_forward_rounded,
-                      color: Colors.white.withValues(alpha: 0.7),
-                      size: 18,
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: BrandColors.primary,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: BrandColors.primary.withValues(alpha: 0.45),
+                      blurRadius: 18,
+                      offset: const Offset(0, 6),
                     ),
                   ],
                 ),
+                child: const Icon(
+                  Icons.shopping_bag_outlined,
+                  color: Colors.white,
+                  size: 24,
+                ),
               ),
             ),
-          ),
+            // Orange item-count badge
+            Positioned(
+              top: -4,
+              right: -4,
+              child: Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: BrandColors.secondary,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1.5),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '${cart.lines.length}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+          ],
         );
       },
     );
