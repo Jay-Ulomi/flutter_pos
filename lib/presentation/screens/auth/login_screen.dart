@@ -107,70 +107,31 @@ class _LoginScreenState extends State<LoginScreen>
                   // ── Green brand header ──────────────────────────────────
                   FadeTransition(
                     opacity: _fadeIn,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        // Glow blobs
-                        Positioned(
-                          top: -30, right: -30,
-                          child: Container(
-                            width: 160, height: 160,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withValues(alpha: 0.06),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(28, 44, 28, 36),
+                      child: Column(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: Image.asset(
+                              'assets/app_icon.png',
+                              width: 80,
+                              height: 80,
+                              fit: BoxFit.cover,
                             ),
                           ),
-                        ),
-                        Positioned(
-                          bottom: 0, left: -20,
-                          child: Container(
-                            width: 100, height: 100,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: const Color(0xFFFFA02E)
-                                  .withValues(alpha: 0.08),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Aduinola',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: -0.5,
                             ),
                           ),
-                        ),
-                        // Brand content
-                        Padding(
-                          padding:
-                              const EdgeInsets.fromLTRB(28, 44, 28, 36),
-                          child: Column(
-                            children: [
-                              // App icon — already has green bg, no wrapper needed
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(20),
-                                child: Image.asset(
-                                  'assets/app_icon.png',
-                                  width: 80,
-                                  height: 80,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              const Text(
-                                'Aduinola',
-                                style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'POS Terminal',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color:
-                                      Colors.white.withValues(alpha: 0.55),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
 
