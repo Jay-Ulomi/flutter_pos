@@ -1187,21 +1187,224 @@ class _PosScreenState extends State<PosScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 10, bottom: 4),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: const Color(0xFFD1D5DB),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Expanded(child: _cartPane()),
-          ],
+        child: _CartSheet(
+          cartPane: _cartPane(),
+          onAddProduct: _addProductToCart,
+          onScan: _openScanner,
         ),
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Cart sheet — search + scan bar over the cart pane
+// ---------------------------------------------------------------------------
+
+class _CartSheet extends StatefulWidget {
+  final Widget cartPane;
+  final Future<void> Function(BuildContext, Product) onAddProduct;
+  final VoidCallback onScan;
+
+  const _CartSheet({
+    required this.cartPane,
+    required this.onAddProduct,
+    required this.onScan,
+  });
+
+  @override
+  State<_CartSheet> createState() => _CartSheetState();
+}
+
+class _CartSheetState extends State<_CartSheet> {
+  final _searchCtrl = TextEditingController();
+  bool _hasQuery = false;
+
+  @override
+  void dispose() {
+    context.read<ProductBloc>().add(const ProductSearchChanged(''));
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _clearSearch() {
+    _searchCtrl.clear();
+    context.read<ProductBloc>().add(const ProductSearchChanged(''));
+    setState(() => _hasQuery = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // ── Drag handle ──
+        Container(
+          margin: const EdgeInsets.only(top: 10, bottom: 8),
+          width: 36,
+          height: 4,
+          decoration: BoxDecoration(
+            color: const Color(0xFFD1D5DB),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+
+        // ── Search + scan bar ──
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 44,
+                  child: TextField(
+                    controller: _searchCtrl,
+                    style: const TextStyle(fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: 'Search products to add...',
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      suffixIcon: _hasQuery
+                          ? IconButton(
+                              icon: const Icon(Icons.close, size: 16),
+                              onPressed: _clearSearch,
+                            )
+                          : null,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                            color: BrandColors.primary, width: 1.5),
+                      ),
+                      filled: true,
+                      fillColor: const Color(0xFFF9FAFB),
+                    ),
+                    onChanged: (v) {
+                      context.read<ProductBloc>().add(ProductSearchChanged(v));
+                      setState(() => _hasQuery = v.isNotEmpty);
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: widget.onScan,
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                  ),
+                  child: const Icon(
+                    Icons.qr_code_scanner,
+                    size: 20,
+                    color: Color(0xFF374151),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const Divider(height: 1, color: Color(0xFFE5E7EB)),
+
+        Expanded(
+          child: _hasQuery ? _searchResults(context) : widget.cartPane,
+        ),
+      ],
+    );
+  }
+
+  Widget _searchResults(BuildContext context) {
+    return BlocBuilder<ProductBloc, ProductState>(
+      builder: (context, state) {
+        if (state.status == ProductStatus.loading) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32),
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: BrandColors.primary,
+              ),
+            ),
+          );
+        }
+        if (state.products.isEmpty) {
+          return const EmptyState(
+            title: 'No products found',
+            icon: Icons.search_off_rounded,
+          );
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: state.products.length,
+          itemBuilder: (_, i) {
+            final p = state.products[i];
+            return ListTile(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: p.imageUrl != null && p.imageUrl!.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.network(
+                          p.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, err, stack) => const Icon(
+                            Icons.inventory_2_outlined,
+                            size: 18,
+                            color: Color(0xFF9CA3AF),
+                          ),
+                        ),
+                      )
+                    : const Icon(
+                        Icons.inventory_2_outlined,
+                        size: 18,
+                        color: Color(0xFF9CA3AF),
+                      ),
+              ),
+              title: Text(
+                p.name,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF111827),
+                ),
+              ),
+              subtitle: MoneyText(
+                p.sellingPrice,
+                style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+              ),
+              trailing: GestureDetector(
+                onTap: () => widget.onAddProduct(context, p),
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: BrandColors.primary,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.add, size: 18, color: Colors.white),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
