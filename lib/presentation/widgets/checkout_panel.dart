@@ -4,8 +4,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/services/card_terminal_service.dart';
+import '../../data/datasources/remote/promotion_remote.dart';
 import '../../data/models/sale_models.dart';
 import '../../di/injection.dart';
+import '../../core/error/exceptions.dart';
 import '../blocs/cart/cart_bloc.dart';
 import '../blocs/cart/cart_event.dart';
 import '../blocs/cart/cart_state.dart';
@@ -139,18 +141,51 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
       _couponValidating = true;
       _couponError = null;
     });
-    // Simple local validation — in production call /api/promotions/validate-coupon
-    // For now, just store the code and let backend apply it; we show no preview discount.
-    await Future.delayed(const Duration(milliseconds: 300));
-    if (!mounted) return;
-    setState(() {
-      _appliedCoupon = code;
-      _couponDiscount = 0; // backend will calculate final discount
-      _couponValidating = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Coupon "$code" will be applied at checkout')),
-    );
+    try {
+      final result = await sl<PromotionRemoteDataSource>().validateCoupon(code);
+
+      if (result.minimumOrderAmount != null &&
+          cartSubtotal < result.minimumOrderAmount!) {
+        if (!mounted) return;
+        setState(() {
+          _couponError =
+              'Minimum order of ${result.minimumOrderAmount!.toStringAsFixed(0)} required';
+          _couponValidating = false;
+        });
+        return;
+      }
+
+      final discount = result.calculateDiscount(cartSubtotal);
+      if (!mounted) return;
+      setState(() {
+        _appliedCoupon = code;
+        _couponDiscount = discount;
+        _couponValidating = false;
+      });
+
+      final discountLabel = result.discountType == 'PERCENTAGE'
+          ? '${result.discountValue.toStringAsFixed(0)}% off'
+          : 'TZS ${result.discountValue.toStringAsFixed(0)} off';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Coupon "${result.name.isNotEmpty ? result.name : code}" applied — $discountLabel',
+          ),
+        ),
+      );
+    } on ServerException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _couponError = e.message;
+        _couponValidating = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _couponError = 'Could not validate coupon. Try again.';
+        _couponValidating = false;
+      });
+    }
   }
 
   void _removeCoupon() {
@@ -359,9 +394,6 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-
     return BlocConsumer<SaleBloc, SaleState>(
       listener: (context, state) {
         if (state.status == SaleStatus.completed ||
@@ -374,215 +406,401 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
           }
         } else if (state.status == SaleStatus.error &&
             state.errorMessage != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(state.errorMessage!)));
         }
       },
       builder: (context, saleState) {
         return BlocBuilder<CartBloc, CartState>(
           builder: (context, cart) {
             final processing = saleState.status == SaleStatus.processing;
-            final remaining = _remaining(cart.total);
-            final change = (_totalPaid - cart.total)
-                .clamp(0, double.infinity)
-                .toDouble();
-            final isPaid = _totalPaid >= cart.total && cart.isNotEmpty;
+            final effectiveTotal = cart.total - _couponDiscount;
+            final remaining = _remaining(effectiveTotal);
+            final change =
+                (_totalPaid - effectiveTotal).clamp(0, double.infinity).toDouble();
+            final isPaid = _totalPaid >= effectiveTotal && cart.isNotEmpty;
 
             return Column(
               children: [
-                // ═══ Header with total ═══
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  color: colors.surfaceContainerLow,
-                  child: Column(
+                // ── Header ──
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          if (widget.onBack != null)
-                            Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: IconButton(
-                                icon: const Icon(Icons.arrow_back),
-                                onPressed: widget.onBack,
-                                style: IconButton.styleFrom(
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                ),
-                              ),
+                      if (widget.onBack != null) ...[
+                        GestureDetector(
+                          onTap: widget.onBack,
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF3F4F6),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                          const Icon(Icons.payment),
-                          const SizedBox(width: 8),
-                          Text('Checkout', style: theme.textTheme.titleMedium),
-                          const Spacer(),
-                          // Customer chip
-                          ActionChip(
-                            avatar: Icon(
-                              cart.hasCustomer
-                                  ? Icons.person
-                                  : Icons.person_outline,
-                              size: 18,
-                            ),
-                            label: Text(
-                              cart.hasCustomer
-                                  ? cart.selectedCustomerName ?? 'Customer'
-                                  : 'Walk-in',
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            onPressed: _pickCustomer,
+                            child: const Icon(Icons.arrow_back,
+                                size: 18, color: Color(0xFF6B7280)),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      // Big total display
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Text(
-                            'Total',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-                          const Spacer(),
-                          MoneyText(
-                            cart.total,
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colors.onSurface,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                // ═══ Scrollable body ═══
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      // ── Coupon code ──
-                      if (_appliedCoupon == null) ...[
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _couponCtrl,
-                                textCapitalization: TextCapitalization.characters,
-                                decoration: InputDecoration(
-                                  hintText: 'Coupon code (optional)',
-                                  prefixIcon: const Icon(Icons.local_offer_outlined, size: 18),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 10,
-                                  ),
-                                  errorText: _couponError,
-                                ),
-                                onSubmitted: (_) => _applyCoupon(0),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            FilledButton.tonal(
-                              onPressed: _couponValidating ? null : () => _applyCoupon(0),
-                              child: _couponValidating
-                                  ? const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
-                                    )
-                                  : const Text('Apply'),
-                            ),
-                          ],
                         ),
-                        const SizedBox(height: 12),
-                      ] else ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        const SizedBox(width: 10),
+                      ],
+                      const Text(
+                        'Checkout',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF111827),
+                        ),
+                      ),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: _pickCustomer,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
-                            color: colors.tertiaryContainer.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(12),
+                            color: cart.hasCustomer
+                                ? const Color(0xFFDCFCE7)
+                                : const Color(0xFFF3F4F6),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: cart.hasCustomer
+                                  ? const Color(0xFFBBF7D0)
+                                  : const Color(0xFFE5E7EB),
+                            ),
                           ),
                           child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.local_offer, size: 18, color: colors.tertiary),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Coupon: $_appliedCoupon',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: colors.onTertiaryContainer,
-                                  ),
-                                ),
+                              Icon(
+                                cart.hasCustomer
+                                    ? Icons.person_rounded
+                                    : Icons.person_outline,
+                                size: 13,
+                                color: cart.hasCustomer
+                                    ? const Color(0xFF16A34A)
+                                    : const Color(0xFF9CA3AF),
                               ),
-                              InkWell(
-                                borderRadius: BorderRadius.circular(12),
-                                onTap: _removeCoupon,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(4),
-                                  child: Icon(Icons.close, size: 16, color: colors.error),
+                              const SizedBox(width: 5),
+                              Text(
+                                cart.hasCustomer
+                                    ? (cart.selectedCustomerName ?? 'Customer')
+                                    : 'Walk-in',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: cart.hasCustomer
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                                  color: cart.hasCustomer
+                                      ? const Color(0xFF166534)
+                                      : const Color(0xFF6B7280),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1, color: Color(0xFFE5E7EB)),
+
+                // ── Body ──
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      // Order summary card
+                      _sectionLabel('Order Summary'),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF9FAFB),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFE5E7EB)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ...cart.lines.map((line) {
+                              final qty = line.quantity ==
+                                      line.quantity.floorToDouble()
+                                  ? line.quantity.toInt().toString()
+                                  : line.quantity.toStringAsFixed(2);
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text.rich(
+                                        TextSpan(
+                                          text: line.product.name,
+                                          style: const TextStyle(
+                                              fontSize: 13,
+                                              color: Color(0xFF374151)),
+                                          children: [
+                                            TextSpan(
+                                              text: ' ×$qty',
+                                              style: const TextStyle(
+                                                  color: Color(0xFF9CA3AF)),
+                                            ),
+                                          ],
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    MoneyText(
+                                      line.lineTotal,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF111827),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
+                            const Divider(height: 16, color: Color(0xFFE5E7EB)),
+                            _summaryRow('Subtotal', cart.subtotal),
+                            if (cart.taxAmount > 0) ...[
+                              const SizedBox(height: 4),
+                              _summaryRow('Tax', cart.taxAmount),
+                            ],
+                            if (cart.discount > 0) ...[
+                              const SizedBox(height: 4),
+                              _summaryRow('Discount', -cart.discount,
+                                  valueColor: const Color(0xFF16A34A)),
+                            ],
+                            if (_couponDiscount > 0) ...[
+                              const SizedBox(height: 4),
+                              _summaryRow(
+                                  'Coupon ($_appliedCoupon)', -_couponDiscount,
+                                  valueColor: const Color(0xFF16A34A)),
+                            ],
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              child:
+                                  Divider(height: 1, color: Color(0xFFE5E7EB)),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Total',
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF111827))),
+                                MoneyText(
+                                  effectiveTotal,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF468432),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Coupon
+                      if (_appliedCoupon == null) ...[
+                        _sectionLabel('Coupon'),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: SizedBox(
+                                height: 44,
+                                child: TextField(
+                                  controller: _couponCtrl,
+                                  textCapitalization:
+                                      TextCapitalization.characters,
+                                  style: const TextStyle(fontSize: 14),
+                                  decoration: InputDecoration(
+                                    hintText: 'Enter coupon code',
+                                    hintStyle: const TextStyle(
+                                        color: Color(0xFFD1D5DB), fontSize: 14),
+                                    prefixIcon: const Icon(
+                                        Icons.local_offer_outlined,
+                                        size: 18,
+                                        color: Color(0xFF9CA3AF)),
+                                    errorText: _couponError,
+                                    contentPadding:
+                                        const EdgeInsets.symmetric(vertical: 0),
+                                    filled: true,
+                                    fillColor: const Color(0xFFF9FAFB),
+                                    border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                            color: Color(0xFFE5E7EB))),
+                                    enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                            color: Color(0xFFE5E7EB))),
+                                    focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                            color: Color(0xFF468432),
+                                            width: 1.5)),
+                                  ),
+                                  onSubmitted: (_) => _applyCoupon(cart.total),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              height: 44,
+                              child: FilledButton(
+                                onPressed: _couponValidating
+                                    ? null
+                                    : () => _applyCoupon(cart.total),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: const Color(0xFF468432),
+                                  disabledBackgroundColor:
+                                      const Color(0xFFD1D5DB),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                  elevation: 0,
+                                ),
+                                child: _couponValidating
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white))
+                                    : const Text('Apply',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w600)),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                      ] else ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFDCFCE7),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFBBF7D0)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.local_offer_rounded,
+                                  size: 16, color: Color(0xFF16A34A)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Coupon "$_appliedCoupon" applied',
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF166534)),
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: _removeCoupon,
+                                child: const Icon(Icons.close,
+                                    size: 15, color: Color(0xFF9CA3AF)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
                       ],
 
-                      // ── Payment method buttons ──
-                      GridView.count(
-                        crossAxisCount: 3,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        mainAxisSpacing: 8,
-                        crossAxisSpacing: 8,
-                        childAspectRatio: 1.8,
+                      // Payment section header
+                      Row(
+                        children: [
+                          _sectionLabel('Payment'),
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: () {
+                              _addAmountCtrl.clear();
+                              _addReferenceCtrl.clear();
+                              setState(() => _addMethod = PaymentMethod.cash);
+                              _addFullPayment(cart.total);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF468432)
+                                    .withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.add,
+                                      size: 12, color: Color(0xFF468432)),
+                                  SizedBox(width: 4),
+                                  Text('Split',
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFF468432))),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Payment method pills
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
                         children: PaymentMethod.values.map((m) {
                           final selected = m == _addMethod;
-                          return Material(
-                            color: selected
-                                ? colors.primaryContainer
-                                : colors.surfaceContainerLow,
-                            borderRadius: BorderRadius.circular(12),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(12),
-                              onTap: () => setState(() {
-                                _addMethod = m;
-                                if (!m.requiresReference) {
-                                  _addReferenceCtrl.clear();
-                                }
-                              }),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                          return GestureDetector(
+                            onTap: () => setState(() {
+                              _addMethod = m;
+                              if (!m.requiresReference) {
+                                _addReferenceCtrl.clear();
+                              }
+                            }),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 7),
+                              decoration: BoxDecoration(
+                                color: selected
+                                    ? const Color(0xFF468432)
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: selected
+                                      ? const Color(0xFF468432)
+                                      : const Color(0xFFE5E7EB),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(
-                                    m.icon,
-                                    size: 24,
-                                    color: selected
-                                        ? colors.onPrimaryContainer
-                                        : colors.onSurfaceVariant,
-                                  ),
-                                  const SizedBox(height: 4),
+                                  Icon(m.icon,
+                                      size: 14,
+                                      color: selected
+                                          ? Colors.white
+                                          : const Color(0xFF6B7280)),
+                                  const SizedBox(width: 6),
                                   Text(
                                     m.label,
-                                    style: theme.textTheme.labelMedium
-                                        ?.copyWith(
-                                          fontWeight: selected
-                                              ? FontWeight.w600
-                                              : FontWeight.w500,
-                                          color: selected
-                                              ? colors.onPrimaryContainer
-                                              : colors.onSurfaceVariant,
-                                        ),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: selected
+                                          ? Colors.white
+                                          : const Color(0xFF6B7280),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -590,116 +808,100 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                           );
                         }).toList(),
                       ),
+                      const SizedBox(height: 12),
 
-                      if (_addMethod == PaymentMethod.credit || _addMethod == PaymentMethod.giftCard)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.info_outline,
-                                size: 14,
-                                color: colors.secondary,
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  _addMethod == PaymentMethod.giftCard
-                                      ? 'Enter the gift card code as the reference. Balance will be deducted at checkout.'
-                                      : 'Credit amount added to customer balance.',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: colors.secondary,
-                                  ),
-                                ),
-                              ),
-                            ],
+                      // Reference input (when required)
+                      if (_addMethod.requiresReference && remaining > 0) ...[
+                        TextField(
+                          controller: _addReferenceCtrl,
+                          textInputAction: TextInputAction.next,
+                          textCapitalization:
+                              _addMethod == PaymentMethod.giftCard
+                                  ? TextCapitalization.characters
+                                  : TextCapitalization.none,
+                          style: const TextStyle(fontSize: 14),
+                          decoration: InputDecoration(
+                            hintText: _addMethod == PaymentMethod.giftCard
+                                ? 'Gift card code'
+                                : 'Reference / Transaction ID',
+                            hintStyle: const TextStyle(
+                                color: Color(0xFFD1D5DB), fontSize: 14),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 12),
+                            filled: true,
+                            fillColor: const Color(0xFFF9FAFB),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                    color: Color(0xFFE5E7EB))),
+                            enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                    color: Color(0xFFE5E7EB))),
+                            focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                    color: Color(0xFF468432), width: 1.5)),
                           ),
                         ),
+                        const SizedBox(height: 10),
+                      ],
 
-                      const SizedBox(height: 16),
-
-                      // ── Amount input ──
+                      // Amount input
                       if (remaining > 0) ...[
-                        if (_addMethod.requiresReference) ...[
-                          TextField(
-                            controller: _addReferenceCtrl,
-                            textInputAction: TextInputAction.next,
-                            textCapitalization: _addMethod == PaymentMethod.giftCard
-                                ? TextCapitalization.characters
-                                : TextCapitalization.none,
-                            decoration: InputDecoration(
-                              labelText: _addMethod == PaymentMethod.giftCard
-                                  ? 'Gift Card Code'
-                                  : '${_addMethod.label} Reference',
-                              hintText: _addMethod == PaymentMethod.giftCard
-                                  ? 'Enter card code'
-                                  : 'Transaction/reference number',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                        ],
                         TextField(
                           controller: _addAmountCtrl,
                           keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
+                              decimal: true),
                           inputFormatters: [
                             FilteringTextInputFormatter.allow(
-                              RegExp(r'[0-9.]'),
-                            ),
+                                RegExp(r'[0-9.]'))
                           ],
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF111827)),
                           textAlign: TextAlign.center,
                           decoration: InputDecoration(
                             hintText: '0',
-                            hintStyle: theme.textTheme.headlineSmall?.copyWith(
-                              color: colors.onSurfaceVariant.withValues(
-                                alpha: 0.4,
-                              ),
-                              fontWeight: FontWeight.w600,
-                            ),
+                            hintStyle: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFD1D5DB)),
+                            prefixText: 'TZS  ',
+                            prefixStyle: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF9CA3AF),
+                                fontWeight: FontWeight.w500),
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 14),
+                            filled: true,
+                            fillColor: const Color(0xFFF9FAFB),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 16,
-                            ),
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                    color: Color(0xFFE5E7EB))),
+                            enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                    color: Color(0xFFE5E7EB))),
+                            focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                    color: Color(0xFF468432), width: 1.5)),
                           ),
                           onChanged: (_) => setState(() {}),
                           onSubmitted: (_) => _addPayment(cart.total),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 10),
 
-                        // ── Quick amount grid ──
-                        GridView.count(
-                          crossAxisCount: 4,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          mainAxisSpacing: 8,
-                          crossAxisSpacing: 8,
-                          childAspectRatio: 2.2,
+                        // Quick buttons
+                        Row(
                           children: [
-                            _quickBtn(
-                              'Full',
-                              () => _addFullPayment(cart.total),
-                            ),
+                            _quickBtn('Full', () => _addFullPayment(cart.total)),
                             if (_addMethod == PaymentMethod.cash)
-                              for (final amt in const [
-                                5000,
-                                10000,
-                                20000,
-                                50000,
-                              ])
+                              for (final amt in [5000, 10000, 20000, 50000]) ...[
+                                const SizedBox(width: 6),
                                 _quickBtn(
                                   '${(amt / 1000).toStringAsFixed(0)}K',
                                   () {
@@ -707,11 +909,12 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                     _addPayment(cart.total);
                                   },
                                 ),
+                              ],
                           ],
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 10),
 
-                        // ── Add payment button (or Charge Terminal for card) ──
+                        // Add / Charge button
                         if (_addMethod == PaymentMethod.card) ...[
                           SizedBox(
                             width: double.infinity,
@@ -721,23 +924,25 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                   ? null
                                   : () => _chargeTerminal(cart.total),
                               style: FilledButton.styleFrom(
-                                backgroundColor: colors.primary,
-                                foregroundColor: colors.onPrimary,
+                                backgroundColor: const Color(0xFF468432),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                                elevation: 0,
                               ),
                               icon: _terminalProcessing
                                   ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
+                                      width: 16,
+                                      height: 16,
                                       child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : const Icon(Icons.contactless),
+                                          strokeWidth: 2,
+                                          color: Colors.white))
+                                  : const Icon(Icons.contactless, size: 18),
                               label: Text(
                                 _terminalProcessing
                                     ? 'Waiting for card…'
                                     : 'Charge Terminal',
+                                style: const TextStyle(
+                                    fontSize: 14, fontWeight: FontWeight.w600),
                               ),
                             ),
                           ),
@@ -754,243 +959,275 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                             ),
                           if (_terminalError != null)
                             Padding(
-                              padding: const EdgeInsets.only(top: 6),
-                              child: Text(
-                                _terminalError!,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: colors.error,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(_terminalError!,
+                                  style: const TextStyle(
+                                      fontSize: 11, color: Color(0xFFDC2626)),
+                                  textAlign: TextAlign.center),
                             ),
-                          const SizedBox(height: 8),
-                          // Manual fallback for card-not-present / keyed-in
+                          const SizedBox(height: 6),
                           SizedBox(
                             width: double.infinity,
                             height: 40,
                             child: OutlinedButton.icon(
                               onPressed: () => _addPayment(cart.total),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: Color(0xFFE5E7EB)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                              ),
                               icon: const Icon(Icons.keyboard_alt_outlined,
-                                  size: 18),
-                              label: const Text('Manual Entry'),
+                                  size: 16),
+                              label: const Text('Manual Entry',
+                                  style: TextStyle(fontSize: 13)),
                             ),
                           ),
                         ] else
                           SizedBox(
                             width: double.infinity,
                             height: 44,
-                            child: FilledButton.tonalIcon(
+                            child: FilledButton.icon(
                               onPressed: () => _addPayment(cart.total),
-                              icon: const Icon(Icons.add),
-                              label: const Text('Add Payment'),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: const Color(0xFF468432),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                                elevation: 0,
+                              ),
+                              icon: const Icon(Icons.add, size: 18),
+                              label: const Text('Add Payment',
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600)),
                             ),
                           ),
+                        const SizedBox(height: 16),
                       ],
 
-                      // ── Added payments list ──
+                      // Added payments
                       if (_payments.isNotEmpty) ...[
-                        const SizedBox(height: 16),
                         for (var i = 0; i < _payments.length; i++)
                           Container(
                             margin: const EdgeInsets.only(bottom: 6),
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
+                                horizontal: 12, vertical: 10),
                             decoration: BoxDecoration(
-                              color: colors.surfaceContainerLow,
-                              borderRadius: BorderRadius.circular(10),
+                              color: const Color(0xFFF9FAFB),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFE5E7EB)),
                             ),
                             child: Row(
                               children: [
-                                Icon(
-                                  _payments[i].method.icon,
-                                  size: 20,
-                                  color: colors.onSurfaceVariant,
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF468432)
+                                        .withValues(alpha: 0.10),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(_payments[i].method.icon,
+                                      size: 16, color: const Color(0xFF468432)),
                                 ),
                                 const SizedBox(width: 10),
-                                Text(
-                                  _payments[i].method.label,
-                                  style: theme.textTheme.bodyMedium,
-                                ),
-                                if ((_payments[i].reference ?? '').isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(left: 8),
-                                    child: Text(
-                                      '#${_payments[i].reference}',
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: colors.onSurfaceVariant,
-                                          ),
-                                    ),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _payments[i].method.label,
+                                        style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFF111827)),
+                                      ),
+                                      if ((_payments[i].reference ?? '')
+                                          .isNotEmpty)
+                                        Text(
+                                          '#${_payments[i].reference}',
+                                          style: const TextStyle(
+                                              fontSize: 11,
+                                              color: Color(0xFF9CA3AF)),
+                                        ),
+                                    ],
                                   ),
-                                const Spacer(),
+                                ),
                                 MoneyText(
                                   _payments[i].amount,
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF111827)),
                                 ),
-                                const SizedBox(width: 4),
-                                InkWell(
-                                  borderRadius: BorderRadius.circular(12),
+                                const SizedBox(width: 8),
+                                GestureDetector(
                                   onTap: () => _removePayment(i),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(4),
-                                    child: Icon(
-                                      Icons.close,
-                                      size: 16,
-                                      color: colors.error,
+                                  child: Container(
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFEE2E2),
+                                      borderRadius: BorderRadius.circular(6),
                                     ),
+                                    child: const Icon(Icons.close,
+                                        size: 13, color: Color(0xFFDC2626)),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        if (change > 0)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.primaryContainer.withValues(
-                                alpha: 0.5,
-                              ),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.currency_exchange,
-                                  size: 20,
-                                  color: colors.primary,
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  'Change',
-                                  style: theme.textTheme.bodyMedium,
-                                ),
-                                const Spacer(),
-                                MoneyText(
-                                  change,
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: colors.primary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                        const SizedBox(height: 4),
                       ],
 
-                      // ── Remaining balance ──
-                      if (remaining > 0 && _payments.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: colors.errorContainer.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Remaining',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: colors.error,
-                                ),
-                              ),
-                              MoneyText(
-                                remaining,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: colors.error,
-                                ),
-                              ),
-                            ],
-                          ),
+                      // Payment summary card
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF9FAFB),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFE5E7EB)),
                         ),
-                      ],
+                        child: Column(
+                          children: [
+                            _summaryRow('Total due', effectiveTotal),
+                            const SizedBox(height: 4),
+                            _summaryRow('Paid', _totalPaid,
+                                valueColor: _totalPaid > 0
+                                    ? const Color(0xFF16A34A)
+                                    : null),
+                            const SizedBox(height: 4),
+                            if (remaining > 0)
+                              _summaryRow('Remaining', remaining,
+                                  valueColor: const Color(0xFFDC2626),
+                                  bold: true)
+                            else
+                              _summaryRow('Change', change,
+                                  valueColor: const Color(0xFF16A34A),
+                                  bold: true),
+                          ],
+                        ),
+                      ),
 
-                      // ── Notes toggle ──
-                      const SizedBox(height: 12),
+                      // Notes
+                      const SizedBox(height: 16),
                       if (!_showNotes)
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: TextButton.icon(
-                            onPressed: () => setState(() => _showNotes = true),
-                            icon: const Icon(Icons.note_add_outlined, size: 18),
-                            label: const Text('Add note'),
-                            style: TextButton.styleFrom(
-                              visualDensity: VisualDensity.compact,
-                            ),
+                        GestureDetector(
+                          onTap: () => setState(() => _showNotes = true),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.note_add_outlined,
+                                  size: 15, color: Color(0xFF9CA3AF)),
+                              SizedBox(width: 6),
+                              Text('Add note',
+                                  style: TextStyle(
+                                      fontSize: 13, color: Color(0xFF6B7280))),
+                            ],
                           ),
                         )
                       else
-                        TextField(
-                          controller: _notesCtrl,
-                          autofocus: true,
-                          decoration: InputDecoration(
-                            labelText: 'Order notes',
-                            hintText: 'e.g. Gift wrap, table 3',
-                            prefixIcon: const Icon(Icons.note_alt_outlined),
-                            suffixIcon: IconButton(
-                              icon: const Icon(Icons.close, size: 18),
-                              onPressed: () {
-                                _notesCtrl.clear();
-                                setState(() => _showNotes = false);
-                              },
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                _sectionLabel('Note'),
+                                const Spacer(),
+                                GestureDetector(
+                                  onTap: () {
+                                    _notesCtrl.clear();
+                                    setState(() => _showNotes = false);
+                                  },
+                                  child: const Icon(Icons.close,
+                                      size: 14, color: Color(0xFF9CA3AF)),
+                                ),
+                              ],
                             ),
-                          ),
-                          maxLines: 1,
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _notesCtrl,
+                              autofocus: true,
+                              maxLines: 2,
+                              style: const TextStyle(fontSize: 14),
+                              decoration: InputDecoration(
+                                hintText: 'e.g. Gift wrap, table 3',
+                                hintStyle: const TextStyle(
+                                    color: Color(0xFFD1D5DB)),
+                                contentPadding: const EdgeInsets.all(12),
+                                filled: true,
+                                fillColor: const Color(0xFFF9FAFB),
+                                border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                        color: Color(0xFFE5E7EB))),
+                                enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                        color: Color(0xFFE5E7EB))),
+                                focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                        color: Color(0xFF468432), width: 1.5)),
+                              ),
+                            ),
+                          ],
                         ),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
 
-                // ═══ Complete Sale button ═══
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: colors.surface,
-                    border: Border(
-                      top: BorderSide(color: colors.outlineVariant),
-                    ),
-                  ),
+                // ── Complete Sale button ──
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                   child: SizedBox(
-                    height: 56,
+                    height: 52,
                     width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: (processing || !isPaid)
-                          ? null
-                          : () => _complete(cart),
+                    child: FilledButton(
+                      onPressed:
+                          (processing || !isPaid) ? null : () => _complete(cart),
                       style: FilledButton.styleFrom(
-                        backgroundColor: colors.secondary,
-                        foregroundColor: colors.onSecondary,
-                        disabledBackgroundColor:
-                            colors.outline.withValues(alpha: 0.3),
+                        backgroundColor: const Color(0xFF468432),
+                        disabledBackgroundColor: const Color(0xFFD1D5DB),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                        elevation: 0,
                       ),
-                      icon: processing
+                      child: processing
                           ? const SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.check_circle_outline, size: 22),
-                      label: Text(
-                        isPaid ? 'Complete Sale' : 'Add payment to continue',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                                  strokeWidth: 2.5, color: Colors.white))
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  isPaid
+                                      ? 'Complete Sale'
+                                      : 'Add payment to continue',
+                                  style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white),
+                                ),
+                                if (isPaid) ...[
+                                  const SizedBox(width: 10),
+                                  Container(
+                                    width: 1,
+                                    height: 16,
+                                    color: Colors.white.withValues(alpha: 0.4),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  MoneyText(
+                                    effectiveTotal,
+                                    style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white),
+                                  ),
+                                ],
+                              ],
+                            ),
                     ),
                   ),
                 ),
@@ -1002,20 +1239,62 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
     );
   }
 
+  Widget _sectionLabel(String text) {
+    return Text(
+      text.toUpperCase(),
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1.2,
+        color: Color(0xFF9CA3AF),
+      ),
+    );
+  }
+
+  Widget _summaryRow(String label, double amount,
+      {Color? valueColor, bool bold = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+            color: bold ? const Color(0xFF111827) : const Color(0xFF6B7280),
+          ),
+        ),
+        MoneyText(
+          amount,
+          style: TextStyle(
+            fontSize: bold ? 14 : 13,
+            fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
+            color: valueColor ?? const Color(0xFF374151),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _quickBtn(String label, VoidCallback onTap) {
-    final colors = Theme.of(context).colorScheme;
-    return Material(
-      color: colors.surfaceContainerHigh,
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
+    return Expanded(
+      child: GestureDetector(
         onTap: onTap,
-        child: Center(
+        child: Container(
+          height: 36,
+          decoration: BoxDecoration(
+            color: const Color(0xFF468432).withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+                color: const Color(0xFF468432).withValues(alpha: 0.2)),
+          ),
+          alignment: Alignment.center,
           child: Text(
             label,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: colors.onSurface,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF468432),
             ),
           ),
         ),
