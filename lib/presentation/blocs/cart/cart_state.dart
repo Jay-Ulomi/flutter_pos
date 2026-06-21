@@ -81,12 +81,14 @@ class CartState extends Equatable {
   final double discount;
   final String? selectedCustomerId;
   final String? selectedCustomerName;
+  final double customerBalance;
 
   const CartState({
     this.lines = const [],
     this.discount = 0,
     this.selectedCustomerId,
     this.selectedCustomerName,
+    this.customerBalance = 0,
   });
 
   double get subtotal => lines.fold(0, (sum, l) => sum + l.lineSubtotal);
@@ -108,6 +110,7 @@ class CartState extends Equatable {
     double? discount,
     String? selectedCustomerId,
     String? selectedCustomerName,
+    double? customerBalance,
     bool clearCustomer = false,
   }) {
     return CartState(
@@ -119,6 +122,7 @@ class CartState extends Equatable {
       selectedCustomerName: clearCustomer
           ? null
           : (selectedCustomerName ?? this.selectedCustomerName),
+      customerBalance: clearCustomer ? 0 : (customerBalance ?? this.customerBalance),
     );
   }
 
@@ -128,5 +132,6 @@ class CartState extends Equatable {
     discount,
     selectedCustomerId,
     selectedCustomerName,
+    customerBalance,
   ];
 }

@@ -74,12 +74,14 @@ class CartCleared extends CartEvent {
 class CartCustomerSelected extends CartEvent {
   final String customerId;
   final String customerName;
+  final double customerBalance;
   const CartCustomerSelected({
     required this.customerId,
     required this.customerName,
+    this.customerBalance = 0,
   });
   @override
-  List<Object?> get props => [customerId, customerName];
+  List<Object?> get props => [customerId, customerName, customerBalance];
 }
 
 class CartRestored extends CartEvent {

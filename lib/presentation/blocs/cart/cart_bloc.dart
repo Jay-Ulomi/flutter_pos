@@ -38,6 +38,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       state.copyWith(
         selectedCustomerId: event.customerId,
         selectedCustomerName: event.customerName,
+        customerBalance: event.customerBalance,
       ),
     );
   }

@@ -18,7 +18,7 @@ import '../blocs/session/session_bloc.dart';
 import 'customer_picker_sheet.dart';
 import 'money_text.dart';
 
-enum PaymentMethod { cash, card, mobile, bankTransfer, credit, giftCard }
+enum PaymentMethod { cash, card, mobile, bankTransfer, credit, giftCard, storeCredit }
 
 extension PaymentMethodX on PaymentMethod {
   String get apiName {
@@ -35,6 +35,8 @@ extension PaymentMethodX on PaymentMethod {
         return 'CREDIT';
       case PaymentMethod.giftCard:
         return 'GIFT_CARD';
+      case PaymentMethod.storeCredit:
+        return 'STORE_CREDIT';
     }
   }
 
@@ -52,6 +54,8 @@ extension PaymentMethodX on PaymentMethod {
         return 'Credit';
       case PaymentMethod.giftCard:
         return 'Gift Card';
+      case PaymentMethod.storeCredit:
+        return 'Store Credit';
     }
   }
 
@@ -69,6 +73,8 @@ extension PaymentMethodX on PaymentMethod {
         return Icons.account_balance_wallet_outlined;
       case PaymentMethod.giftCard:
         return Icons.card_giftcard;
+      case PaymentMethod.storeCredit:
+        return Icons.wallet;
     }
   }
 
@@ -81,6 +87,7 @@ extension PaymentMethodX on PaymentMethod {
         return true;
       case PaymentMethod.cash:
       case PaymentMethod.credit:
+      case PaymentMethod.storeCredit:
         return false;
     }
   }
@@ -306,28 +313,37 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
     setState(() => _payments.removeAt(index));
   }
 
+  double _storeCreditUsed() =>
+      _payments.where((p) => p.method == PaymentMethod.storeCredit).fold(0.0, (s, p) => s + p.amount);
+
   void _complete(CartState cart) {
     final sessionId = context.read<SessionBloc>().state.current?.id;
     if (sessionId == null || sessionId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No active session found. Open a session first.'),
-        ),
+        const SnackBar(content: Text('No active session found. Open a session first.')),
       );
       return;
     }
     if (_hasCreditPayment && !cart.hasCustomer) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('A customer is required for credit payments.'),
-        ),
+        const SnackBar(content: Text('A customer is required for credit payments.')),
       );
       return;
     }
     final effectiveTotal = cart.total - _couponDiscount;
-    if (_totalPaid < effectiveTotal) {
+    final remaining = _remaining(effectiveTotal);
+    // Allow underpayment only when a customer is selected (remainder goes on account).
+    if (remaining > 0 && !cart.hasCustomer) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Payment amount is less than total')),
+        const SnackBar(content: Text('Select a customer to put the balance on account, or add more payment.')),
+      );
+      return;
+    }
+    // Validate store credit doesn't exceed available balance.
+    final creditUsed = _storeCreditUsed();
+    if (creditUsed > cart.customerBalance) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Store credit used exceeds available balance.')),
       );
       return;
     }
@@ -362,9 +378,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
           ),
         )
         .toList();
-    final change = (_totalPaid - effectiveTotal)
-        .clamp(0, double.infinity)
-        .toDouble();
+    final change = (_totalPaid - effectiveTotal).clamp(0, double.infinity).toDouble();
     return Sale(
       sessionId: sessionId,
       items: items,
@@ -393,7 +407,11 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
     } else {
       final c = picked.customer!;
       context.read<CartBloc>().add(
-        CartCustomerSelected(customerId: c.id, customerName: c.name),
+        CartCustomerSelected(
+          customerId: c.id,
+          customerName: c.name,
+          customerBalance: c.currentBalance,
+        ),
       );
     }
   }
@@ -424,7 +442,14 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
             final remaining = _remaining(effectiveTotal);
             final change =
                 (_totalPaid - effectiveTotal).clamp(0, double.infinity).toDouble();
-            final isPaid = _totalPaid >= effectiveTotal && cart.isNotEmpty;
+            final availableCredit = cart.customerBalance > 0 ? cart.customerBalance : 0.0;
+            // Can complete if: fully paid, OR customer is set and remaining goes on account.
+            final canComplete = cart.isNotEmpty &&
+                (_totalPaid >= effectiveTotal || (remaining > 0 && cart.hasCustomer));
+            // Visible payment methods — store credit only when customer has positive balance.
+            final visibleMethods = PaymentMethod.values
+                .where((m) => m != PaymentMethod.storeCredit || availableCredit > 0)
+                .toList();
 
             return Column(
               children: [
@@ -620,6 +645,48 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                       _sectionLabel('Payment Method'),
                       const SizedBox(height: 10),
 
+                      // Store credit banner — shown when customer has a positive balance.
+                      if (availableCredit > 0) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFDCFCE7),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFBBF7D0)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.wallet, size: 16, color: Color(0xFF16A34A)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Store credit available: TZS ${availableCredit.toStringAsFixed(0)}',
+                                  style: const TextStyle(fontSize: 12, color: Color(0xFF166534), fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  final apply = [availableCredit, remaining].reduce((a, b) => a < b ? a : b);
+                                  if (apply <= 0) return;
+                                  setState(() {
+                                    _payments.add(_PaymentEntry(method: PaymentMethod.storeCredit, amount: apply));
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF16A34A),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Text('Apply', style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+
                       // Payment method cards — 3-column grid
                       GridView.count(
                         crossAxisCount: 3,
@@ -628,7 +695,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                         mainAxisSpacing: 6,
                         crossAxisSpacing: 6,
                         childAspectRatio: 2.4,
-                        children: PaymentMethod.values.map((m) {
+                        children: visibleMethods.map((m) {
                           final selected = m == _addMethod;
                           return GestureDetector(
                             onTap: () => setState(() {
@@ -1052,18 +1119,17 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                             _summaryRow('Total due', effectiveTotal),
                             const SizedBox(height: 4),
                             _summaryRow('Paid', _totalPaid,
-                                valueColor: _totalPaid > 0
-                                    ? const Color(0xFF16A34A)
-                                    : null),
+                                valueColor: _totalPaid > 0 ? const Color(0xFF16A34A) : null),
                             const SizedBox(height: 4),
-                            if (remaining > 0)
+                            if (remaining > 0 && cart.hasCustomer)
+                              _summaryRow('On Account', remaining,
+                                  valueColor: const Color(0xFFD97706), bold: true)
+                            else if (remaining > 0)
                               _summaryRow('Remaining', remaining,
-                                  valueColor: const Color(0xFFDC2626),
-                                  bold: true)
+                                  valueColor: const Color(0xFFDC2626), bold: true)
                             else
                               _summaryRow('Change', change,
-                                  valueColor: const Color(0xFF16A34A),
-                                  bold: true),
+                                  valueColor: const Color(0xFF16A34A), bold: true),
                           ],
                         ),
                       ),
@@ -1144,7 +1210,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                     width: double.infinity,
                     child: FilledButton(
                       onPressed:
-                          (processing || !isPaid) ? null : () => _complete(cart),
+                          (processing || !canComplete) ? null : () => _complete(cart),
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFF468432),
                         disabledBackgroundColor: const Color(0xFFD1D5DB),
@@ -1162,15 +1228,15 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  isPaid
-                                      ? 'Complete Sale'
+                                  canComplete
+                                      ? (remaining > 0 ? 'Complete — Put on Account' : 'Complete Sale')
                                       : 'Add payment to continue',
                                   style: const TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w700,
                                       color: Colors.white),
                                 ),
-                                if (isPaid) ...[
+                                if (canComplete && remaining == 0) ...[
                                   const SizedBox(width: 10),
                                   Container(
                                     width: 1,
