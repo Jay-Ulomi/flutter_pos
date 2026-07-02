@@ -323,6 +323,16 @@ class SyncRepositoryImpl implements SyncRepository {
   }
 
   @override
+  Future<int> getRetriablePendingSaleCount() {
+    return _saleLocal.getRetriablePendingSaleCount();
+  }
+
+  @override
+  Future<int> clearFailedSales() {
+    return _saleLocal.deleteFailedSales();
+  }
+
+  @override
   Future<int> getPendingLaundryActionCount() {
     return _laundryLocal.getPendingActionCount();
   }

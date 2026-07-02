@@ -39,3 +39,17 @@ class SyncConnectivityChanged extends SyncEvent {
   @override
   List<Object?> get props => [isOnline];
 }
+
+/// Quiet background push — fired by the periodic retry timer and on app resume.
+/// Unlike [SyncPushRequested] it does not flip the loud syncing/success phase,
+/// so it won't flicker the UI while the user is idle. Swallows errors and just
+/// refreshes the status snapshot.
+class SyncAutoRetryRequested extends SyncEvent {
+  const SyncAutoRetryRequested();
+}
+
+/// Discards all queued sales stuck in the `failed` state (e.g. permanently
+/// rejected by the server) so they stop blocking the queue.
+class SyncFailedSalesCleared extends SyncEvent {
+  const SyncFailedSalesCleared();
+}

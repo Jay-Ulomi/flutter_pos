@@ -907,7 +907,12 @@ class _PosScreenState extends State<PosScreen> {
   // ---- cart pane (desktop sidebar + mobile sheet) ----
 
   Widget _cartPane() {
-    return BlocBuilder<CartBloc, CartState>(
+    return GestureDetector(
+      // Numeric keyboards have no "done" key — tap anywhere outside a field to
+      // dismiss it (child buttons/fields still handle their own taps first).
+      behavior: HitTestBehavior.translucent,
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: BlocBuilder<CartBloc, CartState>(
       builder: (context, cart) {
         return Column(
           children: [
@@ -1047,6 +1052,8 @@ class _PosScreenState extends State<PosScreen> {
                     )
                   : ListView.builder(
                       padding: const EdgeInsets.symmetric(vertical: 8),
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
                       itemCount: cart.lines.length,
                       itemBuilder: (_, i) {
                         final line = cart.lines[i];
@@ -1140,6 +1147,7 @@ class _PosScreenState extends State<PosScreen> {
           ],
         );
       },
+      ),
     );
   }
 
@@ -1475,9 +1483,40 @@ class _CartSheetState extends State<_CartSheet> {
                   color: Color(0xFF111827),
                 ),
               ),
-              subtitle: MoneyText(
-                p.sellingPrice,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+              subtitle: Row(
+                children: [
+                  MoneyText(
+                    p.sellingPrice,
+                    style: const TextStyle(
+                        fontSize: 12, color: Color(0xFF6B7280)),
+                  ),
+                  if (p.stockLabel != null) ...[
+                    const Text(
+                      '  ·  ',
+                      style: TextStyle(fontSize: 12, color: Color(0xFFD1D5DB)),
+                    ),
+                    Icon(
+                      Icons.inventory_2_outlined,
+                      size: 11,
+                      color: p.isOutOfStock
+                          ? const Color(0xFFDC2626)
+                          : const Color(0xFF9CA3AF),
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      p.stockLabel!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: p.isOutOfStock
+                            ? const Color(0xFFDC2626)
+                            : p.isLowStock
+                                ? const Color(0xFFD97706)
+                                : const Color(0xFF6B7280),
+                      ),
+                    ),
+                  ],
+                ],
               ),
               trailing: GestureDetector(
                 onTap: () async {

@@ -25,6 +25,7 @@ import 'presentation/blocs/sale/sale_bloc.dart';
 import 'presentation/blocs/session/session_bloc.dart';
 import 'presentation/blocs/held_sales/held_sales_cubit.dart';
 import 'presentation/blocs/sync/sync_bloc.dart';
+import 'presentation/blocs/sync/sync_event.dart';
 import 'presentation/blocs/theme/theme_cubit.dart';
 import 'presentation/routes/app_router.dart';
 
@@ -42,7 +43,7 @@ class PosApp extends StatefulWidget {
   State<PosApp> createState() => _PosAppState();
 }
 
-class _PosAppState extends State<PosApp> {
+class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
   final _themeCubit = ThemeCubit();
   AuthBloc? _authBloc;
   BusinessBloc? _businessBloc;
@@ -54,7 +55,18 @@ class _PosAppState extends State<PosApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _bootstrapFuture = _bootstrap();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Flush any queued sales when the app returns to the foreground — covers
+    // the case where connectivity was restored while the app was backgrounded
+    // (so the reconnect push never fired).
+    if (state == AppLifecycleState.resumed) {
+      _syncBloc?.add(const SyncAutoRetryRequested());
+    }
   }
 
   Future<void> _bootstrap() async {
@@ -75,6 +87,7 @@ class _PosAppState extends State<PosApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _themeCubit.close();
     _authBloc?.close();
     _businessBloc?.close();

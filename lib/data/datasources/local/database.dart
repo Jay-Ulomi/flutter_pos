@@ -263,6 +263,30 @@ class AppDatabase extends _$AppDatabase {
     return result.read(count) ?? 0;
   }
 
+  /// Count of queued sales still worth auto-retrying: everything still
+  /// `pending`, plus `failed` rows that have not yet exhausted [maxRetry]
+  /// attempts. Exhausted-failed rows are excluded so the background retry
+  /// loop stops hammering permanently-rejected sales (they remain visible
+  /// and can still be pushed manually or cleared).
+  Future<int> getRetriablePendingSaleCount({int maxRetry = 5}) async {
+    final count = countAll();
+    final query = selectOnly(pendingSales)
+      ..where(
+        pendingSales.status.equals('pending') |
+            (pendingSales.status.equals('failed') &
+                pendingSales.retryCount.isSmallerThanValue(maxRetry)),
+      )
+      ..addColumns([count]);
+    final result = await query.getSingle();
+    return result.read(count) ?? 0;
+  }
+
+  /// Removes all queued sales stuck in the `failed` state. Returns the number
+  /// of rows deleted.
+  Future<int> deleteFailedSales() {
+    return (delete(pendingSales)..where((s) => s.status.equals('failed'))).go();
+  }
+
   Future<void> insertPendingSale(PendingSalesCompanion sale) {
     return into(pendingSales).insert(sale);
   }

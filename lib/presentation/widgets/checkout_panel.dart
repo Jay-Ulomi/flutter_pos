@@ -360,7 +360,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
             productId: l.product.id,
             productName: l.product.name,
             quantity: l.quantity,
-            unitPrice: l.product.sellingPrice,
+            unitPrice: l.effectivePrice,
             discount: l.lineDiscount,
             taxAmount: l.lineTax,
             totalPrice: l.lineTotal,

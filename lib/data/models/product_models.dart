@@ -155,6 +155,16 @@ class Product extends Equatable {
     return stockQuantity! <= 0;
   }
 
+  /// Human-readable available stock, e.g. "12 pcs" or "3.5 kg". Returns null
+  /// when the product isn't inventory-tracked (nothing to show).
+  String? get stockLabel {
+    if (!trackInventory || stockQuantity == null) return null;
+    final q = stockQuantity!;
+    final qStr =
+        q == q.floorToDouble() ? q.toInt().toString() : q.toStringAsFixed(2);
+    return (unit != null && unit!.isNotEmpty) ? '$qStr $unit' : qStr;
+  }
+
   factory Product.fromJson(Map<String, dynamic> json) {
     final rawTierPrices = json['tierPrices'];
     final parsedTierPrices = <String, double>{};
@@ -199,7 +209,7 @@ class Product extends Equatable {
       categoryId:
           json['categoryId']?.toString() ?? json['category']?['id']?.toString(),
       categoryName: json['categoryName'] ?? json['category']?['name'],
-      unit: json['unit'],
+      unit: json['unit'] ?? json['unitAbbreviation'] ?? json['unitName'],
       stockQuantity:
           json['stockQuantity']?.toDouble() ?? json['currentStock']?.toDouble(),
       minStockLevel: json['minStockLevel']?.toDouble(),

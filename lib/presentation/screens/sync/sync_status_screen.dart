@@ -56,6 +56,34 @@ class _SyncStatusScreenState extends State<SyncStatusScreen> {
     }
   }
 
+  Future<void> _confirmClearFailed(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Clear failed sales?'),
+        content: const Text(
+          'This permanently discards queued sales that the server keeps '
+          'rejecting (they will never sync). The completed sale is not on the '
+          'server, so this cannot be undone. Only do this for sales you know '
+          'are bad or duplicated.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Clear'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      context.read<SyncBloc>().add(const SyncFailedSalesCleared());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -357,6 +385,20 @@ class _SyncStatusScreenState extends State<SyncStatusScreen> {
                       ),
                     ],
                   ),
+                  // Clearing stuck (permanently-rejected) sales — only shown
+                  // when there is something to clear.
+                  if (state.status.failedSalesCount > 0) ...[
+                    const SizedBox(height: 12),
+                    _actionButton(
+                      icon: Icons.delete_sweep_outlined,
+                      label:
+                          'Clear ${state.status.failedSalesCount} Failed Sale'
+                          '${state.status.failedSalesCount == 1 ? '' : 's'}',
+                      onPressed: syncing
+                          ? null
+                          : () => _confirmClearFailed(context),
+                    ),
+                  ],
                 ],
               ),
             ),

@@ -50,6 +50,14 @@ class SaleLocalDataSource {
     return _db.getFailedSaleCount();
   }
 
+  Future<int> getRetriablePendingSaleCount() async {
+    return _db.getRetriablePendingSaleCount();
+  }
+
+  Future<int> deleteFailedSales() async {
+    return _db.deleteFailedSales();
+  }
+
   Future<void> updateSaleStatus(
     String localId,
     sync_model.SyncItemStatus status,

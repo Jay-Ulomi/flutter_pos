@@ -21,6 +21,7 @@ import '../data/datasources/remote/product_remote.dart';
 import '../data/datasources/remote/sale_remote.dart';
 import '../data/datasources/remote/session_remote.dart';
 import '../data/datasources/remote/sync_remote.dart';
+import '../data/datasources/remote/promotion_remote.dart';
 import '../data/repositories/auth_repository_impl.dart';
 import '../data/repositories/customer_repository_impl.dart';
 import '../data/repositories/product_repository_impl.dart';
@@ -80,6 +81,9 @@ Future<void> setupDependencies() async {
   );
   sl.registerLazySingleton<SaleRemoteDataSource>(
     () => SaleRemoteDataSource(sl()),
+  );
+  sl.registerLazySingleton<PromotionRemoteDataSource>(
+    () => PromotionRemoteDataSource(sl()),
   );
   sl.registerLazySingleton<SessionRemoteDataSource>(
     () => SessionRemoteDataSource(sl()),

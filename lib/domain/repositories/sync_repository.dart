@@ -21,6 +21,17 @@ abstract class SyncRepository {
 
   Future<int> getPendingSaleCount();
   Future<int> getFailedSaleCount();
+
+  /// Count of queued sales still worth auto-retrying (pending + not-yet-exhausted
+  /// failed). Used to gate the background retry loop so it stops once only
+  /// permanently-rejected sales remain.
+  Future<int> getRetriablePendingSaleCount();
+
+  /// Discards all queued sales stuck in the `failed` state. Returns how many
+  /// were removed. Used to clear sales that can never succeed (e.g. rejected by
+  /// the server) so they stop blocking the queue.
+  Future<int> clearFailedSales();
+
   Future<int> getPendingLaundryActionCount();
   Future<int> getFailedLaundryActionCount();
 }

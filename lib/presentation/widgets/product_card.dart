@@ -79,6 +79,32 @@ class ProductCard extends StatelessWidget {
                         _StockBadge(outOfStock: outOfStock),
                     ],
                   ),
+                  if (product.stockLabel != null) ...[
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.inventory_2_outlined,
+                          size: 11,
+                          color: outOfStock
+                              ? cs.error
+                              : cs.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          '${product.stockLabel!} in stock',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: outOfStock
+                                ? cs.error
+                                : product.isLowStock
+                                    ? cs.tertiary
+                                    : cs.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

@@ -9,6 +9,8 @@ import '../../blocs/business/business_bloc.dart';
 import '../../blocs/sale/sale_bloc.dart';
 import '../../blocs/sale/sale_event.dart';
 import '../../blocs/sale/sale_state.dart';
+import '../../blocs/sync/sync_bloc.dart';
+import '../../blocs/sync/sync_state.dart';
 import '../laundry/laundry_orders_screen.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/error_view.dart';
@@ -54,7 +56,15 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
           ),
         ],
       ),
-      child: BlocBuilder<SaleBloc, SaleState>(
+      child: BlocListener<SyncBloc, SyncBlocState>(
+        // When the background sync flushes the queue, the pending count changes
+        // but SaleBloc still holds the stale list — reload so cleared sales
+        // stop showing as "Pending".
+        listenWhen: (prev, curr) =>
+            prev.status.pendingSalesCount != curr.status.pendingSalesCount,
+        listener: (context, _) =>
+            context.read<SaleBloc>().add(const SaleRecentLoadRequested()),
+        child: BlocBuilder<SaleBloc, SaleState>(
         builder: (context, state) {
           if (state.status == SaleStatus.loadingRecent) {
             return const LoadingIndicator();
@@ -120,6 +130,7 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
           ),
           );
         },
+        ),
       ),
     );
   }

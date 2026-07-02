@@ -55,15 +55,24 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         : state.lines.indexWhere((l) => l.product.id == event.product.id);
     final lines = [...state.lines];
     if (existing >= 0) {
-      final line = lines[existing];
-      lines[existing] = line.copyWith(quantity: line.quantity + event.quantity);
+      // Re-added: bump quantity and move to the top so the just-added item is
+      // visible.
+      final line = lines.removeAt(existing);
+      lines.insert(
+        0,
+        line.copyWith(quantity: line.quantity + event.quantity),
+      );
     } else {
-      lines.add(CartLine(
-        product: event.product,
-        quantity: event.quantity,
-        serialNumber: event.serialNumber,
-        lotNumber: event.lotNumber,
-      ));
+      // New product goes to the top of the cart.
+      lines.insert(
+        0,
+        CartLine(
+          product: event.product,
+          quantity: event.quantity,
+          serialNumber: event.serialNumber,
+          lotNumber: event.lotNumber,
+        ),
+      );
     }
     emit(state.copyWith(lines: lines));
   }
@@ -99,8 +108,8 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       sellingPrice: event.price,
     );
     final lines = [
-      ...state.lines,
       CartLine(product: product, quantity: event.quantity),
+      ...state.lines,
     ];
     emit(state.copyWith(lines: lines));
   }

@@ -18,15 +18,39 @@ class TrialExpiredScreen extends StatelessWidget {
     final colors = theme.colorScheme;
     final auth = context.watch<AuthBloc>().state;
 
-    final isExpiredByDate =
+    final status = auth.subscriptionStatus;
+    final isSuspended = status == 'suspended';
+    final isCanceled = status == 'canceled';
+    final isExpiredSubscription = status == 'expired';
+    final isTrialExpiredByDate =
         auth.trialEndsAt != null &&
         DateTime.now().isAfter(auth.trialEndsAt!);
-    final isSuspended = auth.subscriptionStatus == 'suspended';
 
-    final title = isSuspended ? 'Account Suspended' : 'Trial Ended';
-    final subtitle = isSuspended
-        ? 'Your account has been suspended. Please contact support or upgrade your plan to restore access.'
-        : 'Your 14-day free trial has ended. Upgrade to a paid plan to continue using the POS.';
+    late final String title;
+    late final String subtitle;
+    late final IconData statusIcon;
+
+    if (isSuspended) {
+      title = 'Account Suspended';
+      subtitle =
+          'Your account has been suspended. Please contact support or visit the billing portal to restore access.';
+      statusIcon = Icons.block_outlined;
+    } else if (isCanceled) {
+      title = 'Subscription Cancelled';
+      subtitle =
+          'Your subscription has been cancelled. Please contact your administrator or choose a new plan to continue.';
+      statusIcon = Icons.cancel_outlined;
+    } else if (isExpiredSubscription) {
+      title = 'Subscription Expired';
+      subtitle =
+          'Your subscription has expired. Please renew your plan through the billing portal to restore access.';
+      statusIcon = Icons.credit_card_off_outlined;
+    } else {
+      title = 'Trial Ended';
+      subtitle =
+          'Your 14-day free trial has ended. Upgrade to a paid plan to continue using the POS.';
+      statusIcon = Icons.hourglass_bottom_outlined;
+    }
 
     return Scaffold(
       backgroundColor: BrandColors.backgroundLight,
@@ -47,9 +71,7 @@ class TrialExpiredScreen extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    isSuspended
-                        ? Icons.block_outlined
-                        : Icons.hourglass_bottom_outlined,
+                    statusIcon,
                     size: 40,
                     color: colors.error,
                   ),
@@ -75,7 +97,7 @@ class TrialExpiredScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
 
-                if (isExpiredByDate && auth.trialEndsAt != null) ...[
+                if (isTrialExpiredByDate && auth.trialEndsAt != null) ...[
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -126,7 +148,7 @@ class TrialExpiredScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       Text(
-                        'Visit to upgrade your plan:',
+                        'Visit to manage your plan:',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colors.onSurfaceVariant,
                         ),

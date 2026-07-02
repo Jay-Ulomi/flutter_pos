@@ -74,7 +74,9 @@ class AuthState extends Equatable {
 
   /// True when the subscription/trial has expired and the app should be blocked.
   bool get isTrialExpired {
-    if (subscriptionStatus == 'expired' || subscriptionStatus == 'suspended') {
+    if (subscriptionStatus == 'expired' ||
+        subscriptionStatus == 'suspended' ||
+        subscriptionStatus == 'canceled') {
       return true;
     }
     if (trialEndsAt != null && DateTime.now().isAfter(trialEndsAt!)) {
@@ -82,6 +84,9 @@ class AuthState extends Equatable {
     }
     return false;
   }
+
+  /// True when in grace period — reads allowed, writes blocked.
+  bool get isPastDue => subscriptionStatus == 'past_due';
 
   /// Days remaining in trial. Null if not on trial. 0 = expired today.
   int? get trialDaysRemaining {

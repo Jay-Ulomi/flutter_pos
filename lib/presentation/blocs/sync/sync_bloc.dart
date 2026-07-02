@@ -13,6 +13,13 @@ class SyncBloc extends Bloc<SyncEvent, SyncBlocState> {
   final NetworkInfo _networkInfo;
   final TokenManager _tokenManager;
   StreamSubscription<bool>? _connectivitySub;
+  Timer? _retryTimer;
+
+  /// How often the background loop re-attempts a queued push while there are
+  /// retriable sales. Covers sales that were queued while nominally "online"
+  /// (the HTTP call failed but connectivity never dropped, so no reconnect
+  /// event fires) and pushes stranded by a too-early reconnect signal.
+  static const Duration _retryInterval = Duration(seconds: 45);
 
   SyncBloc(this._syncRepository, this._networkInfo, this._tokenManager)
     : super(const SyncBlocState()) {
@@ -21,10 +28,21 @@ class SyncBloc extends Bloc<SyncEvent, SyncBlocState> {
     on<SyncBootstrapRequested>(_onBootstrap);
     on<SyncDeltaRequested>(_onDelta);
     on<SyncPushRequested>(_onPush);
+    on<SyncAutoRetryRequested>(_onAutoRetry);
+    on<SyncFailedSalesCleared>(_onFailedSalesCleared);
     on<SyncConnectivityChanged>(_onConnectivityChanged);
 
     _connectivitySub = _networkInfo.onConnectivityChanged.listen((isOnline) {
       add(SyncConnectivityChanged(isOnline));
+    });
+
+    _retryTimer = Timer.periodic(_retryInterval, (_) async {
+      if (!_networkInfo.isConnected) return;
+      final retriable = await _syncRepository.getRetriablePendingSaleCount();
+      final laundry = await _syncRepository.getPendingLaundryActionCount();
+      if (retriable + laundry > 0) {
+        add(const SyncAutoRetryRequested());
+      }
     });
   }
 
@@ -217,6 +235,46 @@ class SyncBloc extends Bloc<SyncEvent, SyncBlocState> {
     }
   }
 
+  /// Quiet background push: attempts to flush the queue without flipping the
+  /// loud syncing/success phase, so it won't flicker the UI while idle. Errors
+  /// are swallowed — the periodic timer will try again.
+  Future<void> _onAutoRetry(
+    SyncAutoRetryRequested event,
+    Emitter<SyncBlocState> emit,
+  ) async {
+    if (!_networkInfo.isConnected) return;
+    try {
+      await _syncRepository.pushPendingSales();
+    } catch (_) {
+      // Best-effort — leave rows queued/failed for the next tick.
+    }
+    try {
+      await _syncRepository.pushPendingLaundryActions();
+    } catch (_) {
+      // Best-effort.
+    }
+    try {
+      await _refreshStatusSnapshot(emit);
+    } catch (_) {
+      // Snapshot refresh is non-critical.
+    }
+  }
+
+  Future<void> _onFailedSalesCleared(
+    SyncFailedSalesCleared event,
+    Emitter<SyncBlocState> emit,
+  ) async {
+    try {
+      await _syncRepository.clearFailedSales();
+      await _refreshStatusSnapshot(emit);
+      emit(state.copyWith(phase: SyncPhase.idle, clearError: true));
+    } catch (e) {
+      emit(
+        state.copyWith(phase: SyncPhase.error, errorMessage: _humanizeError(e)),
+      );
+    }
+  }
+
   String _humanizeError(Object error) {
     final raw = error.toString();
     final lower = raw.toLowerCase();
@@ -263,6 +321,7 @@ class SyncBloc extends Bloc<SyncEvent, SyncBlocState> {
 
   @override
   Future<void> close() async {
+    _retryTimer?.cancel();
     await _connectivitySub?.cancel();
     return super.close();
   }

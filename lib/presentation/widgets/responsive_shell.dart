@@ -63,6 +63,29 @@ int _destIndex(String location, List<_NavDest> dests) {
   return -1;
 }
 
+class _PastDueBanner extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final isPastDue =
+        context.select<AuthBloc, bool>((b) => b.state.isPastDue);
+    if (!isPastDue) return const SizedBox.shrink();
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFFF59E0B),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: const Text(
+        '⚠️  Subscription past due — contact your administrator to restore full access.',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+}
+
 /// A responsive navigation shell.
 ///
 /// - Mobile (width < 720): [Scaffold] with a [Drawer] (current behavior).
@@ -105,7 +128,12 @@ class ResponsiveShell extends StatelessWidget {
       appBar: appBar,
       drawer: _AppDrawerWidget(destinations: destinations),
       floatingActionButton: floatingActionButton,
-      body: child,
+      body: Column(
+        children: [
+          _PastDueBanner(),
+          Expanded(child: child),
+        ],
+      ),
     );
   }
 }
@@ -135,59 +163,66 @@ class _DesktopShell extends StatelessWidget {
     return Scaffold(
       appBar: appBar,
       floatingActionButton: floatingActionButton,
-      body: Row(
+      body: Column(
         children: [
-          BlocSelector<SyncBloc, SyncBlocState, ({int pending, int failed})>(
-            selector: (s) => (
-              pending: s.status.pendingCount,
-              failed: s.status.failedCount,
+          _PastDueBanner(),
+          Expanded(
+            child: Row(
+              children: [
+                BlocSelector<SyncBloc, SyncBlocState, ({int pending, int failed})>(
+                  selector: (s) => (
+                    pending: s.status.pendingCount,
+                    failed: s.status.failedCount,
+                  ),
+                  builder: (context, sync) {
+                    final colors = Theme.of(context).colorScheme;
+                    return NavigationRail(
+                      selectedIndex: selectedIndex < 0 ? null : selectedIndex,
+                      onDestinationSelected: (i) =>
+                          context.go(destinations[i].path),
+                      labelType: NavigationRailLabelType.all,
+                      backgroundColor: colors.surfaceContainerLow,
+                      indicatorColor: colors.primary.withValues(alpha: 0.18),
+                      leading: _RailHeader(),
+                      destinations: destinations.map((d) {
+                        final isSync = d.path == '/sync';
+                        Widget icon = Icon(d.icon);
+                        Widget selectedIcon = Icon(
+                          d.selectedIcon,
+                          color: colors.primary,
+                        );
+                        if (isSync && (sync.pending > 0 || sync.failed > 0)) {
+                          final badgeColor = sync.failed > 0
+                              ? colors.error
+                              : colors.secondary;
+                          final label = sync.failed > 0
+                              ? '${sync.failed}'
+                              : '${sync.pending}';
+                          icon = Badge(
+                            backgroundColor: badgeColor,
+                            label: Text(label),
+                            child: icon,
+                          );
+                          selectedIcon = Badge(
+                            backgroundColor: badgeColor,
+                            label: Text(label),
+                            child: selectedIcon,
+                          );
+                        }
+                        return NavigationRailDestination(
+                          icon: icon,
+                          selectedIcon: selectedIcon,
+                          label: Text(d.label),
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+                const VerticalDivider(thickness: 1, width: 1),
+                Expanded(child: child),
+              ],
             ),
-            builder: (context, sync) {
-              final colors = Theme.of(context).colorScheme;
-              return NavigationRail(
-                selectedIndex: selectedIndex < 0 ? null : selectedIndex,
-                onDestinationSelected: (i) =>
-                    context.go(destinations[i].path),
-                labelType: NavigationRailLabelType.all,
-                backgroundColor: colors.surfaceContainerLow,
-                indicatorColor: colors.primary.withValues(alpha: 0.18),
-                leading: _RailHeader(),
-                destinations: destinations.map((d) {
-                  final isSync = d.path == '/sync';
-                  Widget icon = Icon(d.icon);
-                  Widget selectedIcon = Icon(
-                    d.selectedIcon,
-                    color: colors.primary,
-                  );
-                  if (isSync && (sync.pending > 0 || sync.failed > 0)) {
-                    final badgeColor = sync.failed > 0
-                        ? colors.error
-                        : colors.secondary;
-                    final label = sync.failed > 0
-                        ? '${sync.failed}'
-                        : '${sync.pending}';
-                    icon = Badge(
-                      backgroundColor: badgeColor,
-                      label: Text(label),
-                      child: icon,
-                    );
-                    selectedIcon = Badge(
-                      backgroundColor: badgeColor,
-                      label: Text(label),
-                      child: selectedIcon,
-                    );
-                  }
-                  return NavigationRailDestination(
-                    icon: icon,
-                    selectedIcon: selectedIcon,
-                    label: Text(d.label),
-                  );
-                }).toList(),
-              );
-            },
           ),
-          const VerticalDivider(thickness: 1, width: 1),
-          Expanded(child: child),
         ],
       ),
     );

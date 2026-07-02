@@ -227,7 +227,7 @@ class _ItemList extends StatelessWidget {
               Expanded(
                 flex: 3,
                 child: Text(
-                  '${line.quantity % 1 == 0 ? line.quantity.toInt() : line.quantity} × ${_fmt(line.product.sellingPrice)}',
+                  '${line.quantity % 1 == 0 ? line.quantity.toInt() : line.quantity} × ${_fmt(line.effectivePrice)}',
                   style: const TextStyle(
                     color: Color(0xFF8B949E),
                     fontSize: 13,
