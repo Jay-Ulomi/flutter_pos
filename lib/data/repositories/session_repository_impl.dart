@@ -71,7 +71,11 @@ class SessionRepositoryImpl implements SessionRepository {
   Future<void> reconcileProvisionalSession() async {
     if (!_networkInfo.isConnected) return;
     final cached = await _local.getCachedSession();
-    if (cached == null || !_isProvisional(cached)) return;
+    final cacheProvisional = cached != null && _isProvisional(cached);
+    // Also handle stragglers: sales queued with a provisional id from stale UI
+    // state after the session was already reconciled.
+    final hasStragglers = await _saleLocal.hasProvisionalSessionSales();
+    if (!cacheProvisional && !hasStragglers) return;
 
     // Adopt the server's already-open session if there is one; otherwise open a
     // new one with the cash the cashier counted offline.
@@ -79,15 +83,15 @@ class SessionRepositoryImpl implements SessionRepository {
     final real = active ??
         await _remote.openSession(
           OpenSessionRequest(
-            openingCash: cached.openingCash,
-            notes: cached.notes,
+            openingCash: cached?.openingCash ?? 0,
+            notes: cached?.notes,
           ),
         );
 
-    // Repoint any queued sales BEFORE caching the real session, so a failure
-    // leaves everything still pointing at the provisional id (retried later).
-    await _saleLocal.remapSessionId(cached.id, real.id);
-    await _local.cacheSession(real);
+    // Repoint EVERY provisional-session sale BEFORE caching the real session,
+    // so a failure leaves rows still provisional (retried on the next push).
+    await _saleLocal.remapProvisionalSessions(real.id);
+    if (cacheProvisional) await _local.cacheSession(real);
   }
 
   @override
