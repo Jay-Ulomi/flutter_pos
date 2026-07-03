@@ -914,8 +914,12 @@ class _PosScreenState extends State<PosScreen> {
       onTap: () => FocusScope.of(context).unfocus(),
       child: BlocBuilder<CartBloc, CartState>(
       builder: (context, cart) {
-        return Column(
+        final keyboardHeight = MediaQuery.viewInsetsOf(context).bottom;
+        return Stack(
           children: [
+            Positioned.fill(
+              child: Column(
+                children: [
             // ── Header ──
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 12, 10),
@@ -1151,9 +1155,48 @@ class _PosScreenState extends State<PosScreen> {
                 ),
               ),
             ),
+                ],
+              ),
+            ),
+            // "Done" bar pinned above the soft keyboard — numeric keyboards have
+            // no return/done key, so this gives an explicit way to dismiss it.
+            if (keyboardHeight > 0)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: keyboardHeight,
+                child: _keyboardDoneBar(context),
+              ),
           ],
         );
       },
+      ),
+    );
+  }
+
+  Widget _keyboardDoneBar(BuildContext context) {
+    return Material(
+      color: const Color(0xFFF3F4F6),
+      child: Container(
+        height: 44,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
+        ),
+        child: TextButton.icon(
+          onPressed: () => FocusScope.of(context).unfocus(),
+          icon: const Icon(Icons.keyboard_hide_outlined,
+              size: 18, color: BrandColors.primary),
+          label: const Text(
+            'Done',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: BrandColors.primary,
+            ),
+          ),
+        ),
       ),
     );
   }

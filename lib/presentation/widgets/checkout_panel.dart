@@ -451,8 +451,12 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                 .where((m) => m != PaymentMethod.storeCredit || availableCredit > 0)
                 .toList();
 
-            return Column(
+            final keyboardHeight = MediaQuery.viewInsetsOf(context).bottom;
+            return Stack(
               children: [
+                Positioned.fill(
+                  child: Column(
+                    children: [
                 // ── Header ──
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
@@ -538,6 +542,8 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                 // ── Body ──
                 Expanded(
                   child: ListView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
                     padding: const EdgeInsets.all(16),
                     children: [
                       // Order summary card
@@ -1257,11 +1263,50 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                     ),
                   ),
                 ),
+                    ],
+                  ),
+                ),
+                // "Done" bar above the keyboard — the numeric amount keypad has
+                // no return key, so this gives an explicit way to dismiss it.
+                if (keyboardHeight > 0)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: keyboardHeight,
+                    child: _keyboardDoneBar(context),
+                  ),
               ],
             );
           },
         );
       },
+    );
+  }
+
+  Widget _keyboardDoneBar(BuildContext context) {
+    return Material(
+      color: const Color(0xFFF3F4F6),
+      child: Container(
+        height: 44,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
+        ),
+        child: TextButton.icon(
+          onPressed: () => FocusScope.of(context).unfocus(),
+          icon: const Icon(Icons.keyboard_hide_outlined,
+              size: 18, color: Color(0xFF468432)),
+          label: const Text(
+            'Done',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF468432),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
