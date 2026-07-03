@@ -143,12 +143,39 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
   // Synchronous double-submit guard (set before the async bloc round-trip).
   bool _submitting = false;
 
+  // Auto-adds the typed amount when the amount field is dismissed (Done / tap
+  // away). Tapping the Add/quick buttons keeps the field focused, so there's no
+  // double-add.
+  final _addAmountFocus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _addAmountFocus.addListener(() {
+      if (!_addAmountFocus.hasFocus) _maybeAutoAddPayment();
+    });
+  }
+
+  void _maybeAutoAddPayment() {
+    if (!mounted) return;
+    final entered = double.tryParse(_addAmountCtrl.text.trim()) ?? 0;
+    if (entered <= 0) return;
+    // Don't nag for a reference on dismiss — only auto-add when the entry is
+    // actually complete for this method.
+    if (_addMethod.requiresReference &&
+        _addReferenceCtrl.text.trim().isEmpty) {
+      return;
+    }
+    _addPayment(context.read<CartBloc>().state.total);
+  }
+
   @override
   void dispose() {
     _notesCtrl.dispose();
     _addAmountCtrl.dispose();
     _addReferenceCtrl.dispose();
     _couponCtrl.dispose();
+    _addAmountFocus.dispose();
     super.dispose();
   }
 
@@ -903,6 +930,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                         const SizedBox(height: 8),
                         TextField(
                           controller: _addAmountCtrl,
+                          focusNode: _addAmountFocus,
                           keyboardAppearance: Brightness.light,
                           keyboardType: const TextInputType.numberWithOptions(
                               decimal: true),
