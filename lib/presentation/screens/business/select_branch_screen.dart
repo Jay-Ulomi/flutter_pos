@@ -36,6 +36,7 @@ class _SelectBranchScreenState extends State<SelectBranchScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
+            tooltip: 'Log out',
             onPressed: () {
               context.read<AuthBloc>().add(const AuthLogoutRequested());
             },

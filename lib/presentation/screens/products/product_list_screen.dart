@@ -100,6 +100,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
             onPressed: () =>
                 context.read<ProductBloc>().add(const ProductSyncRequested()),
           ),

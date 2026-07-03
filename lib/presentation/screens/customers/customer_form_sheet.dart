@@ -117,6 +117,7 @@ class _CustomerFormSheetState extends State<CustomerFormSheet> {
                     const Spacer(),
                     IconButton(
                       icon: const Icon(Icons.close),
+                      tooltip: 'Close',
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],

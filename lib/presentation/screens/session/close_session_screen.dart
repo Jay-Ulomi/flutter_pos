@@ -224,6 +224,7 @@ class _CloseSessionScreenState extends State<CloseSessionScreen> {
                                 ),
                                 IconButton(
                                   visualDensity: VisualDensity.compact,
+                                  tooltip: 'Decrease',
                                   icon: const Icon(
                                     Icons.remove_circle_outline,
                                     size: 20,
@@ -244,6 +245,7 @@ class _CloseSessionScreenState extends State<CloseSessionScreen> {
                                 ),
                                 IconButton(
                                   visualDensity: VisualDensity.compact,
+                                  tooltip: 'Increase',
                                   icon: const Icon(
                                     Icons.add_circle_outline,
                                     size: 20,

@@ -225,6 +225,7 @@ class _LoginScreenState extends State<LoginScreen>
                                       hint: '••••••••',
                                       icon: Icons.lock_outline_rounded,
                                       suffix: IconButton(
+                                        tooltip: 'Toggle password visibility',
                                         icon: Icon(
                                           _obscure
                                               ? Icons

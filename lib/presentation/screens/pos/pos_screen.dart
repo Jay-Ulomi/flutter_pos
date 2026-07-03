@@ -536,6 +536,7 @@ class _PosScreenState extends State<PosScreen> {
                           prefixIcon: const Icon(Icons.search, size: 20),
                           suffixIcon: IconButton(
                             icon: const Icon(Icons.qr_code_scanner, size: 20),
+                            tooltip: 'Scan barcode',
                             onPressed: _openScanner,
                           ),
                           contentPadding: const EdgeInsets.symmetric(vertical: 0),
@@ -1406,6 +1407,7 @@ class _CartSheetState extends State<_CartSheet> {
                       suffixIcon: _hasQuery
                           ? IconButton(
                               icon: const Icon(Icons.close, size: 16),
+                              tooltip: 'Clear search',
                               onPressed: _clearSearch,
                             )
                           : null,

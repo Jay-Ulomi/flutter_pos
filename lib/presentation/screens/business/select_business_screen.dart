@@ -32,6 +32,7 @@ class _SelectBusinessScreenState extends State<SelectBusinessScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
+            tooltip: 'Log out',
             onPressed: () {
               context.read<AuthBloc>().add(const AuthLogoutRequested());
             },

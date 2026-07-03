@@ -428,6 +428,7 @@ class _AdjustSheetState<T extends num> extends State<_AdjustSheet<T>> {
                     const Spacer(),
                     IconButton(
                       icon: const Icon(Icons.close),
+                      tooltip: 'Close',
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],

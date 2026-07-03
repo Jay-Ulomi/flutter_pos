@@ -655,7 +655,11 @@ class _LaundryOrdersScreenState extends State<LaundryOrdersScreen> {
         appBar: AppBar(
           title: const Text('Laundry Tickets'),
           actions: [
-            IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
+            IconButton(
+              tooltip: 'Refresh',
+              onPressed: _load,
+              icon: const Icon(Icons.refresh),
+            ),
           ],
         ),
         child: _buildOrdersPane(context),
@@ -668,10 +672,15 @@ class _LaundryOrdersScreenState extends State<LaundryOrdersScreen> {
         title: const Text('POS • Laundry'),
         actions: [
           IconButton(
+            tooltip: 'Load products',
             onPressed: _loadProducts,
             icon: const Icon(Icons.inventory_2_outlined),
           ),
-          IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
+          IconButton(
+            tooltip: 'Refresh',
+            onPressed: _load,
+            icon: const Icon(Icons.refresh),
+          ),
         ],
       ),
       floatingActionButton: isWide
@@ -719,6 +728,7 @@ class _LaundryOrdersScreenState extends State<LaundryOrdersScreen> {
                     prefixIcon: const Icon(Icons.search),
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.clear),
+                      tooltip: 'Clear search',
                       onPressed: () {
                         _searchCtrl.clear();
                         _pageIndex = 0;
@@ -856,6 +866,7 @@ class _LaundryOrdersScreenState extends State<LaundryOrdersScreen> {
                 ),
               ),
               IconButton(
+                tooltip: 'Previous page',
                 onPressed: _page.number > 0
                     ? () {
                         setState(() => _pageIndex -= 1);
@@ -865,6 +876,7 @@ class _LaundryOrdersScreenState extends State<LaundryOrdersScreen> {
                 icon: const Icon(Icons.chevron_left),
               ),
               IconButton(
+                tooltip: 'Next page',
                 onPressed: (_page.number + 1) < _page.totalPages
                     ? () {
                         setState(() => _pageIndex += 1);
@@ -1916,6 +1928,7 @@ class _CreateLaundryTicketDialogState
                 ),
               ),
               IconButton(
+                tooltip: 'Remove',
                 onPressed: () {
                   if (_items.length == 1) return;
                   setState(() {

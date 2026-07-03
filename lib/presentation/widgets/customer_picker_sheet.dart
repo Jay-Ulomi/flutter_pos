@@ -65,6 +65,7 @@ class _CustomerPickerSheetState extends State<CustomerPickerSheet> {
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.close),
+                    tooltip: 'Close',
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],

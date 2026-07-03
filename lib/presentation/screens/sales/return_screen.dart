@@ -221,6 +221,7 @@ class _ReturnScreenState extends State<ReturnScreen> {
           const SizedBox(width: 8),
           IconButton(
             visualDensity: VisualDensity.compact,
+            tooltip: 'Decrease',
             onPressed: qty > 0
                 ? () => setState(() => _returnQtys[index] = qty - 1)
                 : null,
@@ -236,6 +237,7 @@ class _ReturnScreenState extends State<ReturnScreen> {
           ),
           IconButton(
             visualDensity: VisualDensity.compact,
+            tooltip: 'Increase',
             onPressed: qty < item.quantity
                 ? () => setState(() => _returnQtys[index] = qty + 1)
                 : null,

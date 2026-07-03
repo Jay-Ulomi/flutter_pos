@@ -51,6 +51,7 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
             onPressed: () =>
                 context.read<SaleBloc>().add(const SaleRecentLoadRequested()),
           ),

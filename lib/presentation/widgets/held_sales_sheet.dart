@@ -74,6 +74,7 @@ class _HeldSalesSheet extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 8),
                                 IconButton(
+                                  tooltip: 'Remove',
                                   icon: Icon(
                                     Icons.delete_outline,
                                     color: theme.colorScheme.error,
