@@ -111,7 +111,7 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
     return BlocProvider<ThemeCubit>.value(
       value: _themeCubit,
       child: BlocBuilder<ThemeCubit, ThemeMode>(
-        builder: (context, themeMode) {
+        builder: (context, _) {
           return FutureBuilder<void>(
             future: _bootstrapFuture,
             builder: (context, snapshot) {
@@ -121,7 +121,9 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
                   debugShowCheckedModeBanner: false,
                   theme: AppTheme.lightTheme,
                   darkTheme: AppTheme.darkTheme,
-                  themeMode: themeMode,
+                  // Forced light: POS screens are designed light-only; full
+                  // dark-mode support is a future design pass.
+                  themeMode: ThemeMode.light,
                   home: const Scaffold(
                     body: Center(child: CircularProgressIndicator()),
                   ),
@@ -134,7 +136,9 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
                   debugShowCheckedModeBanner: false,
                   theme: AppTheme.lightTheme,
                   darkTheme: AppTheme.darkTheme,
-                  themeMode: themeMode,
+                  // Forced light: POS screens are designed light-only; full
+                  // dark-mode support is a future design pass.
+                  themeMode: ThemeMode.light,
                   home: Scaffold(
                     body: Center(
                       child: Padding(
@@ -177,7 +181,9 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
                   debugShowCheckedModeBanner: false,
                   theme: AppTheme.lightTheme,
                   darkTheme: AppTheme.darkTheme,
-                  themeMode: themeMode,
+                  // Forced light: POS screens are designed light-only; full
+                  // dark-mode support is a future design pass.
+                  themeMode: ThemeMode.light,
                   routerConfig: _router!,
                 ),
               );

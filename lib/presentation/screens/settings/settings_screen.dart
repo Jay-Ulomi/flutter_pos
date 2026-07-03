@@ -7,7 +7,6 @@ import '../../blocs/auth/auth_event.dart';
 import '../../blocs/branch/branch_bloc.dart';
 import '../../blocs/session/session_bloc.dart';
 import '../../blocs/session/session_state.dart';
-import '../../blocs/theme/theme_cubit.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/theme/brand_colors.dart';
@@ -129,70 +128,28 @@ class SettingsScreen extends StatelessWidget {
               // ── Appearance ──
               _sectionLabel(context, 'Appearance'),
               Card(
-                child: BlocBuilder<ThemeCubit, ThemeMode>(
-                  builder: (context, themeMode) {
-                    return Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                themeMode == ThemeMode.dark
-                                    ? Icons.dark_mode
-                                    : themeMode == ThemeMode.light
-                                    ? Icons.light_mode
-                                    : Icons.brightness_auto,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.light_mode),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Theme', style: theme.textTheme.bodyLarge),
+                            Text(
+                              'Light — dark mode coming soon',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colors.onSurfaceVariant,
                               ),
-                              const SizedBox(width: 12),
-                              Text('Theme', style: theme.textTheme.bodyLarge),
-                              const Spacer(),
-                              Text(
-                                themeMode == ThemeMode.dark
-                                    ? 'Dark'
-                                    : themeMode == ThemeMode.light
-                                    ? 'Light'
-                                    : 'System',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colors.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            child: SegmentedButton<ThemeMode>(
-                              segments: const [
-                                ButtonSegment(
-                                  value: ThemeMode.light,
-                                  icon: Icon(Icons.light_mode, size: 18),
-                                  label: Text('Light'),
-                                ),
-                                ButtonSegment(
-                                  value: ThemeMode.system,
-                                  icon: Icon(Icons.brightness_auto, size: 18),
-                                  label: Text('System'),
-                                ),
-                                ButtonSegment(
-                                  value: ThemeMode.dark,
-                                  icon: Icon(Icons.dark_mode, size: 18),
-                                  label: Text('Dark'),
-                                ),
-                              ],
-                              selected: {themeMode},
-                              onSelectionChanged: (selected) {
-                                context.read<ThemeCubit>().setThemeMode(
-                                  selected.first,
-                                );
-                              },
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    );
-                  },
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
