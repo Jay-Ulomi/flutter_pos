@@ -9,13 +9,17 @@ import '../../core/theme/brand_colors.dart';
 class KeyboardDoneBar extends StatelessWidget {
   const KeyboardDoneBar({super.key});
 
+  /// Height of the bar — callers inflate the scroll view's bottom inset by this
+  /// so a focused field scrolls above the bar instead of behind it.
+  static const double height = 44;
+
   @override
   Widget build(BuildContext context) {
     return Material(
       // Matches the light iOS keyboard backdrop so the bar blends with it.
       color: const Color(0xFFD1D4DB),
       child: Container(
-        height: 44,
+        height: height,
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 4),
         decoration: const BoxDecoration(

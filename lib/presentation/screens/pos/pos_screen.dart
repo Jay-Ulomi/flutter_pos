@@ -1049,7 +1049,16 @@ class _PosScreenState extends State<PosScreen> {
 
             // ── Items ──
             Expanded(
-              child: cart.isEmpty
+              // Inflate the bottom inset by the Done-bar height so a focused
+              // price/qty field scrolls above the bar, not behind it.
+              child: MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  viewInsets: MediaQuery.of(context).viewInsets.copyWith(
+                    bottom: keyboardHeight +
+                        (keyboardHeight > 0 ? KeyboardDoneBar.height : 0),
+                  ),
+                ),
+                child: cart.isEmpty
                   ? const EmptyState(
                       title: 'Cart is empty',
                       subtitle: 'Tap a product to add',
@@ -1100,6 +1109,7 @@ class _PosScreenState extends State<PosScreen> {
                         );
                       },
                     ),
+              ),
             ),
 
             if (cart.isNotEmpty) ...[

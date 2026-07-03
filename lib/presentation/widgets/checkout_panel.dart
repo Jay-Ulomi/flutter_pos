@@ -542,7 +542,18 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
 
                 // ── Body ──
                 Expanded(
-                  child: ListView(
+                  // Inflate the bottom inset by the Done-bar height so a focused
+                  // field scrolls above the bar, not behind it.
+                  child: MediaQuery(
+                    data: MediaQuery.of(context).copyWith(
+                      viewInsets: MediaQuery.of(context).viewInsets.copyWith(
+                            bottom: keyboardHeight +
+                                (keyboardHeight > 0
+                                    ? KeyboardDoneBar.height
+                                    : 0),
+                          ),
+                    ),
+                    child: ListView(
                     keyboardDismissBehavior:
                         ScrollViewKeyboardDismissBehavior.onDrag,
                     padding: const EdgeInsets.all(16),
@@ -1209,6 +1220,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                         ),
                       const SizedBox(height: 20),
                     ],
+                    ),
                   ),
                 ),
 
