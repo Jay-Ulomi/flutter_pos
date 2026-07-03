@@ -31,9 +31,12 @@ class CartLine extends Equatable {
   double get lineDiscount {
     if (discount <= 0) return 0;
     // Percent applies to the line; a fixed amount is the total off the line
-    // (not per-unit). Never let a discount exceed the line value.
+    // (not per-unit). Never let a discount exceed the line value. Rounded to
+    // cents so the value submitted to (and re-used by) the backend carries no
+    // float drift.
     final raw = isPercentDiscount ? lineSubtotal * (discount / 100) : discount;
-    return raw.clamp(0, lineSubtotal).toDouble();
+    final clamped = raw.clamp(0, lineSubtotal).toDouble();
+    return (clamped * 100).roundToDouble() / 100;
   }
 
   double get lineTax =>

@@ -217,6 +217,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
     });
   }
 
+  /// Rounds a money amount to cents to strip float-arithmetic drift.
+  double _money(double v) => (v * 100).roundToDouble() / 100;
+
   double get _totalPaid => _payments.fold(0.0, (sum, p) => sum + p.amount);
   double _remaining(double total) {
     final t = total < 0 ? 0.0 : total;
@@ -417,15 +420,16 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
       sessionId: sessionId,
       items: items,
       payments: payments,
-      subtotal: cart.subtotal,
-      taxAmount: cart.taxAmount,
+      // Round money to cents so submitted values carry no float drift.
+      subtotal: _money(cart.subtotal),
+      taxAmount: _money(cart.taxAmount),
       // Order-level discount only. Per-line discounts are sent on each SaleItem
       // and applied by the backend per line — including them here would
       // double-count.
-      discountAmount: cart.discount + _couponDiscount,
-      totalAmount: effectiveTotal,
-      paidAmount: _totalPaid,
-      changeAmount: change,
+      discountAmount: _money(cart.discount + _couponDiscount),
+      totalAmount: _money(effectiveTotal),
+      paidAmount: _money(_totalPaid),
+      changeAmount: _money(change),
       customerId: cart.selectedCustomerId,
       customerName: cart.selectedCustomerName,
       couponCode: _appliedCoupon,

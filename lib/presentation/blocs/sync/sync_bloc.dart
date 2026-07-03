@@ -51,7 +51,9 @@ class SyncBloc extends Bloc<SyncEvent, SyncBlocState> {
     }).catchError((_) {});
 
     _retryTimer = Timer.periodic(_retryInterval, (_) async {
-      if (!_networkInfo.isConnected) return;
+      // Reachability (not just interface) so we don't hammer HTTP on a captive
+      // portal or a router with no uplink.
+      if (!await _networkInfo.hasInternet()) return;
       final retriable = await _syncRepository.getRetriablePendingSaleCount();
       final laundry = await _syncRepository.getPendingLaundryActionCount();
       if (retriable + laundry > 0) {
@@ -59,8 +61,10 @@ class SyncBloc extends Bloc<SyncEvent, SyncBlocState> {
       }
     });
 
-    _deltaTimer = Timer.periodic(_deltaInterval, (_) {
-      if (_networkInfo.isConnected) add(const SyncBackgroundDeltaRequested());
+    _deltaTimer = Timer.periodic(_deltaInterval, (_) async {
+      if (await _networkInfo.hasInternet()) {
+        add(const SyncBackgroundDeltaRequested());
+      }
     });
   }
 
