@@ -16,6 +16,7 @@ import '../blocs/sale/sale_event.dart';
 import '../blocs/sale/sale_state.dart';
 import '../blocs/session/session_bloc.dart';
 import 'customer_picker_sheet.dart';
+import 'keyboard_done_bar.dart';
 import 'money_text.dart';
 
 enum PaymentMethod { cash, card, mobile, bankTransfer, credit, giftCard, storeCredit }
@@ -767,6 +768,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                       if (_addMethod.requiresReference && remaining > 0) ...[
                         TextField(
                           controller: _addReferenceCtrl,
+                          keyboardAppearance: Brightness.light,
                           textInputAction: TextInputAction.next,
                           textCapitalization:
                               _addMethod == PaymentMethod.giftCard
@@ -846,6 +848,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                         const SizedBox(height: 8),
                         TextField(
                           controller: _addAmountCtrl,
+                          keyboardAppearance: Brightness.light,
                           keyboardType: const TextInputType.numberWithOptions(
                               decimal: true),
                           textInputAction: TextInputAction.done,
@@ -1177,6 +1180,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                             const SizedBox(height: 8),
                             TextField(
                               controller: _notesCtrl,
+                              keyboardAppearance: Brightness.light,
                               autofocus: true,
                               maxLines: 2,
                               style: const TextStyle(fontSize: 14),
@@ -1273,40 +1277,13 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                     left: 0,
                     right: 0,
                     bottom: keyboardHeight,
-                    child: _keyboardDoneBar(context),
+                    child: const KeyboardDoneBar(),
                   ),
               ],
             );
           },
         );
       },
-    );
-  }
-
-  Widget _keyboardDoneBar(BuildContext context) {
-    return Material(
-      color: const Color(0xFFF3F4F6),
-      child: Container(
-        height: 44,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
-        ),
-        child: TextButton.icon(
-          onPressed: () => FocusScope.of(context).unfocus(),
-          icon: const Icon(Icons.keyboard_hide_outlined,
-              size: 18, color: Color(0xFF468432)),
-          label: const Text(
-            'Done',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF468432),
-            ),
-          ),
-        ),
-      ),
     );
   }
 
