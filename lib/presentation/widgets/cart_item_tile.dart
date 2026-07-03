@@ -138,19 +138,23 @@ class _CartItemTileState extends State<CartItemTile> {
                 ),
               ),
               const SizedBox(width: 8),
-              GestureDetector(
-                onTap: widget.onRemove,
-                child: Container(
-                  width: 26,
-                  height: 26,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEE2E2),
-                    borderRadius: BorderRadius.circular(7),
-                  ),
-                  child: const Icon(
-                    Icons.delete_outline_rounded,
-                    size: 14,
-                    color: Color(0xFFDC2626),
+              Semantics(
+                button: true,
+                label: 'Remove ${line.product.name}',
+                child: GestureDetector(
+                  onTap: widget.onRemove,
+                  child: Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEE2E2),
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                    child: const Icon(
+                      Icons.delete_outline_rounded,
+                      size: 14,
+                      color: Color(0xFFDC2626),
+                    ),
                   ),
                 ),
               ),
@@ -312,6 +316,7 @@ class _CartItemTileState extends State<CartItemTile> {
             children: [
               _QtyButton(
                 icon: Icons.remove,
+                semanticLabel: 'Decrease quantity',
                 onTap: () => widget.onQtyChanged(line.quantity - 1),
               ),
               const SizedBox(width: 8),
@@ -375,6 +380,7 @@ class _CartItemTileState extends State<CartItemTile> {
               const SizedBox(width: 8),
               _QtyButton(
                 icon: Icons.add,
+                semanticLabel: 'Increase quantity',
                 onTap: () => widget.onQtyChanged(line.quantity + 1),
               ),
               const Spacer(),
@@ -399,22 +405,31 @@ class _CartItemTileState extends State<CartItemTile> {
 class _QtyButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
+  final String semanticLabel;
 
-  const _QtyButton({required this.icon, required this.onTap});
+  const _QtyButton({
+    required this.icon,
+    required this.onTap,
+    required this.semanticLabel,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 28,
-        height: 28,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+          ),
+          child: Icon(icon, size: 14, color: const Color(0xFF374151)),
         ),
-        child: Icon(icon, size: 14, color: const Color(0xFF374151)),
       ),
     );
   }
