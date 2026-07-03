@@ -1658,7 +1658,9 @@ class _CreateLaundryTicketDialogState
     return AlertDialog(
       title: const Text('Create Laundry Ticket'),
       content: SizedBox(
-        width: 520,
+        // Cap to the available width (minus the dialog's own insets) so it
+        // never overflows a phone, up to 520 on wider screens.
+        width: (MediaQuery.of(context).size.width - 80).clamp(280, 520).toDouble(),
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
@@ -1978,7 +1980,7 @@ class _LaundryOrderDetailsDialog extends StatelessWidget {
     return AlertDialog(
       title: Text('Ticket Details • ${order.ticketNumber}'),
       content: SizedBox(
-        width: 620,
+        width: (MediaQuery.of(context).size.width - 80).clamp(280, 620).toDouble(),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
