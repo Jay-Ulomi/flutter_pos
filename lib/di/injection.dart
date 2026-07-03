@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
@@ -132,9 +133,12 @@ Future<void> setupDependencies() async {
     () => SyncRepositoryImpl(sl(), sl(), sl(), sl(), sl(), sl()),
   );
 
-  // Card terminal — swap MockCardTerminalService for StripeCardTerminalService
-  // (or another provider) when real hardware is available.
+  // Card terminal. The mock auto-approves, so it's DEBUG-only; release builds
+  // get a disabled terminal (forces Manual Entry) until a real provider
+  // (StripeCardTerminalService, etc.) is wired up.
   sl.registerLazySingleton<CardTerminalService>(
-    () => MockCardTerminalService(),
+    () => kReleaseMode
+        ? DisabledCardTerminalService()
+        : MockCardTerminalService(),
   );
 }

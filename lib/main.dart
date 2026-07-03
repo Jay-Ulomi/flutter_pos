@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:go_router/go_router.dart';
 
 import 'core/constants/app_constants.dart';
 import 'core/network/network_info.dart';
@@ -50,6 +51,7 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
   BranchBloc? _branchBloc;
   SessionBloc? _sessionBloc;
   SyncBloc? _syncBloc;
+  GoRouter? _router;
   late final Future<void> _bootstrapFuture;
 
   @override
@@ -82,6 +84,13 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
       sl<SyncRepository>(),
       sl<NetworkInfo>(),
       sl<TokenManager>(),
+    );
+    // Build the router once — rebuilding it on every theme/state change resets
+    // navigation state and re-runs redirects.
+    _router = AppRouter.build(
+      authBloc: _authBloc!,
+      businessBloc: _businessBloc!,
+      sessionBloc: _sessionBloc!,
     );
   }
 
@@ -163,22 +172,13 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
                     create: (_) => CustomerGroupBloc(sl<CustomerRepository>()),
                   ),
                 ],
-                child: Builder(
-                  builder: (context) {
-                    final router = AppRouter.build(
-                      authBloc: _authBloc!,
-                      businessBloc: _businessBloc!,
-                      sessionBloc: _sessionBloc!,
-                    );
-                    return MaterialApp.router(
-                      title: AppConstants.appName,
-                      debugShowCheckedModeBanner: false,
-                      theme: AppTheme.lightTheme,
-                      darkTheme: AppTheme.darkTheme,
-                      themeMode: themeMode,
-                      routerConfig: router,
-                    );
-                  },
+                child: MaterialApp.router(
+                  title: AppConstants.appName,
+                  debugShowCheckedModeBanner: false,
+                  theme: AppTheme.lightTheme,
+                  darkTheme: AppTheme.darkTheme,
+                  themeMode: themeMode,
+                  routerConfig: _router!,
                 ),
               );
             },

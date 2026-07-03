@@ -78,6 +78,27 @@ class MockCardTerminalService implements CardTerminalService {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Disabled terminal — safe default for release builds with no real reader.
+// Never auto-approves; forces the cashier to use Manual Entry.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class DisabledCardTerminalService implements CardTerminalService {
+  @override
+  Future<bool> get isReady async => false;
+
+  @override
+  Future<CardTerminalResult> processPayment({required int amountInCents}) async {
+    return const CardTerminalResult(
+      status: CardTerminalStatus.error,
+      errorMessage: 'No card terminal configured. Use Manual Entry.',
+    );
+  }
+
+  @override
+  Future<void> cancelPayment() async {}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Stripe Terminal stub — wire up stripe_terminal package here.
 // ─────────────────────────────────────────────────────────────────────────────
 

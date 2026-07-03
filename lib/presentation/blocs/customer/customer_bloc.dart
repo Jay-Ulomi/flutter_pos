@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/utils/error_message.dart';
 import '../../../data/models/customer_models.dart';
 import '../../../domain/repositories/customer_repository.dart';
 import 'customer_event.dart';
@@ -10,6 +11,7 @@ import 'customer_state.dart';
 class CustomerBloc extends Bloc<CustomerEvent, CustomerState> {
   final CustomerRepository _repository;
   Timer? _debounce;
+  Completer<void>? _debounceCompleter;
 
   CustomerBloc(this._repository) : super(const CustomerState()) {
     on<CustomerLoadRequested>(_onLoadRequested);
@@ -33,7 +35,7 @@ class CustomerBloc extends Bloc<CustomerEvent, CustomerState> {
       emit(
         state.copyWith(
           status: CustomerStatus.error,
-          errorMessage: e.toString(),
+          errorMessage: humanizeError(e),
         ),
       );
     }
@@ -45,7 +47,11 @@ class CustomerBloc extends Bloc<CustomerEvent, CustomerState> {
   ) async {
     emit(state.copyWith(query: event.query));
     _debounce?.cancel();
+    if (_debounceCompleter?.isCompleted == false) {
+      _debounceCompleter!.complete();
+    }
     final completer = Completer<void>();
+    _debounceCompleter = completer;
     _debounce = Timer(const Duration(milliseconds: 300), () async {
       try {
         final customers = await _repository.getCustomers(search: event.query);
@@ -63,12 +69,12 @@ class CustomerBloc extends Bloc<CustomerEvent, CustomerState> {
           emit(
             state.copyWith(
               status: CustomerStatus.error,
-              errorMessage: e.toString(),
+              errorMessage: humanizeError(e),
             ),
           );
         }
       } finally {
-        completer.complete();
+        if (!completer.isCompleted) completer.complete();
       }
     });
     await completer.future;
@@ -202,6 +208,9 @@ class CustomerBloc extends Bloc<CustomerEvent, CustomerState> {
   @override
   Future<void> close() {
     _debounce?.cancel();
+    if (_debounceCompleter?.isCompleted == false) {
+      _debounceCompleter!.complete();
+    }
     return super.close();
   }
 }

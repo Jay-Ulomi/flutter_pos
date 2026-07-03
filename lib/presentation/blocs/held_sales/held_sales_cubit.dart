@@ -102,10 +102,21 @@ class HeldSalesCubit extends Cubit<List<HeldSale>> {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_key);
     if (raw == null) return;
-    final list = (jsonDecode(raw) as List)
-        .map((e) => HeldSale.fromJson(e as Map<String, dynamic>))
-        .toList();
-    emit(list);
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return;
+      final list = <HeldSale>[];
+      for (final e in decoded) {
+        // Skip individual corrupt/schema-drifted entries instead of losing all.
+        try {
+          if (e is Map<String, dynamic>) list.add(HeldSale.fromJson(e));
+        } catch (_) {}
+      }
+      emit(list);
+    } catch (_) {
+      // Corrupt blob — reset rather than crash on every launch.
+      await prefs.remove(_key);
+    }
   }
 
   Future<void> _persist() async {

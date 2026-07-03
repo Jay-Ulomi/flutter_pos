@@ -10,6 +10,7 @@ import 'product_state.dart';
 class ProductBloc extends Bloc<ProductEvent, ProductState> {
   final ProductRepository _repository;
   Timer? _debounce;
+  Completer<void>? _debounceCompleter;
 
   ProductBloc(this._repository) : super(const ProductState()) {
     on<ProductLoadRequested>(_onLoad);
@@ -86,8 +87,14 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     Emitter<ProductState> emit,
   ) async {
     emit(state.copyWith(searchQuery: event.query));
+    // Cancel the previous debounce AND release its handler so it doesn't hang
+    // (and doesn't fire a fetch) — only the latest keystroke's timer runs.
     _debounce?.cancel();
+    if (_debounceCompleter?.isCompleted == false) {
+      _debounceCompleter!.complete();
+    }
     final completer = Completer<void>();
+    _debounceCompleter = completer;
     _debounce = Timer(const Duration(milliseconds: 300), () async {
       try {
         final products = await _repository.getProducts(
@@ -113,7 +120,7 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
           );
         }
       } finally {
-        completer.complete();
+        if (!completer.isCompleted) completer.complete();
       }
     });
     await completer.future;
@@ -159,6 +166,9 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
   @override
   Future<void> close() {
     _debounce?.cancel();
+    if (_debounceCompleter?.isCompleted == false) {
+      _debounceCompleter!.complete();
+    }
     return super.close();
   }
 }
