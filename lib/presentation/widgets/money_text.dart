@@ -21,6 +21,12 @@ class MoneyText extends StatelessWidget {
     final text = compact
         ? Formatters.currencyCompact(amount, symbol: symbol ?? 'TZS')
         : Formatters.currency(amount, symbol: symbol ?? 'TZS');
-    return Text(text, style: style);
+    // Tabular (monospaced) figures so amounts align digit-for-digit in lists,
+    // totals and receipts — the key legibility win for a POS.
+    const tabular = [FontFeature.tabularFigures()];
+    return Text(
+      text,
+      style: (style ?? const TextStyle()).copyWith(fontFeatures: tabular),
+    );
   }
 }
