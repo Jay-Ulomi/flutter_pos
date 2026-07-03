@@ -32,6 +32,10 @@ abstract class SyncRepository {
   /// the server) so they stop blocking the queue.
   Future<int> clearFailedSales();
 
+  /// Re-queues sales left in the `syncing` state after an app-kill mid-push so
+  /// they aren't silently lost. Call once at startup. Returns rows recovered.
+  Future<int> recoverStuckSales();
+
   Future<int> getPendingLaundryActionCount();
   Future<int> getFailedLaundryActionCount();
 }

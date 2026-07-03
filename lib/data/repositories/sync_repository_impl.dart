@@ -22,6 +22,10 @@ class SyncRepositoryImpl implements SyncRepository {
   final SaleLocalDataSource _saleLocal;
   final LaundryLocalDataSource _laundryLocal;
 
+  // Serializes sale pushes so the reconnect trigger, the periodic timer, and a
+  // manual push can't send the same queue twice concurrently.
+  bool _pushingSales = false;
+
   SyncRepositoryImpl(
     this._remote,
     this._db,
@@ -103,7 +107,23 @@ class SyncRepositoryImpl implements SyncRepository {
   }
 
   @override
+  Future<int> recoverStuckSales() {
+    return _saleLocal.resetSyncingSales();
+  }
+
+  @override
   Future<SyncPushResult> pushPendingSales() async {
+    // In-flight guard: only one push may run at a time.
+    if (_pushingSales) return const SyncPushResult();
+    _pushingSales = true;
+    try {
+      return await _pushPendingSalesInner();
+    } finally {
+      _pushingSales = false;
+    }
+  }
+
+  Future<SyncPushResult> _pushPendingSalesInner() async {
     final pending = await _saleLocal.getPendingSales();
     if (pending.isEmpty) {
       return const SyncPushResult();
@@ -114,7 +134,6 @@ class SyncRepositoryImpl implements SyncRepository {
     // missing/blank ids.
     final payload = <Map<String, dynamic>>[];
     final localIdsByClientId = <String, List<String>>{};
-    final pendingByLocalId = <String, dynamic>{};
     for (final p in pending) {
       var normalized = p.sale;
       var clientId = (p.clientId ?? '').trim();
@@ -136,7 +155,6 @@ class SyncRepositoryImpl implements SyncRepository {
 
       payload.add(normalized.toJson());
       localIdsByClientId.putIfAbsent(clientId, () => []).add(p.localId);
-      pendingByLocalId[p.localId] = p;
     }
 
     // Mark as syncing first.
@@ -192,25 +210,16 @@ class SyncRepositoryImpl implements SyncRepository {
 
       return result;
     } catch (e) {
-      // On total failure, revert syncing -> failed
+      // Whole-batch/transient failure (network, 5xx, malformed response): put
+      // rows back to `pending` so they retry — WITHOUT marking them failed or
+      // consuming the retry budget. Only genuine per-item server rejections
+      // (handled above) count as failures.
       for (final p in pending) {
-        final original = pendingByLocalId[p.localId];
-        final errorText = humanizeError(e);
-        if (original != null) {
-          await _saleLocal.updateSaleStatus(
-            original.localId,
-            SyncItemStatus.failed,
-            errorText,
-          );
-          await _saleLocal.incrementRetryCount(original.localId);
-        } else {
-          await _saleLocal.updateSaleStatus(
-            p.localId,
-            SyncItemStatus.failed,
-            errorText,
-          );
-          await _saleLocal.incrementRetryCount(p.localId);
-        }
+        await _saleLocal.updateSaleStatus(
+          p.localId,
+          SyncItemStatus.pending,
+          null,
+        );
       }
       rethrow;
     }

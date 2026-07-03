@@ -36,6 +36,14 @@ class SyncBloc extends Bloc<SyncEvent, SyncBlocState> {
       add(SyncConnectivityChanged(isOnline));
     });
 
+    // Recover sales stranded in `syncing` by an app-kill mid-push, then try to
+    // flush them. Runs once at startup.
+    _syncRepository.recoverStuckSales().then((recovered) {
+      if (recovered > 0 && _networkInfo.isConnected) {
+        add(const SyncAutoRetryRequested());
+      }
+    }).catchError((_) {});
+
     _retryTimer = Timer.periodic(_retryInterval, (_) async {
       if (!_networkInfo.isConnected) return;
       final retriable = await _syncRepository.getRetriablePendingSaleCount();

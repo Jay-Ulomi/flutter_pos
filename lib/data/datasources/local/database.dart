@@ -333,13 +333,20 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> incrementRetryCount(String localId) async {
-    final sale = await (select(
-      pendingSales,
-    )..where((s) => s.localId.equals(localId))).getSingleOrNull();
-    if (sale != null) {
-      await (update(pendingSales)..where((s) => s.localId.equals(localId)))
-          .write(PendingSalesCompanion(retryCount: Value(sale.retryCount + 1)));
-    }
+    // Atomic increment — avoids a lost update if two pushes race.
+    await customUpdate(
+      'UPDATE pending_sales SET retry_count = retry_count + 1 WHERE local_id = ?',
+      variables: [Variable.withString(localId)],
+      updates: {pendingSales},
+    );
+  }
+
+  /// Recovers sales left in `syncing` after an app-kill mid-push. They are
+  /// idempotent by clientId, so re-queueing them is safe and prevents silent
+  /// loss. Returns the number of rows recovered.
+  Future<int> resetSyncingSales() {
+    return (update(pendingSales)..where((s) => s.status.equals('syncing')))
+        .write(const PendingSalesCompanion(status: Value('pending')));
   }
 
   // Pending Laundry Actions

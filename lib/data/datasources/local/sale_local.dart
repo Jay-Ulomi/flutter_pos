@@ -58,6 +58,10 @@ class SaleLocalDataSource {
     return _db.deleteFailedSales();
   }
 
+  Future<int> resetSyncingSales() async {
+    return _db.resetSyncingSales();
+  }
+
   Future<void> updateSaleStatus(
     String localId,
     sync_model.SyncItemStatus status,
