@@ -71,7 +71,8 @@ class _PastDueBanner extends StatelessWidget {
     if (!isPastDue) return const SizedBox.shrink();
     return Container(
       width: double.infinity,
-      color: const Color(0xFFF59E0B),
+      // amber-700 for legible white-on-amber contrast (amber-500 failed WCAG).
+      color: const Color(0xFFB45309),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: const Text(
         '⚠️  Subscription past due — contact your administrator to restore full access.',

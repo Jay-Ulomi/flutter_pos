@@ -14,12 +14,17 @@ class SyncBloc extends Bloc<SyncEvent, SyncBlocState> {
   final TokenManager _tokenManager;
   StreamSubscription<bool>? _connectivitySub;
   Timer? _retryTimer;
+  Timer? _deltaTimer;
 
   /// How often the background loop re-attempts a queued push while there are
   /// retriable sales. Covers sales that were queued while nominally "online"
   /// (the HTTP call failed but connectivity never dropped, so no reconnect
   /// event fires) and pushes stranded by a too-early reconnect signal.
   static const Duration _retryInterval = Duration(seconds: 45);
+
+  /// How often to quietly pull a delta so a terminal that never drops its
+  /// connection still refreshes prices/stock/products.
+  static const Duration _deltaInterval = Duration(minutes: 5);
 
   SyncBloc(this._syncRepository, this._networkInfo, this._tokenManager)
     : super(const SyncBlocState()) {
@@ -29,6 +34,7 @@ class SyncBloc extends Bloc<SyncEvent, SyncBlocState> {
     on<SyncDeltaRequested>(_onDelta);
     on<SyncPushRequested>(_onPush);
     on<SyncAutoRetryRequested>(_onAutoRetry);
+    on<SyncBackgroundDeltaRequested>(_onBackgroundDelta);
     on<SyncFailedSalesCleared>(_onFailedSalesCleared);
     on<SyncConnectivityChanged>(_onConnectivityChanged);
 
@@ -51,6 +57,10 @@ class SyncBloc extends Bloc<SyncEvent, SyncBlocState> {
       if (retriable + laundry > 0) {
         add(const SyncAutoRetryRequested());
       }
+    });
+
+    _deltaTimer = Timer.periodic(_deltaInterval, (_) {
+      if (_networkInfo.isConnected) add(const SyncBackgroundDeltaRequested());
     });
   }
 
@@ -268,6 +278,29 @@ class SyncBloc extends Bloc<SyncEvent, SyncBlocState> {
     }
   }
 
+  /// Quiet delta pull (periodic) to refresh the local cache while online. Uses
+  /// the stored baseline; falls back to bootstrap when there's none. Swallows
+  /// errors and never flips the loud syncing phase.
+  Future<void> _onBackgroundDelta(
+    SyncBackgroundDeltaRequested event,
+    Emitter<SyncBlocState> emit,
+  ) async {
+    if (!_networkInfo.isConnected) return;
+    final branchId = await _currentBranchId();
+    if (branchId == null || branchId.isEmpty) return;
+    try {
+      final last = await _syncRepository.getLastSyncedAt();
+      if (last != null) {
+        await _syncRepository.delta(branchId: branchId, since: last);
+      } else {
+        await _syncRepository.bootstrap(branchId: branchId);
+      }
+      await _refreshStatusSnapshot(emit);
+    } catch (_) {
+      // Best-effort — the next tick retries.
+    }
+  }
+
   Future<void> _onFailedSalesCleared(
     SyncFailedSalesCleared event,
     Emitter<SyncBlocState> emit,
@@ -330,6 +363,7 @@ class SyncBloc extends Bloc<SyncEvent, SyncBlocState> {
   @override
   Future<void> close() async {
     _retryTimer?.cancel();
+    _deltaTimer?.cancel();
     await _connectivitySub?.cancel();
     return super.close();
   }

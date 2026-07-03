@@ -53,3 +53,9 @@ class SyncAutoRetryRequested extends SyncEvent {
 class SyncFailedSalesCleared extends SyncEvent {
   const SyncFailedSalesCleared();
 }
+
+/// Quiet, periodic delta pull to refresh products/prices/stock while online.
+/// Does not flip the loud syncing phase.
+class SyncBackgroundDeltaRequested extends SyncEvent {
+  const SyncBackgroundDeltaRequested();
+}
