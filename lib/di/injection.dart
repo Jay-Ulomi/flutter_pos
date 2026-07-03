@@ -124,13 +124,13 @@ Future<void> setupDependencies() async {
     () => SaleRepositoryImpl(sl(), sl(), sl()),
   );
   sl.registerLazySingleton<SessionRepository>(
-    () => SessionRepositoryImpl(sl(), sl(), sl()),
+    () => SessionRepositoryImpl(sl(), sl(), sl(), sl(), sl()),
   );
   sl.registerLazySingleton<CustomerRepository>(
     () => CustomerRepositoryImpl(sl(), sl(), sl()),
   );
   sl.registerLazySingleton<SyncRepository>(
-    () => SyncRepositoryImpl(sl(), sl(), sl(), sl(), sl(), sl()),
+    () => SyncRepositoryImpl(sl(), sl(), sl(), sl(), sl(), sl(), sl()),
   );
 
   // Card terminal. The mock auto-approves, so it's DEBUG-only; release builds

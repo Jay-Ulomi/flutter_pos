@@ -62,6 +62,25 @@ class SaleLocalDataSource {
     return _db.resetSyncingSales();
   }
 
+  /// Repoints queued sales from a provisional (offline) session id to the real
+  /// server session id once it exists. Returns how many rows were remapped.
+  Future<int> remapSessionId(String oldSessionId, String newSessionId) async {
+    final pending = await getPendingSales();
+    var remapped = 0;
+    for (final p in pending) {
+      if (p.sale.sessionId == oldSessionId) {
+        final updated = p.sale.copyWith(sessionId: newSessionId);
+        await _db.updatePendingSaleClientData(
+          p.localId,
+          p.clientId ?? p.sale.clientId ?? '',
+          jsonEncode(updated.toLocalJson()),
+        );
+        remapped++;
+      }
+    }
+    return remapped;
+  }
+
   Future<void> updateSaleStatus(
     String localId,
     sync_model.SyncItemStatus status,

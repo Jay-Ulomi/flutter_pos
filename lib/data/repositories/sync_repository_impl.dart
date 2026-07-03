@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/utils/error_message.dart';
+import '../../domain/repositories/session_repository.dart';
 import '../../domain/repositories/sync_repository.dart';
 import '../datasources/local/customer_local.dart';
 import '../datasources/local/database.dart';
@@ -21,6 +22,7 @@ class SyncRepositoryImpl implements SyncRepository {
   final CustomerLocalDataSource _customerLocal;
   final SaleLocalDataSource _saleLocal;
   final LaundryLocalDataSource _laundryLocal;
+  final SessionRepository _sessionRepository;
 
   // Serializes sale pushes so the reconnect trigger, the periodic timer, and a
   // manual push can't send the same queue twice concurrently.
@@ -33,6 +35,7 @@ class SyncRepositoryImpl implements SyncRepository {
     this._customerLocal,
     this._saleLocal,
     this._laundryLocal,
+    this._sessionRepository,
   );
 
   @override
@@ -117,6 +120,14 @@ class SyncRepositoryImpl implements SyncRepository {
     if (_pushingSales) return const SyncPushResult();
     _pushingSales = true;
     try {
+      // If the shift was opened offline, turn the provisional session into a
+      // real one and repoint queued sales to it BEFORE pushing. If that fails,
+      // skip this round rather than push sales with an invalid session id.
+      try {
+        await _sessionRepository.reconcileProvisionalSession();
+      } catch (_) {
+        return const SyncPushResult();
+      }
       return await _pushPendingSalesInner();
     } finally {
       _pushingSales = false;
