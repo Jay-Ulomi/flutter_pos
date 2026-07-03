@@ -9,6 +9,7 @@ import '../../blocs/customer_group/customer_group_bloc.dart';
 import '../../blocs/customer_group/customer_group_event.dart';
 import '../../blocs/customer_group/customer_group_state.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/error_view.dart';
 import '../../widgets/loading_indicator.dart';
 import '../../widgets/money_text.dart';
 import '../../widgets/responsive_shell.dart';
@@ -117,6 +118,14 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           final c = state.selected;
           if (state.status == CustomerStatus.loading && c == null) {
             return const LoadingIndicator();
+          }
+          if (state.status == CustomerStatus.error && c == null) {
+            return ErrorView(
+              message: state.errorMessage ?? 'Failed to load customer',
+              onRetry: () => context.read<CustomerBloc>().add(
+                CustomerByIdRequested(widget.customerId),
+              ),
+            );
           }
           if (c == null || c.id != widget.customerId) {
             return const EmptyState(

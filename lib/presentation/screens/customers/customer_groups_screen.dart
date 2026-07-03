@@ -6,6 +6,7 @@ import '../../blocs/customer_group/customer_group_bloc.dart';
 import '../../blocs/customer_group/customer_group_event.dart';
 import '../../blocs/customer_group/customer_group_state.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/error_view.dart';
 import '../../widgets/loading_indicator.dart';
 import '../../widgets/responsive_shell.dart';
 
@@ -84,6 +85,15 @@ class _CustomerGroupsScreenState extends State<CustomerGroupsScreen> {
           if (state.status == CustomerGroupStatus.loading &&
               state.groups.isEmpty) {
             return const LoadingIndicator();
+          }
+          if (state.status == CustomerGroupStatus.error &&
+              state.groups.isEmpty) {
+            return ErrorView(
+              message: state.errorMessage ?? 'Failed to load customer groups',
+              onRetry: () => context.read<CustomerGroupBloc>().add(
+                const CustomerGroupsLoadRequested(),
+              ),
+            );
           }
           if (state.groups.isEmpty) {
             return const EmptyState(
