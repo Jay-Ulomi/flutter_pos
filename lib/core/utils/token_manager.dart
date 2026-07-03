@@ -10,6 +10,7 @@ class TokenManager {
   static const _branchIdKey = 'branch_id';
   static const _businessTypeKey = 'business_type';
   static const _userKey = 'user_json';
+  static const _permissionsKey = 'permissions';
 
   TokenManager(this._storage);
 
@@ -52,6 +53,16 @@ class TokenManager {
 
   Future<void> saveUserJson(String json) => _write(_userKey, json);
   Future<String?> getUserJson() => _read(_userKey);
+
+  /// Effective permissions for the active business, stored comma-separated so
+  /// they survive an offline restart (where switch-context can't be re-fetched).
+  Future<void> savePermissions(Set<String> permissions) =>
+      _write(_permissionsKey, permissions.join(','));
+  Future<Set<String>> getPermissions() async {
+    final raw = await _read(_permissionsKey);
+    if (raw == null || raw.isEmpty) return <String>{};
+    return raw.split(',').where((e) => e.isNotEmpty).toSet();
+  }
 
   Future<void> clearAll() async {
     try {

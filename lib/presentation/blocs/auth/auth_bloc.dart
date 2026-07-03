@@ -103,6 +103,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (businessType != null) {
           await _tokenManager.saveBusinessType(businessType);
         }
+        final perms = ctx.permissions.toSet();
+        await _tokenManager.savePermissions(perms);
         emit(
           AuthState(
             status: AuthStatus.authenticated,
@@ -113,6 +115,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             enabledFeatures: tenantData.features,
             trialEndsAt: tenantData.trialEndsAt,
             subscriptionStatus: tenantData.subscriptionStatus,
+            permissions: perms,
           ),
         );
         return;
@@ -120,6 +123,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (e is NetworkException) {
           // Offline — resume with cached context so user can still use the app
           final cachedType = await _tokenManager.getBusinessType();
+          final cachedPerms = await _tokenManager.getPermissions();
           emit(
             AuthState(
               status: AuthStatus.authenticated,
@@ -128,6 +132,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
               branchId: savedBranch,
               selectedBusinessType: cachedType,
               enabledFeatures: const {},
+              permissions: cachedPerms,
             ),
           );
           return;
@@ -280,6 +285,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (state.selectedBusinessType != null) {
         await _tokenManager.saveBusinessType(state.selectedBusinessType!);
       }
+      final perms = ctx.permissions.toSet();
+      await _tokenManager.savePermissions(perms);
 
       emit(
         state.copyWith(
@@ -290,6 +297,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           enabledFeatures: tenantData.features,
           trialEndsAt: tenantData.trialEndsAt,
           subscriptionStatus: tenantData.subscriptionStatus,
+          permissions: perms,
         ),
       );
     } catch (e) {

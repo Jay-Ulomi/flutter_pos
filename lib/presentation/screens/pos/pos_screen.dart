@@ -1057,8 +1057,12 @@ class _PosScreenState extends State<PosScreen> {
                       itemCount: cart.lines.length,
                       itemBuilder: (_, i) {
                         final line = cart.lines[i];
+                        final auth = context.read<AuthBloc>().state;
+                        final canOverridePrice = auth.can('override_price');
+                        final canDiscount = auth.can('apply_discount');
                         return CartItemTile(
                           line: line,
+                          canEditPrice: canOverridePrice,
                           onQtyChanged: (q) => context.read<CartBloc>().add(
                             CartItemQtyChanged(line.product.id, q),
                           ),
@@ -1068,23 +1072,26 @@ class _PosScreenState extends State<PosScreen> {
                           onRemove: () => context.read<CartBloc>().add(
                             CartItemRemoved(line.product.id),
                           ),
-                          onTapDiscount: () async {
-                            final result = await showDiscountDialog(
-                              context,
-                              productName: line.product.name,
-                              currentDiscount: line.discount,
-                              currentIsPercent: line.isPercentDiscount,
-                            );
-                            if (result != null && context.mounted) {
-                              context.read<CartBloc>().add(
-                                CartItemDiscountApplied(
-                                  line.product.id,
-                                  discount: result.value,
-                                  isPercent: result.isPercent,
-                                ),
-                              );
-                            }
-                          },
+                          // Hidden entirely when the user lacks discount permission.
+                          onTapDiscount: !canDiscount
+                              ? null
+                              : () async {
+                                  final result = await showDiscountDialog(
+                                    context,
+                                    productName: line.product.name,
+                                    currentDiscount: line.discount,
+                                    currentIsPercent: line.isPercentDiscount,
+                                  );
+                                  if (result != null && context.mounted) {
+                                    context.read<CartBloc>().add(
+                                      CartItemDiscountApplied(
+                                        line.product.id,
+                                        discount: result.value,
+                                        isPercent: result.isPercent,
+                                      ),
+                                    );
+                                  }
+                                },
                         );
                       },
                     ),
@@ -1503,16 +1510,20 @@ class _CartSheetState extends State<_CartSheet> {
                           : const Color(0xFF9CA3AF),
                     ),
                     const SizedBox(width: 3),
-                    Text(
-                      p.stockLabel!,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: p.isOutOfStock
-                            ? const Color(0xFFDC2626)
-                            : p.isLowStock
-                                ? const Color(0xFFD97706)
-                                : const Color(0xFF6B7280),
+                    Flexible(
+                      child: Text(
+                        p.stockLabel!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: p.isOutOfStock
+                              ? const Color(0xFFDC2626)
+                              : p.isLowStock
+                                  ? const Color(0xFFD97706)
+                                  : const Color(0xFF6B7280),
+                        ),
                       ),
                     ),
                   ],

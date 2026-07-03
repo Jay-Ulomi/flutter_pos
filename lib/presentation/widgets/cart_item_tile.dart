@@ -12,6 +12,9 @@ class CartItemTile extends StatefulWidget {
   final VoidCallback onRemove;
   final VoidCallback? onTapDiscount;
 
+  /// When false, the unit price is shown read-only (user lacks override_price).
+  final bool canEditPrice;
+
   const CartItemTile({
     super.key,
     required this.line,
@@ -19,6 +22,7 @@ class CartItemTile extends StatefulWidget {
     required this.onPriceChanged,
     required this.onRemove,
     this.onTapDiscount,
+    this.canEditPrice = true,
   });
 
   @override
@@ -186,63 +190,79 @@ class _CartItemTileState extends State<CartItemTile> {
                       ),
                     ),
                     const SizedBox(width: 3),
-                    SizedBox(
-                      width: 72,
-                      child: TextSelectionTheme(
-                        data: const TextSelectionThemeData(
-                          selectionColor: Color(0x66FCD34D),
-                          cursorColor: Color(0xFF92400E),
-                          selectionHandleColor: Color(0xFF92400E),
+                    if (!widget.canEditPrice)
+                      // Read-only: user lacks the price-override permission.
+                      Text(
+                        _priceText(line.effectivePrice),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: line.hasPriceOverride
+                              ? const Color(0xFF92400E)
+                              : const Color(0xFF374151),
+                          fontWeight: line.hasPriceOverride
+                              ? FontWeight.w700
+                              : FontWeight.w600,
                         ),
-                        child: TextField(
-                          controller: _priceCtrl,
-                          focusNode: _priceFocus,
-                          cursorColor: const Color(0xFF92400E),
-                          keyboardAppearance: Brightness.light,
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                          ],
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: line.hasPriceOverride
-                                ? const Color(0xFF92400E)
-                                : const Color(0xFF374151),
-                            fontWeight: line.hasPriceOverride
-                                ? FontWeight.w700
-                                : FontWeight.w600,
+                      )
+                    else
+                      SizedBox(
+                        width: 72,
+                        child: TextSelectionTheme(
+                          data: const TextSelectionThemeData(
+                            selectionColor: Color(0x66FCD34D),
+                            cursorColor: Color(0xFF92400E),
+                            selectionHandleColor: Color(0xFF92400E),
                           ),
-                          decoration: InputDecoration(
-                            isDense: true,
-                            isCollapsed: true,
-                            // Disable the global theme's dark fill so the light
-                            // container shows through (no dark box in dark mode).
-                            filled: false,
-                            fillColor: Colors.transparent,
-                            contentPadding:
-                                const EdgeInsets.symmetric(vertical: 4),
-                            border: InputBorder.none,
-                            hintText: _priceText(line.effectivePrice),
-                            hintStyle: const TextStyle(
+                          child: TextField(
+                            controller: _priceCtrl,
+                            focusNode: _priceFocus,
+                            cursorColor: const Color(0xFF92400E),
+                            keyboardAppearance: Brightness.light,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(
+                                  RegExp(r'[0-9.]')),
+                            ],
+                            style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF9CA3AF),
-                              fontWeight: FontWeight.w500,
+                              color: line.hasPriceOverride
+                                  ? const Color(0xFF92400E)
+                                  : const Color(0xFF374151),
+                              fontWeight: line.hasPriceOverride
+                                  ? FontWeight.w700
+                                  : FontWeight.w600,
                             ),
+                            decoration: InputDecoration(
+                              isDense: true,
+                              isCollapsed: true,
+                              // Disable the global theme's dark fill so the light
+                              // container shows through (no dark box in dark mode).
+                              filled: false,
+                              fillColor: Colors.transparent,
+                              contentPadding:
+                                  const EdgeInsets.symmetric(vertical: 4),
+                              border: InputBorder.none,
+                              hintText: _priceText(line.effectivePrice),
+                              hintStyle: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF9CA3AF),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            onTap: () {
+                              // First tap on the committed value: clear it (shown
+                              // as gray hint) so there's no dark select-all box.
+                              // Subsequent taps while editing keep the input.
+                              if (_priceCtrl.text ==
+                                  _priceText(widget.line.effectivePrice)) {
+                                _priceCtrl.clear();
+                              }
+                            },
+                            onChanged: _commitPrice,
                           ),
-                          onTap: () {
-                            // First tap on the committed value: clear it (shown
-                            // as gray hint) so there's no dark select-all box.
-                            // Subsequent taps while editing keep the input.
-                            if (_priceCtrl.text ==
-                                _priceText(widget.line.effectivePrice)) {
-                              _priceCtrl.clear();
-                            }
-                          },
-                          onChanged: _commitPrice,
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),

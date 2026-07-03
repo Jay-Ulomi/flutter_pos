@@ -24,6 +24,8 @@ class AuthState extends Equatable {
   // Subscription / trial
   final DateTime? trialEndsAt;
   final String? subscriptionStatus; // 'trial', 'active', 'expired', 'suspended'
+  // Effective permissions for the active business. Contains '*' for privileged roles.
+  final Set<String> permissions;
 
   const AuthState({
     this.status = AuthStatus.unknown,
@@ -36,6 +38,7 @@ class AuthState extends Equatable {
     this.errorMessage,
     this.trialEndsAt,
     this.subscriptionStatus,
+    this.permissions = const <String>{},
   });
 
   const AuthState.unknown() : this();
@@ -55,6 +58,7 @@ class AuthState extends Equatable {
     DateTime? trialEndsAt,
     String? subscriptionStatus,
     bool clearTrial = false,
+    Set<String>? permissions,
   }) {
     return AuthState(
       status: status ?? this.status,
@@ -67,10 +71,20 @@ class AuthState extends Equatable {
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       trialEndsAt: clearTrial ? null : (trialEndsAt ?? this.trialEndsAt),
       subscriptionStatus: clearTrial ? null : (subscriptionStatus ?? this.subscriptionStatus),
+      permissions: permissions ?? this.permissions,
     );
   }
 
   bool hasFeature(String featureName) => enabledFeatures.contains(featureName);
+
+  /// Whether the current user may perform an action requiring [permission].
+  /// Privileged roles carry '*' (all). Defaults to allow when permissions are
+  /// unknown (e.g. offline before the first context sync) so we never wrongly
+  /// block a legitimate manager who has no cached permission set yet.
+  bool can(String permission) {
+    if (permissions.isEmpty) return true;
+    return permissions.contains('*') || permissions.contains(permission);
+  }
 
   /// True when the subscription/trial has expired and the app should be blocked.
   bool get isTrialExpired {
@@ -112,5 +126,6 @@ class AuthState extends Equatable {
     errorMessage,
     trialEndsAt,
     subscriptionStatus,
+    permissions,
   ];
 }

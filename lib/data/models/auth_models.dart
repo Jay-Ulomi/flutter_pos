@@ -176,11 +176,16 @@ class ContextResponse {
   final String businessId;
   final String? branchId;
 
+  /// Effective permission names for this business. `['*']` means all (privileged
+  /// role); empty list means the role has no explicit grants.
+  final List<String> permissions;
+
   ContextResponse({
     required this.accessToken,
     required this.refreshToken,
     required this.businessId,
     this.branchId,
+    this.permissions = const [],
   });
 
   factory ContextResponse.fromJson(Map<String, dynamic> json) {
@@ -189,6 +194,10 @@ class ContextResponse {
       refreshToken: json['refreshToken'] ?? '',
       businessId: json['businessId']?.toString() ?? '',
       branchId: json['branchId']?.toString(), // null if branch not yet selected
+      permissions: (json['permissions'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
     );
   }
 }

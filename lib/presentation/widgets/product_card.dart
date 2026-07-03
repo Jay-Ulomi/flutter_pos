@@ -91,15 +91,19 @@ class ProductCard extends StatelessWidget {
                               : cs.onSurfaceVariant,
                         ),
                         const SizedBox(width: 3),
-                        Text(
-                          '${product.stockLabel!} in stock',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: outOfStock
-                                ? cs.error
-                                : product.isLowStock
-                                    ? cs.tertiary
-                                    : cs.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
+                        Expanded(
+                          child: Text(
+                            '${product.stockLabel!} in stock',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: outOfStock
+                                  ? cs.error
+                                  : product.isLowStock
+                                      ? cs.tertiary
+                                      : cs.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ],
