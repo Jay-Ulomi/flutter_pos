@@ -192,21 +192,27 @@ class _PosScreenState extends State<PosScreen> {
       );
     }
 
-    // Step 2 — serial/lot number prompt (if required).
+    // Step 2 — serial/lot number prompt (if required). A product can require
+    // both, so prompt for each independently.
     String? serialNumber;
     String? lotNumber;
-    if (effectiveProduct.requiresSerial || effectiveProduct.requiresLot) {
+    if (effectiveProduct.requiresSerial) {
       final code = await _promptTrackingCode(
         context,
-        isSerial: effectiveProduct.requiresSerial,
+        isSerial: true,
         productName: effectiveProduct.name,
       );
       if (code == null || !context.mounted) return;
-      if (effectiveProduct.requiresSerial) {
-        serialNumber = code;
-      } else {
-        lotNumber = code;
-      }
+      serialNumber = code;
+    }
+    if (effectiveProduct.requiresLot) {
+      final code = await _promptTrackingCode(
+        context,
+        isSerial: false,
+        productName: effectiveProduct.name,
+      );
+      if (code == null || !context.mounted) return;
+      lotNumber = code;
     }
 
     if (context.mounted) {
@@ -1075,6 +1081,9 @@ class _PosScreenState extends State<PosScreen> {
                         final canOverridePrice = auth.can('override_price');
                         final canDiscount = auth.can('apply_discount');
                         return CartItemTile(
+                          key: ValueKey(
+                            '${line.product.id}_${line.serialNumber}_${line.lotNumber}',
+                          ),
                           line: line,
                           canEditPrice: canOverridePrice,
                           onQtyChanged: (q) => context.read<CartBloc>().add(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/services/card_terminal_service.dart';
 import '../../data/datasources/remote/promotion_remote.dart';
@@ -133,6 +134,14 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
   // Card terminal state
   bool _terminalProcessing = false;
   String? _terminalError;
+
+  // Idempotency: a stable clientId for this checkout attempt, reused across
+  // retries so a lost-response/retry can't create a duplicate sale (the backend
+  // dedups by clientId). Cleared only after the sale completes.
+  final _uuid = const Uuid();
+  String? _pendingClientId;
+  // Synchronous double-submit guard (set before the async bloc round-trip).
+  bool _submitting = false;
 
   @override
   void dispose() {
@@ -335,6 +344,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
       _payments.where((p) => p.method == PaymentMethod.storeCredit).fold(0.0, (s, p) => s + p.amount);
 
   void _complete(CartState cart) {
+    // Guard against a fast double-tap enqueuing two checkout events before the
+    // bloc emits `processing`.
+    if (_submitting) return;
     final sessionId = context.read<SessionBloc>().state.current?.id;
     if (sessionId == null || sessionId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -365,12 +377,15 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
       );
       return;
     }
+    _submitting = true;
     context.read<SaleBloc>().add(
       SaleCheckoutRequested(_buildSale(cart, sessionId)),
     );
   }
 
   Sale _buildSale(CartState cart, String sessionId) {
+    // Stable across retries so a lost response can't duplicate the sale.
+    final clientId = _pendingClientId ??= _uuid.v4();
     final effectiveTotal = cart.total - _couponDiscount;
     final items = cart.lines
         .map(
@@ -398,6 +413,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
         .toList();
     final change = (_totalPaid - effectiveTotal).clamp(0, double.infinity).toDouble();
     return Sale(
+      clientId: clientId,
       sessionId: sessionId,
       items: items,
       payments: payments,
@@ -440,6 +456,10 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
       listener: (context, state) {
         if (state.status == SaleStatus.completed ||
             state.status == SaleStatus.queuedOffline) {
+          // Sale is recorded (or safely queued) — release the guard and mint a
+          // fresh clientId for the next sale.
+          _submitting = false;
+          _pendingClientId = null;
           context.read<CartBloc>().add(const CartCleared());
           if (widget.onSaleCompleted != null) {
             widget.onSaleCompleted!();
@@ -448,6 +468,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
           }
         } else if (state.status == SaleStatus.error &&
             state.errorMessage != null) {
+          // Keep _pendingClientId so a retry reuses it (idempotent); just
+          // release the submit guard so the user can retry.
+          _submitting = false;
           ScaffoldMessenger.of(context)
               .showSnackBar(SnackBar(content: Text(state.errorMessage!)));
         }

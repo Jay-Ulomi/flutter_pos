@@ -1,5 +1,6 @@
 import 'package:uuid/uuid.dart';
 
+import '../../core/error/exceptions.dart';
 import '../../core/network/network_info.dart';
 import '../../domain/repositories/sale_repository.dart';
 import '../datasources/local/sale_local.dart';
@@ -20,6 +21,17 @@ class SaleRepositoryImpl implements SaleRepository {
     return sale.copyWith(clientId: _uuid.v4());
   }
 
+  /// Transient = safe to queue and retry. A 4xx business rejection is NOT
+  /// transient (queuing it would fail forever); everything else (no network,
+  /// 5xx, unknown) is treated as transient so we don't drop a real sale.
+  bool _isTransient(Object e) {
+    if (e is NetworkException) return true;
+    if (e is ServerException) {
+      return e.statusCode == null || e.statusCode! >= 500;
+    }
+    return true;
+  }
+
   @override
   Future<Sale> completeSale(Sale sale) async {
     final saleWithId = _ensureClientId(sale);
@@ -29,15 +41,19 @@ class SaleRepositoryImpl implements SaleRepository {
     if (_networkInfo.isConnected) {
       try {
         return await _remote.completeSale(saleWithId);
-      } catch (_) {
-        // Save locally if remote fails
-        final pendingSale = PendingSale(
-          localId: DateTime.now().millisecondsSinceEpoch.toString(),
-          clientId: saleWithId.clientId,
-          sale: pendingPayload,
-          createdAt: DateTime.now(),
-        );
-        await _local.savePendingSale(pendingSale);
+      } catch (e) {
+        // Only queue transient failures (no connectivity / server 5xx). A 4xx
+        // business rejection (insufficient stock, permission, validation) must
+        // NOT be queued — it would fail forever on sync. Surface it instead.
+        if (_isTransient(e)) {
+          final pendingSale = PendingSale(
+            localId: DateTime.now().millisecondsSinceEpoch.toString(),
+            clientId: saleWithId.clientId,
+            sale: pendingPayload,
+            createdAt: DateTime.now(),
+          );
+          await _local.savePendingSale(pendingSale);
+        }
         rethrow;
       }
     }
