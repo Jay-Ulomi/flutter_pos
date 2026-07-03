@@ -2,14 +2,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/utils/error_message.dart';
 import '../../../data/models/session_models.dart';
+import '../../../domain/repositories/sale_repository.dart';
 import '../../../domain/repositories/session_repository.dart';
 import 'session_event.dart';
 import 'session_state.dart';
 
 class SessionBloc extends Bloc<SessionEvent, SessionState> {
   final SessionRepository _repository;
+  final SaleRepository _saleRepository;
 
-  SessionBloc(this._repository) : super(const SessionState()) {
+  SessionBloc(this._repository, this._saleRepository)
+      : super(const SessionState()) {
     on<SessionLoadRequested>(_onLoadRequested);
     on<SessionOpenRequested>(_onOpenRequested);
     on<SessionCloseRequested>(_onCloseRequested);
@@ -62,6 +65,21 @@ class SessionBloc extends Bloc<SessionEvent, SessionState> {
     SessionCloseRequested event,
     Emitter<SessionState> emit,
   ) async {
+    // Block closing while sales are still queued locally — the server would
+    // finalize the shift summary before those sales arrive, corrupting the
+    // reported cash/totals (and the sales could post into a closed session).
+    final pending = await _saleRepository.getPendingSaleCount();
+    if (pending > 0) {
+      emit(
+        state.copyWith(
+          status: SessionStatus.error,
+          errorMessage:
+              'Cannot close: $pending sale${pending == 1 ? '' : 's'} still '
+              'waiting to sync. Sync them first (Sync → Push Queue), then close.',
+        ),
+      );
+      return;
+    }
     emit(state.copyWith(status: SessionStatus.loading, clearError: true));
     try {
       await _repository.closeSession(

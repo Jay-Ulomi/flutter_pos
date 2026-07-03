@@ -79,7 +79,7 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
       ..add(const AuthCheckRequested());
     _businessBloc = BusinessBloc(sl<AuthRepository>());
     _branchBloc = BranchBloc(sl<AuthRepository>());
-    _sessionBloc = SessionBloc(sl<SessionRepository>());
+    _sessionBloc = SessionBloc(sl<SessionRepository>(), sl<SaleRepository>());
     _syncBloc = SyncBloc(
       sl<SyncRepository>(),
       sl<NetworkInfo>(),
