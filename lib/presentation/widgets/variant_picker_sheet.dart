@@ -80,7 +80,7 @@ class _VariantPickerSheet extends StatelessWidget {
                 controller: controller,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: activeVariants.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                separatorBuilder: (_, i) => const SizedBox(height: 8),
                 itemBuilder: (context, i) {
                   final variant = activeVariants[i];
                   final price =
