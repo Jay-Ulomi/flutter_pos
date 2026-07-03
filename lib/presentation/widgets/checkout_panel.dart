@@ -209,12 +209,26 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
   }
 
   double get _totalPaid => _payments.fold(0.0, (sum, p) => sum + p.amount);
-  double _remaining(double total) => (total - _totalPaid).clamp(0, total);
+  double _remaining(double total) {
+    final t = total < 0 ? 0.0 : total;
+    return (t - _totalPaid).clamp(0, t).toDouble();
+  }
+
   bool get _hasCreditPayment =>
       _payments.any((p) => p.method == PaymentMethod.credit);
 
+  /// Only cash may legitimately over-pay (producing change). For every other
+  /// method, cap the entered amount to the remaining balance so an overpayment
+  /// can't be converted into cash change.
+  double _cappedAmount(double amount, double cartTotal) {
+    if (_addMethod == PaymentMethod.cash) return amount;
+    final remaining = _remaining(cartTotal - _couponDiscount);
+    return amount > remaining ? remaining : amount;
+  }
+
   void _addPayment(double cartTotal) {
-    final amount = double.tryParse(_addAmountCtrl.text) ?? 0;
+    final entered = double.tryParse(_addAmountCtrl.text) ?? 0;
+    final amount = _cappedAmount(entered, cartTotal);
     final reference = _addReferenceCtrl.text.trim();
     if (amount <= 0) return;
     if (_addMethod.requiresReference && reference.isEmpty) {
@@ -237,8 +251,11 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
   }
 
   Future<void> _chargeTerminal(double cartTotal) async {
-    final amount = double.tryParse(_addAmountCtrl.text) ?? 0;
-    final chargeAmount = amount > 0 ? amount : _remaining(cartTotal);
+    final entered = double.tryParse(_addAmountCtrl.text) ?? 0;
+    final remaining = _remaining(cartTotal - _couponDiscount);
+    // Card is non-cash: never charge more than the outstanding balance.
+    final base = entered > 0 ? entered : remaining;
+    final chargeAmount = base > remaining ? remaining : base;
     if (chargeAmount <= 0) return;
 
     setState(() {
@@ -386,10 +403,10 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
       payments: payments,
       subtotal: cart.subtotal,
       taxAmount: cart.taxAmount,
-      discountAmount:
-          cart.discount +
-          _couponDiscount +
-          cart.lines.fold(0.0, (sum, l) => sum + l.lineDiscount),
+      // Order-level discount only. Per-line discounts are sent on each SaleItem
+      // and applied by the backend per line — including them here would
+      // double-count.
+      discountAmount: cart.discount + _couponDiscount,
       totalAmount: effectiveTotal,
       paidAmount: _totalPaid,
       changeAmount: change,

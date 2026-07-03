@@ -30,8 +30,10 @@ class CartLine extends Equatable {
 
   double get lineDiscount {
     if (discount <= 0) return 0;
-    if (isPercentDiscount) return lineSubtotal * (discount / 100);
-    return discount * quantity;
+    // Percent applies to the line; a fixed amount is the total off the line
+    // (not per-unit). Never let a discount exceed the line value.
+    final raw = isPercentDiscount ? lineSubtotal * (discount / 100) : discount;
+    return raw.clamp(0, lineSubtotal).toDouble();
   }
 
   double get lineTax =>
@@ -93,10 +95,16 @@ class CartState extends Equatable {
 
   double get subtotal => lines.fold(0, (sum, l) => sum + l.lineSubtotal);
 
+  /// Sum of per-line discounts — must be subtracted from the total.
+  double get lineDiscountTotal =>
+      lines.fold(0, (sum, l) => sum + l.lineDiscount);
+
   double get taxAmount => lines.fold(0, (sum, l) => sum + l.lineTax);
 
   double get total {
-    final value = subtotal + taxAmount - discount;
+    // = Σ lineTotal − sale-level discount. Mirrors the backend's authoritative
+    // computation and, crucially, includes per-line discounts.
+    final value = subtotal - lineDiscountTotal + taxAmount - discount;
     return value < 0 ? 0 : value;
   }
 
