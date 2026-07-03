@@ -394,10 +394,37 @@ class _CartItemTileState extends State<CartItemTile> {
               ),
             ],
           ),
+
+          // ── Insufficient-stock warning ──
+          if (line.exceedsStock) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded,
+                    size: 13, color: Color(0xFFDC2626)),
+                const SizedBox(width: 4),
+                Text(
+                  'Only ${_stockText(line.product.stockQuantity)} in stock',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFFDC2626),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
   }
+}
+
+String _stockText(double? stock) {
+  if (stock == null) return '0';
+  return stock == stock.floorToDouble()
+      ? stock.toInt().toString()
+      : stock.toStringAsFixed(2);
 }
 
 // ---------------------------------------------------------------------------

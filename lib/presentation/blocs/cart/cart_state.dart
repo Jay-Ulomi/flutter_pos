@@ -44,6 +44,13 @@ class CartLine extends Equatable {
 
   double get lineTotal => lineSubtotal - lineDiscount + lineTax;
 
+  /// True when this line's quantity exceeds the product's available stock
+  /// (only for inventory-tracked products with a known stock level).
+  bool get exceedsStock {
+    if (!product.trackInventory || product.stockQuantity == null) return false;
+    return quantity > product.stockQuantity!;
+  }
+
   bool get hasDiscount => discount > 0;
   bool get hasPriceOverride => priceOverride != null;
 

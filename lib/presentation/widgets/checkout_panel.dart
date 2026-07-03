@@ -647,37 +647,73 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       line.quantity.floorToDouble()
                                   ? line.quantity.toInt().toString()
                                   : line.quantity.toStringAsFixed(2);
+                              final stock = line.product.stockQuantity;
+                              final stockText = stock == null
+                                  ? ''
+                                  : (stock == stock.floorToDouble()
+                                      ? stock.toInt().toString()
+                                      : stock.toStringAsFixed(2));
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 6),
-                                child: Row(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
                                   children: [
-                                    Expanded(
-                                      child: Text.rich(
-                                        TextSpan(
-                                          text: line.product.name,
-                                          style: const TextStyle(
-                                              fontSize: 13,
-                                              color: Color(0xFF374151)),
-                                          children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text.rich(
                                             TextSpan(
-                                              text: ' ×$qty',
+                                              text: line.product.name,
                                               style: const TextStyle(
-                                                  color: Color(0xFF9CA3AF)),
+                                                  fontSize: 13,
+                                                  color: Color(0xFF374151)),
+                                              children: [
+                                                TextSpan(
+                                                  text: ' ×$qty',
+                                                  style: const TextStyle(
+                                                      color: Color(0xFF9CA3AF)),
+                                                ),
+                                              ],
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        MoneyText(
+                                          line.lineTotal,
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFF111827),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    if (line.exceedsStock)
+                                      Padding(
+                                        padding:
+                                            const EdgeInsets.only(top: 2),
+                                        child: Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.warning_amber_rounded,
+                                              size: 12,
+                                              color: Color(0xFFDC2626),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'Insufficient stock — only '
+                                              '$stockText available',
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xFFDC2626),
+                                              ),
                                             ),
                                           ],
                                         ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                    ),
-                                    MoneyText(
-                                      line.lineTotal,
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF111827),
-                                      ),
-                                    ),
                                   ],
                                 ),
                               );
