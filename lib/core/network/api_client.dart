@@ -76,8 +76,13 @@ class ApiClient {
               error.requestOptions.extra['_isRetry'] != true) {
             final refreshed = await _ensureSingleRefresh();
             if (refreshed) {
-              final retryResponse = await _retryRequest(error.requestOptions);
-              handler.resolve(retryResponse);
+              // A failing retry must still complete the handler, or the
+              // caller's request would hang forever.
+              try {
+                handler.resolve(await _retryRequest(error.requestOptions));
+              } on DioException catch (retryError) {
+                handler.next(retryError);
+              }
               return;
             }
             // Refresh failed → session is dead, clear everything

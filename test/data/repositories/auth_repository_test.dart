@@ -99,12 +99,6 @@ void main() {
 
   test(
     'logout tells the server, so the session is revoked there too',
-    // Known gap: AuthRemoteDataSource has no logout and AuthRepositoryImpl.logout
-    // only clears local storage, so POST /api/auth/logout (which revokes the
-    // token server-side) is never called. Add AuthRemoteDataSource.logout()
-    // posting to /api/auth/logout with the current bearer token (best effort,
-    // before clearing local tokens), then remove this skip.
-    skip: 'Known gap: Flutter POS logout never calls POST /api/auth/logout',
     () async {
       await repo.login(LoginRequest(email: 'cashier@shop.tz', password: 'right'));
 

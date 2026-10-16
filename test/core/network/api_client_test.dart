@@ -49,7 +49,6 @@ Future<void> json(HttpRequest request, int status, Object body) async {
 ///   on DioException catch (retryError) { handler.next(retryError); }
 ///   return;
 /// Remove the skips below once that is applied; both tests pass with it.
-const _retryHangBug = 'Known bug: retry failure after refresh hangs the request (see top of file)';
 
 void main() {
   // No TestWidgetsFlutterBinding here: it swaps HttpClient for a stub that
@@ -148,7 +147,7 @@ void main() {
     expect(await tokens.getAccessToken(), 'old-access');
   });
 
-  test('a retried request that still gets 401 is not refreshed again (no loop)', skip: _retryHangBug, () async {
+  test('a retried request that still gets 401 is not refreshed again (no loop)', () async {
     backend.handler = (req, _) async {
       if (req.uri.path == ApiConstants.refreshToken) {
         return json(req, 200, {'accessToken': 'new-access', 'refreshToken': 'new-refresh'});
@@ -165,7 +164,7 @@ void main() {
     expect(backend.countPath('/api/pos/sales'), 2);
   });
 
-  test('if the retry after a refresh fails (e.g. 500), the error reaches the caller instead of hanging', skip: _retryHangBug, () async {
+  test('if the retry after a refresh fails (e.g. 500), the error reaches the caller instead of hanging', () async {
     backend.handler = (req, _) async {
       if (req.uri.path == ApiConstants.refreshToken) {
         return json(req, 200, {'accessToken': 'new-access', 'refreshToken': 'new-refresh'});

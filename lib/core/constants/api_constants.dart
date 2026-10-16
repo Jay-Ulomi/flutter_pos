@@ -78,6 +78,7 @@ class ApiConstants {
   static const String refreshToken =
       '$apiPrefix/auth/refresh'; // backend: /api/auth/refresh
   static const String switchContext = '$apiPrefix/auth/switch-context';
+  static const String logout = '$apiPrefix/auth/logout';
   static const String me = '$apiPrefix/auth/me';
 
   // Business

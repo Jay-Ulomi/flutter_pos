@@ -25,6 +25,18 @@ class AuthRemoteDataSource {
     }
   }
 
+  /// Revokes the session on the server. Best effort: callers clear local
+  /// tokens whatever happens here.
+  Future<void> logout() async {
+    await _apiClient.dio.post(
+      ApiConstants.logout,
+      options: Options(
+        sendTimeout: const Duration(seconds: 5),
+        receiveTimeout: const Duration(seconds: 5),
+      ),
+    );
+  }
+
   Future<ContextResponse> switchContext(SwitchContextRequest request) async {
     try {
       final response = await _apiClient.dio.post(

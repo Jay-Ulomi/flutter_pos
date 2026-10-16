@@ -114,6 +114,12 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> logout() async {
+    // Tell the server first, while the bearer token is still available, so the
+    // session is revoked there too. Best effort: offline or failing, we still
+    // sign out locally.
+    try {
+      await _remote.logout();
+    } catch (_) {}
     _apiClient.clearCache(); // wipe in-memory headers immediately
     await _tokenManager.clearAll();
   }
