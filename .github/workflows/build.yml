@@ -47,7 +47,7 @@ jobs:
           security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
 
       - name: Build macOS release
-        run: flutter build macos --release
+        run: flutter build macos --release --dart-define-from-file=.env
 
       - name: Code sign with Developer ID
         env:
@@ -99,7 +99,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Windows release
-        run: flutter build windows --release
+        run: flutter build windows --release --dart-define-from-file=.env
 
       - name: Zip release folder
         run: |

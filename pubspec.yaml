@@ -72,7 +72,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - .env
     - assets/app_icon.png
 
   fonts:
