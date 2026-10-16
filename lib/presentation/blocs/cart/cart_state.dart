@@ -13,6 +13,8 @@ class CartLine extends Equatable {
   final String? serialNumber;
   /// Lot number for LOT-tracked products.
   final String? lotNumber;
+  /// Named price tier (e.g. WHOLESALE); null = normal selling price.
+  final String? priceTier;
 
   const CartLine({
     required this.product,
@@ -22,9 +24,10 @@ class CartLine extends Equatable {
     this.priceOverride,
     this.serialNumber,
     this.lotNumber,
+    this.priceTier,
   });
 
-  double get effectivePrice => priceOverride ?? product.sellingPrice;
+  double get effectivePrice => priceOverride ?? product.priceForTier(priceTier);
 
   double get lineSubtotal => effectivePrice * quantity;
 
@@ -39,8 +42,10 @@ class CartLine extends Equatable {
     return (clamped * 100).roundToDouble() / 100;
   }
 
-  double get lineTax =>
-      (lineSubtotal - lineDiscount) * ((product.taxRate ?? 0) / 100);
+  // Exempt products carry no tax whatever their rate, as on the backend.
+  double get lineTax => product.taxable
+      ? (lineSubtotal - lineDiscount) * ((product.taxRate ?? 0) / 100)
+      : 0;
 
   double get lineTotal => lineSubtotal - lineDiscount + lineTax;
 
@@ -64,6 +69,8 @@ class CartLine extends Equatable {
     bool clearPriceOverride = false,
     String? serialNumber,
     String? lotNumber,
+    String? priceTier,
+    bool clearPriceTier = false,
   }) => CartLine(
     product: product ?? this.product,
     quantity: quantity ?? this.quantity,
@@ -74,6 +81,7 @@ class CartLine extends Equatable {
     priceOverride: clearPriceOverride ? null : (priceOverride ?? this.priceOverride),
     serialNumber: serialNumber ?? this.serialNumber,
     lotNumber: lotNumber ?? this.lotNumber,
+    priceTier: clearPriceTier ? null : (priceTier ?? this.priceTier),
   );
 
   @override
@@ -85,6 +93,7 @@ class CartLine extends Equatable {
     priceOverride,
     serialNumber,
     lotNumber,
+    priceTier,
   ];
 }
 
@@ -94,6 +103,8 @@ class CartState extends Equatable {
   final String? selectedCustomerId;
   final String? selectedCustomerName;
   final double customerBalance;
+  /// Loyalty points of the selected customer (spendable at checkout).
+  final int customerLoyaltyPoints;
 
   const CartState({
     this.lines = const [],
@@ -101,6 +112,7 @@ class CartState extends Equatable {
     this.selectedCustomerId,
     this.selectedCustomerName,
     this.customerBalance = 0,
+    this.customerLoyaltyPoints = 0,
   });
 
   double get subtotal => lines.fold(0, (sum, l) => sum + l.lineSubtotal);
@@ -129,6 +141,7 @@ class CartState extends Equatable {
     String? selectedCustomerId,
     String? selectedCustomerName,
     double? customerBalance,
+    int? customerLoyaltyPoints,
     bool clearCustomer = false,
   }) {
     return CartState(
@@ -141,6 +154,9 @@ class CartState extends Equatable {
           ? null
           : (selectedCustomerName ?? this.selectedCustomerName),
       customerBalance: clearCustomer ? 0 : (customerBalance ?? this.customerBalance),
+      customerLoyaltyPoints: clearCustomer
+          ? 0
+          : (customerLoyaltyPoints ?? this.customerLoyaltyPoints),
     );
   }
 
@@ -151,5 +167,6 @@ class CartState extends Equatable {
     selectedCustomerId,
     selectedCustomerName,
     customerBalance,
+    customerLoyaltyPoints,
   ];
 }

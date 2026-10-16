@@ -17,6 +17,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     on<CartCustomerSelected>(_onCustomerSelected);
     on<CartCustomerCleared>(_onCustomerCleared);
     on<CartItemPriceChanged>(_onPriceChanged);
+    on<CartItemTierChanged>(_onTierChanged);
   }
 
   void _onRestored(CartRestored event, Emitter<CartState> emit) {
@@ -39,8 +40,19 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         selectedCustomerId: event.customerId,
         selectedCustomerName: event.customerName,
         customerBalance: event.customerBalance,
+        customerLoyaltyPoints: event.loyaltyPoints,
       ),
     );
+  }
+
+  void _onTierChanged(CartItemTierChanged event, Emitter<CartState> emit) {
+    final tier = event.tier == null || event.tier!.toUpperCase() == 'NORMAL' ? null : event.tier;
+    final lines = state.lines.map((l) {
+      if (l.product.id != event.productId) return l;
+      // A tier replaces any manual price: it is the price the server will charge.
+      return l.copyWith(priceTier: tier, clearPriceTier: tier == null, clearPriceOverride: true);
+    }).toList();
+    emit(state.copyWith(lines: lines));
   }
 
   void _onCustomerCleared(CartCustomerCleared event, Emitter<CartState> emit) {

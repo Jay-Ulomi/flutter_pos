@@ -185,6 +185,32 @@ class $CachedProductsTable extends CachedProducts
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _taxableMeta = const VerificationMeta(
+    'taxable',
+  );
+  @override
+  late final GeneratedColumn<bool> taxable = GeneratedColumn<bool>(
+    'taxable',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("taxable" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _tierPricesJsonMeta = const VerificationMeta(
+    'tierPricesJson',
+  );
+  @override
+  late final GeneratedColumn<String> tierPricesJson = GeneratedColumn<String>(
+    'tier_prices_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _cachedAtMeta = const VerificationMeta(
     'cachedAt',
   );
@@ -214,6 +240,8 @@ class $CachedProductsTable extends CachedProducts
     isActive,
     imageUrl,
     taxRate,
+    taxable,
+    tierPricesJson,
     cachedAt,
   ];
   @override
@@ -345,6 +373,21 @@ class $CachedProductsTable extends CachedProducts
         taxRate.isAcceptableOrUnknown(data['tax_rate']!, _taxRateMeta),
       );
     }
+    if (data.containsKey('taxable')) {
+      context.handle(
+        _taxableMeta,
+        taxable.isAcceptableOrUnknown(data['taxable']!, _taxableMeta),
+      );
+    }
+    if (data.containsKey('tier_prices_json')) {
+      context.handle(
+        _tierPricesJsonMeta,
+        tierPricesJson.isAcceptableOrUnknown(
+          data['tier_prices_json']!,
+          _tierPricesJsonMeta,
+        ),
+      );
+    }
     if (data.containsKey('cached_at')) {
       context.handle(
         _cachedAtMeta,
@@ -426,6 +469,14 @@ class $CachedProductsTable extends CachedProducts
         DriftSqlType.double,
         data['${effectivePrefix}tax_rate'],
       ),
+      taxable: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}taxable'],
+      )!,
+      tierPricesJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tier_prices_json'],
+      ),
       cachedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}cached_at'],
@@ -456,6 +507,10 @@ class CachedProduct extends DataClass implements Insertable<CachedProduct> {
   final bool isActive;
   final String? imageUrl;
   final double? taxRate;
+  final bool taxable;
+
+  /// JSON object of tier name -> price.
+  final String? tierPricesJson;
   final DateTime cachedAt;
   const CachedProduct({
     required this.id,
@@ -474,6 +529,8 @@ class CachedProduct extends DataClass implements Insertable<CachedProduct> {
     required this.isActive,
     this.imageUrl,
     this.taxRate,
+    required this.taxable,
+    this.tierPricesJson,
     required this.cachedAt,
   });
   @override
@@ -517,6 +574,10 @@ class CachedProduct extends DataClass implements Insertable<CachedProduct> {
     if (!nullToAbsent || taxRate != null) {
       map['tax_rate'] = Variable<double>(taxRate);
     }
+    map['taxable'] = Variable<bool>(taxable);
+    if (!nullToAbsent || tierPricesJson != null) {
+      map['tier_prices_json'] = Variable<String>(tierPricesJson);
+    }
     map['cached_at'] = Variable<DateTime>(cachedAt);
     return map;
   }
@@ -557,6 +618,10 @@ class CachedProduct extends DataClass implements Insertable<CachedProduct> {
       taxRate: taxRate == null && nullToAbsent
           ? const Value.absent()
           : Value(taxRate),
+      taxable: Value(taxable),
+      tierPricesJson: tierPricesJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tierPricesJson),
       cachedAt: Value(cachedAt),
     );
   }
@@ -583,6 +648,8 @@ class CachedProduct extends DataClass implements Insertable<CachedProduct> {
       isActive: serializer.fromJson<bool>(json['isActive']),
       imageUrl: serializer.fromJson<String?>(json['imageUrl']),
       taxRate: serializer.fromJson<double?>(json['taxRate']),
+      taxable: serializer.fromJson<bool>(json['taxable']),
+      tierPricesJson: serializer.fromJson<String?>(json['tierPricesJson']),
       cachedAt: serializer.fromJson<DateTime>(json['cachedAt']),
     );
   }
@@ -606,6 +673,8 @@ class CachedProduct extends DataClass implements Insertable<CachedProduct> {
       'isActive': serializer.toJson<bool>(isActive),
       'imageUrl': serializer.toJson<String?>(imageUrl),
       'taxRate': serializer.toJson<double?>(taxRate),
+      'taxable': serializer.toJson<bool>(taxable),
+      'tierPricesJson': serializer.toJson<String?>(tierPricesJson),
       'cachedAt': serializer.toJson<DateTime>(cachedAt),
     };
   }
@@ -627,6 +696,8 @@ class CachedProduct extends DataClass implements Insertable<CachedProduct> {
     bool? isActive,
     Value<String?> imageUrl = const Value.absent(),
     Value<double?> taxRate = const Value.absent(),
+    bool? taxable,
+    Value<String?> tierPricesJson = const Value.absent(),
     DateTime? cachedAt,
   }) => CachedProduct(
     id: id ?? this.id,
@@ -649,6 +720,10 @@ class CachedProduct extends DataClass implements Insertable<CachedProduct> {
     isActive: isActive ?? this.isActive,
     imageUrl: imageUrl.present ? imageUrl.value : this.imageUrl,
     taxRate: taxRate.present ? taxRate.value : this.taxRate,
+    taxable: taxable ?? this.taxable,
+    tierPricesJson: tierPricesJson.present
+        ? tierPricesJson.value
+        : this.tierPricesJson,
     cachedAt: cachedAt ?? this.cachedAt,
   );
   CachedProduct copyWithCompanion(CachedProductsCompanion data) {
@@ -683,6 +758,10 @@ class CachedProduct extends DataClass implements Insertable<CachedProduct> {
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
       imageUrl: data.imageUrl.present ? data.imageUrl.value : this.imageUrl,
       taxRate: data.taxRate.present ? data.taxRate.value : this.taxRate,
+      taxable: data.taxable.present ? data.taxable.value : this.taxable,
+      tierPricesJson: data.tierPricesJson.present
+          ? data.tierPricesJson.value
+          : this.tierPricesJson,
       cachedAt: data.cachedAt.present ? data.cachedAt.value : this.cachedAt,
     );
   }
@@ -706,6 +785,8 @@ class CachedProduct extends DataClass implements Insertable<CachedProduct> {
           ..write('isActive: $isActive, ')
           ..write('imageUrl: $imageUrl, ')
           ..write('taxRate: $taxRate, ')
+          ..write('taxable: $taxable, ')
+          ..write('tierPricesJson: $tierPricesJson, ')
           ..write('cachedAt: $cachedAt')
           ..write(')'))
         .toString();
@@ -729,6 +810,8 @@ class CachedProduct extends DataClass implements Insertable<CachedProduct> {
     isActive,
     imageUrl,
     taxRate,
+    taxable,
+    tierPricesJson,
     cachedAt,
   );
   @override
@@ -751,6 +834,8 @@ class CachedProduct extends DataClass implements Insertable<CachedProduct> {
           other.isActive == this.isActive &&
           other.imageUrl == this.imageUrl &&
           other.taxRate == this.taxRate &&
+          other.taxable == this.taxable &&
+          other.tierPricesJson == this.tierPricesJson &&
           other.cachedAt == this.cachedAt);
 }
 
@@ -771,6 +856,8 @@ class CachedProductsCompanion extends UpdateCompanion<CachedProduct> {
   final Value<bool> isActive;
   final Value<String?> imageUrl;
   final Value<double?> taxRate;
+  final Value<bool> taxable;
+  final Value<String?> tierPricesJson;
   final Value<DateTime> cachedAt;
   final Value<int> rowid;
   const CachedProductsCompanion({
@@ -790,6 +877,8 @@ class CachedProductsCompanion extends UpdateCompanion<CachedProduct> {
     this.isActive = const Value.absent(),
     this.imageUrl = const Value.absent(),
     this.taxRate = const Value.absent(),
+    this.taxable = const Value.absent(),
+    this.tierPricesJson = const Value.absent(),
     this.cachedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -810,6 +899,8 @@ class CachedProductsCompanion extends UpdateCompanion<CachedProduct> {
     this.isActive = const Value.absent(),
     this.imageUrl = const Value.absent(),
     this.taxRate = const Value.absent(),
+    this.taxable = const Value.absent(),
+    this.tierPricesJson = const Value.absent(),
     required DateTime cachedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -833,6 +924,8 @@ class CachedProductsCompanion extends UpdateCompanion<CachedProduct> {
     Expression<bool>? isActive,
     Expression<String>? imageUrl,
     Expression<double>? taxRate,
+    Expression<bool>? taxable,
+    Expression<String>? tierPricesJson,
     Expression<DateTime>? cachedAt,
     Expression<int>? rowid,
   }) {
@@ -853,6 +946,8 @@ class CachedProductsCompanion extends UpdateCompanion<CachedProduct> {
       if (isActive != null) 'is_active': isActive,
       if (imageUrl != null) 'image_url': imageUrl,
       if (taxRate != null) 'tax_rate': taxRate,
+      if (taxable != null) 'taxable': taxable,
+      if (tierPricesJson != null) 'tier_prices_json': tierPricesJson,
       if (cachedAt != null) 'cached_at': cachedAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -875,6 +970,8 @@ class CachedProductsCompanion extends UpdateCompanion<CachedProduct> {
     Value<bool>? isActive,
     Value<String?>? imageUrl,
     Value<double?>? taxRate,
+    Value<bool>? taxable,
+    Value<String?>? tierPricesJson,
     Value<DateTime>? cachedAt,
     Value<int>? rowid,
   }) {
@@ -895,6 +992,8 @@ class CachedProductsCompanion extends UpdateCompanion<CachedProduct> {
       isActive: isActive ?? this.isActive,
       imageUrl: imageUrl ?? this.imageUrl,
       taxRate: taxRate ?? this.taxRate,
+      taxable: taxable ?? this.taxable,
+      tierPricesJson: tierPricesJson ?? this.tierPricesJson,
       cachedAt: cachedAt ?? this.cachedAt,
       rowid: rowid ?? this.rowid,
     );
@@ -951,6 +1050,12 @@ class CachedProductsCompanion extends UpdateCompanion<CachedProduct> {
     if (taxRate.present) {
       map['tax_rate'] = Variable<double>(taxRate.value);
     }
+    if (taxable.present) {
+      map['taxable'] = Variable<bool>(taxable.value);
+    }
+    if (tierPricesJson.present) {
+      map['tier_prices_json'] = Variable<String>(tierPricesJson.value);
+    }
     if (cachedAt.present) {
       map['cached_at'] = Variable<DateTime>(cachedAt.value);
     }
@@ -979,6 +1084,8 @@ class CachedProductsCompanion extends UpdateCompanion<CachedProduct> {
           ..write('isActive: $isActive, ')
           ..write('imageUrl: $imageUrl, ')
           ..write('taxRate: $taxRate, ')
+          ..write('taxable: $taxable, ')
+          ..write('tierPricesJson: $tierPricesJson, ')
           ..write('cachedAt: $cachedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -3854,6 +3961,8 @@ typedef $$CachedProductsTableCreateCompanionBuilder =
       Value<bool> isActive,
       Value<String?> imageUrl,
       Value<double?> taxRate,
+      Value<bool> taxable,
+      Value<String?> tierPricesJson,
       required DateTime cachedAt,
       Value<int> rowid,
     });
@@ -3875,6 +3984,8 @@ typedef $$CachedProductsTableUpdateCompanionBuilder =
       Value<bool> isActive,
       Value<String?> imageUrl,
       Value<double?> taxRate,
+      Value<bool> taxable,
+      Value<String?> tierPricesJson,
       Value<DateTime> cachedAt,
       Value<int> rowid,
     });
@@ -3965,6 +4076,16 @@ class $$CachedProductsTableFilterComposer
 
   ColumnFilters<double> get taxRate => $composableBuilder(
     column: $table.taxRate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get taxable => $composableBuilder(
+    column: $table.taxable,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tierPricesJson => $composableBuilder(
+    column: $table.tierPricesJson,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4063,6 +4184,16 @@ class $$CachedProductsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get taxable => $composableBuilder(
+    column: $table.taxable,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tierPricesJson => $composableBuilder(
+    column: $table.tierPricesJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get cachedAt => $composableBuilder(
     column: $table.cachedAt,
     builder: (column) => ColumnOrderings(column),
@@ -4140,6 +4271,14 @@ class $$CachedProductsTableAnnotationComposer
   GeneratedColumn<double> get taxRate =>
       $composableBuilder(column: $table.taxRate, builder: (column) => column);
 
+  GeneratedColumn<bool> get taxable =>
+      $composableBuilder(column: $table.taxable, builder: (column) => column);
+
+  GeneratedColumn<String> get tierPricesJson => $composableBuilder(
+    column: $table.tierPricesJson,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get cachedAt =>
       $composableBuilder(column: $table.cachedAt, builder: (column) => column);
 }
@@ -4193,6 +4332,8 @@ class $$CachedProductsTableTableManager
                 Value<bool> isActive = const Value.absent(),
                 Value<String?> imageUrl = const Value.absent(),
                 Value<double?> taxRate = const Value.absent(),
+                Value<bool> taxable = const Value.absent(),
+                Value<String?> tierPricesJson = const Value.absent(),
                 Value<DateTime> cachedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CachedProductsCompanion(
@@ -4212,6 +4353,8 @@ class $$CachedProductsTableTableManager
                 isActive: isActive,
                 imageUrl: imageUrl,
                 taxRate: taxRate,
+                taxable: taxable,
+                tierPricesJson: tierPricesJson,
                 cachedAt: cachedAt,
                 rowid: rowid,
               ),
@@ -4233,6 +4376,8 @@ class $$CachedProductsTableTableManager
                 Value<bool> isActive = const Value.absent(),
                 Value<String?> imageUrl = const Value.absent(),
                 Value<double?> taxRate = const Value.absent(),
+                Value<bool> taxable = const Value.absent(),
+                Value<String?> tierPricesJson = const Value.absent(),
                 required DateTime cachedAt,
                 Value<int> rowid = const Value.absent(),
               }) => CachedProductsCompanion.insert(
@@ -4252,6 +4397,8 @@ class $$CachedProductsTableTableManager
                 isActive: isActive,
                 imageUrl: imageUrl,
                 taxRate: taxRate,
+                taxable: taxable,
+                tierPricesJson: tierPricesJson,
                 cachedAt: cachedAt,
                 rowid: rowid,
               ),

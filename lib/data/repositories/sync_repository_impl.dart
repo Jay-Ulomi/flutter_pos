@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
@@ -80,6 +82,8 @@ class SyncRepositoryImpl implements SyncRepository {
           isActive: Value(p.isActive),
           imageUrl: Value(p.imageUrl),
           taxRate: Value(p.taxRate),
+          taxable: Value(p.taxable),
+          tierPricesJson: Value(p.tierPrices.isEmpty ? null : jsonEncode(p.tierPrices)),
           cachedAt: Value(DateTime.now()),
         ),
       );

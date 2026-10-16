@@ -94,6 +94,7 @@ class ApiConstants {
 
   // Sales — backend controller: /api/pos/sales
   static const String sales = '$apiPrefix/pos/sales';
+  static const String salesPreview = '$apiPrefix/pos/sales/preview';
   static const String returns = '$apiPrefix/pos/returns';
 
   // Sessions — backend controller: /api/pos/sessions

@@ -62,12 +62,20 @@ class HeldSale extends Equatable {
       'name': l.product.name,
       'sellingPrice': l.product.sellingPrice,
       'taxRate': l.product.taxRate,
+      'taxable': l.product.taxable,
+      'tierPrices': l.product.tierPrices,
+      'variantId': l.product.variantId,
+      'trackingType': l.product.trackingType,
       'barcode': l.product.barcode,
       'sku': l.product.sku,
     },
     'quantity': l.quantity,
     'discount': l.discount,
     'isPercentDiscount': l.isPercentDiscount,
+    'priceOverride': l.priceOverride,
+    'priceTier': l.priceTier,
+    'serialNumber': l.serialNumber,
+    'lotNumber': l.lotNumber,
   };
 
   static CartLine _lineFromJson(dynamic json) {
@@ -78,12 +86,23 @@ class HeldSale extends Equatable {
         name: p['name'] as String,
         sellingPrice: (p['sellingPrice'] as num).toDouble(),
         taxRate: (p['taxRate'] as num?)?.toDouble(),
+        taxable: p['taxable'] as bool? ?? true,
+        tierPrices: {
+          for (final e in ((p['tierPrices'] as Map?) ?? const {}).entries)
+            if (e.value is num) e.key.toString(): (e.value as num).toDouble(),
+        },
+        variantId: p['variantId'] as String?,
+        trackingType: p['trackingType'] as String? ?? 'NONE',
         barcode: p['barcode'] as String?,
         sku: p['sku'] as String?,
       ),
       quantity: (json['quantity'] as num).toDouble(),
       discount: (json['discount'] as num?)?.toDouble() ?? 0,
       isPercentDiscount: json['isPercentDiscount'] as bool? ?? false,
+      priceOverride: (json['priceOverride'] as num?)?.toDouble(),
+      priceTier: json['priceTier'] as String?,
+      serialNumber: json['serialNumber'] as String?,
+      lotNumber: json['lotNumber'] as String?,
     );
   }
 

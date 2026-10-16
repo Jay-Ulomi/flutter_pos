@@ -145,7 +145,12 @@ class _PosScreenState extends State<PosScreen> {
     } else {
       final c = picked.customer!;
       cartBloc.add(
-        CartCustomerSelected(customerId: c.id, customerName: c.name),
+        CartCustomerSelected(
+          customerId: c.id,
+          customerName: c.name,
+          customerBalance: c.currentBalance,
+          loyaltyPoints: c.loyaltyPoints,
+        ),
       );
       // Auto-apply customer group discount
       if (c.customerGroupId != null) {
@@ -187,8 +192,10 @@ class _PosScreenState extends State<PosScreen> {
         isActive: product.isActive,
         imageUrl: product.imageUrl,
         taxRate: product.taxRate,
+        taxable: product.taxable,
         tierPrices: product.tierPrices,
         trackingType: product.trackingType,
+        variantId: variant.id,
       );
     }
 
@@ -973,6 +980,10 @@ class _PosScreenState extends State<PosScreen> {
                   ),
                   onPriceChanged: (p) => context.read<CartBloc>().add(
                     CartItemPriceChanged(line.product.id, p),
+                  ),
+                  // Tier prices are server-authorised: no override permission needed.
+                  onTierChanged: (tier) => context.read<CartBloc>().add(
+                    CartItemTierChanged(line.product.id, tier),
                   ),
                   onRemove: () => context.read<CartBloc>().add(
                     CartItemRemoved(line.product.id),

@@ -25,6 +25,20 @@ class SaleRemoteDataSource {
     }
   }
 
+  /// Prices a cart on the server without saving it. A 400 carries a readable
+  /// reason (e.g. an invalid or expired coupon).
+  Future<SalePreview> preview(Map<String, dynamic> body) async {
+    try {
+      final response = await _apiClient.dio.post(ApiConstants.salesPreview, data: body);
+      return SalePreview.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ServerException(
+        message: e.response?.data?['message'] ?? 'Could not price the sale',
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
   Future<Sale> getSaleByNumber(String saleNumber) async {
     try {
       final response = await _apiClient.dio.get(

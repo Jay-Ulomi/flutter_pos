@@ -13,6 +13,10 @@ class SaleItem extends Equatable {
   final String? serialNumber;
   /// For LOT-tracked products — sent to backend at checkout.
   final String? lotNumber;
+  /// Named price tier the line was priced at (server re-prices it).
+  final String? priceTier;
+  /// Chosen product variant, so the server prices the variant.
+  final String? variantId;
 
   const SaleItem({
     this.id,
@@ -25,6 +29,8 @@ class SaleItem extends Equatable {
     required this.totalPrice,
     this.serialNumber,
     this.lotNumber,
+    this.priceTier,
+    this.variantId,
   });
 
   double get subtotal => quantity * unitPrice;
@@ -63,6 +69,8 @@ class SaleItem extends Equatable {
     'discountAmount': discount, // backend expects discountAmount
     if (serialNumber != null) 'serialNumber': serialNumber,
     if (lotNumber != null) 'lotNumber': lotNumber,
+    if (priceTier != null) 'priceTier': priceTier,
+    if (variantId != null) 'variantId': variantId,
   };
 
   factory SaleItem.fromJson(Map<String, dynamic> json) {
@@ -75,6 +83,11 @@ class SaleItem extends Equatable {
       discount: (json['discountAmount'] ?? json['discount'] ?? 0).toDouble(),
       taxAmount: (json['taxAmount'] ?? 0).toDouble(),
       totalPrice: (json['lineTotal'] ?? json['totalPrice'] ?? 0).toDouble(),
+      // Read back so a sale restored from the offline queue keeps them.
+      serialNumber: json['serialNumber'],
+      lotNumber: json['lotNumber'],
+      priceTier: json['priceTier'],
+      variantId: json['variantId']?.toString(),
     );
   }
 
@@ -270,6 +283,56 @@ class Sale extends Equatable {
 
   @override
   List<Object?> get props => [id, clientId, saleNumber, totalAmount, status];
+}
+
+/// A promotion or coupon the server applied to a priced cart.
+class AppliedPromotion {
+  final String name;
+  final String? couponCode;
+  final double discountAmount;
+
+  const AppliedPromotion({required this.name, this.couponCode, required this.discountAmount});
+
+  factory AppliedPromotion.fromJson(Map<String, dynamic> json) => AppliedPromotion(
+    name: json['name']?.toString() ?? '',
+    couponCode: json['couponCode']?.toString(),
+    discountAmount: (json['discountAmount'] ?? 0).toDouble(),
+  );
+}
+
+/// The server's authoritative pricing of a cart (POST /api/pos/sales/preview):
+/// automatic promotions, coupon, tiers and tax, without saving anything.
+class SalePreview {
+  final double subtotal;
+  final double discountAmount;
+  final double taxAmount;
+  final double totalAmount;
+  final List<AppliedPromotion> appliedPromotions;
+  /// Value of one loyalty point in currency (backend app.loyalty.point-value).
+  final double loyaltyPointValue;
+
+  const SalePreview({
+    required this.subtotal,
+    required this.discountAmount,
+    required this.taxAmount,
+    required this.totalAmount,
+    this.appliedPromotions = const [],
+    this.loyaltyPointValue = 10,
+  });
+
+  factory SalePreview.fromJson(Map<String, dynamic> json) => SalePreview(
+    subtotal: (json['subtotal'] ?? 0).toDouble(),
+    discountAmount: (json['discountAmount'] ?? 0).toDouble(),
+    taxAmount: (json['taxAmount'] ?? 0).toDouble(),
+    totalAmount: (json['totalAmount'] ?? 0).toDouble(),
+    appliedPromotions: (json['appliedPromotions'] as List? ?? const [])
+        .map((e) => AppliedPromotion.fromJson(e as Map<String, dynamic>))
+        .toList(),
+    loyaltyPointValue: (json['loyaltyPointValue'] ?? 10).toDouble(),
+  );
+
+  bool hasCoupon(String code) =>
+      appliedPromotions.any((p) => p.couponCode?.toUpperCase() == code.toUpperCase());
 }
 
 class Receipt {

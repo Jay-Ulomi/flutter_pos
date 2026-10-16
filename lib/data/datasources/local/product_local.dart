@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import '../../models/product_models.dart';
 import 'database.dart';
@@ -51,6 +53,8 @@ class ProductLocalDataSource {
           isActive: Value(product.isActive),
           imageUrl: Value(product.imageUrl),
           taxRate: Value(product.taxRate),
+          taxable: Value(product.taxable),
+          tierPricesJson: Value(product.tierPrices.isEmpty ? null : jsonEncode(product.tierPrices)),
           cachedAt: Value(now),
         ),
       );
@@ -107,6 +111,18 @@ class ProductLocalDataSource {
       isActive: cp.isActive,
       imageUrl: cp.imageUrl,
       taxRate: cp.taxRate,
+      taxable: cp.taxable,
+      tierPrices: _decodeTierPrices(cp.tierPricesJson),
     );
+  }
+
+  static Map<String, double> _decodeTierPrices(String? raw) {
+    if (raw == null || raw.isEmpty) return const {};
+    final decoded = jsonDecode(raw);
+    if (decoded is! Map) return const {};
+    return {
+      for (final e in decoded.entries)
+        if (e.value is num) e.key.toString(): (e.value as num).toDouble(),
+    };
   }
 }

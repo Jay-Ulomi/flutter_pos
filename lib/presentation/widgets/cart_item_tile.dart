@@ -12,6 +12,10 @@ class CartItemTile extends StatefulWidget {
   final VoidCallback onRemove;
   final VoidCallback? onTapDiscount;
 
+  /// Called with a tier name (or null for the normal price) when the product
+  /// has named price tiers; the selector is hidden when this is null.
+  final ValueChanged<String?>? onTierChanged;
+
   /// When false, the unit price is shown read-only (user lacks override_price).
   final bool canEditPrice;
 
@@ -22,6 +26,7 @@ class CartItemTile extends StatefulWidget {
     required this.onPriceChanged,
     required this.onRemove,
     this.onTapDiscount,
+    this.onTierChanged,
     this.canEditPrice = true,
   });
 
@@ -175,6 +180,27 @@ class _CartItemTileState extends State<CartItemTile> {
               ),
             ],
           ),
+
+          if (widget.onTierChanged != null &&
+              line.product.tierPrices.keys.any((k) => k != 'NORMAL')) ...[
+            const SizedBox(height: 6),
+            DropdownButton<String>(
+              key: const Key('tier-selector'),
+              isDense: true,
+              value: line.priceTier ?? 'NORMAL',
+              items: [
+                for (final tier in {'NORMAL', ...line.product.tierPrices.keys})
+                  DropdownMenuItem(
+                    value: tier,
+                    child: Text(
+                      '$tier · ${line.product.priceForTier(tier == 'NORMAL' ? null : tier).toStringAsFixed(0)}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+              ],
+              onChanged: (tier) => widget.onTierChanged!(tier == 'NORMAL' ? null : tier),
+            ),
+          ],
 
           const SizedBox(height: 10),
 

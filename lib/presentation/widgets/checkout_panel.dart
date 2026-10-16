@@ -5,7 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/services/card_terminal_service.dart';
-import '../../data/datasources/remote/promotion_remote.dart';
+import '../../core/network/network_info.dart';
+import '../../data/datasources/remote/sale_remote.dart';
 import '../../data/models/sale_models.dart';
 import '../../di/injection.dart';
 import '../../core/error/exceptions.dart';
@@ -16,6 +17,7 @@ import '../blocs/sale/sale_bloc.dart';
 import '../blocs/sale/sale_event.dart';
 import '../blocs/sale/sale_state.dart';
 import '../blocs/session/session_bloc.dart';
+import 'checkout_pricing.dart';
 import 'customer_picker_sheet.dart';
 import 'keyboard_done_bar.dart';
 import 'money_text.dart';
@@ -28,6 +30,7 @@ enum PaymentMethod {
   credit,
   giftCard,
   storeCredit,
+  loyaltyPoints,
 }
 
 extension PaymentMethodX on PaymentMethod {
@@ -47,6 +50,8 @@ extension PaymentMethodX on PaymentMethod {
         return 'GIFT_CARD';
       case PaymentMethod.storeCredit:
         return 'STORE_CREDIT';
+      case PaymentMethod.loyaltyPoints:
+        return 'LOYALTY_POINTS';
     }
   }
 
@@ -66,6 +71,8 @@ extension PaymentMethodX on PaymentMethod {
         return 'Gift Card';
       case PaymentMethod.storeCredit:
         return 'Store Credit';
+      case PaymentMethod.loyaltyPoints:
+        return 'Points';
     }
   }
 
@@ -85,6 +92,8 @@ extension PaymentMethodX on PaymentMethod {
         return Icons.card_giftcard;
       case PaymentMethod.storeCredit:
         return Icons.wallet;
+      case PaymentMethod.loyaltyPoints:
+        return Icons.stars_outlined;
     }
   }
 
@@ -98,6 +107,7 @@ extension PaymentMethodX on PaymentMethod {
       case PaymentMethod.cash:
       case PaymentMethod.credit:
       case PaymentMethod.storeCredit:
+      case PaymentMethod.loyaltyPoints:
         return false;
     }
   }
@@ -138,6 +148,11 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
   String? _couponError;
   // ignore: unused_field
   bool _couponValidating = false;
+  // Server pricing (promotions, coupon, tiers): _preview is valid for the cart
+  // whose key is _previewFor; _requestedKey avoids re-asking for the same cart.
+  SalePreview? _preview;
+  String? _previewFor;
+  String? _requestedKey;
   double _couponDiscount = 0;
 
   // Card terminal state
@@ -187,46 +202,86 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
     super.dispose();
   }
 
-  // ignore: unused_element
-  Future<void> _applyCoupon(double cartSubtotal) async {
+  bool get _online {
+    try {
+      return sl<NetworkInfo>().isConnected;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// The server's preview when it matches the current cart, else null.
+  SalePreview? _freshPreview(CartState cart) {
+    if (_preview == null) return null;
+    return _previewFor == CheckoutPricing.previewKey(cart, couponCode: _appliedCoupon) ? _preview : null;
+  }
+
+  /// Total to collect: the server's price when known, else the local estimate.
+  double _effectiveTotal(CartState cart) =>
+      _freshPreview(cart)?.totalAmount ?? (cart.total - _couponDiscount);
+
+  /// Re-price on the server whenever the cart (or coupon) changes, when online.
+  void _maybeRefreshPreview(CartState cart) {
+    if (cart.isEmpty || !_online) return;
+    final key = CheckoutPricing.previewKey(cart, couponCode: _appliedCoupon);
+    if (key == _requestedKey) return;
+    _requestedKey = key;
+    final coupon = _appliedCoupon;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchPreview(cart, coupon, key));
+  }
+
+  Future<void> _fetchPreview(CartState cart, String? coupon, String key) async {
+    try {
+      final preview = await sl<SaleRemoteDataSource>()
+          .preview(CheckoutPricing.previewBody(cart, couponCode: coupon));
+      if (!mounted || key != _requestedKey) return;
+      setState(() {
+        _preview = preview;
+        _previewFor = key;
+      });
+    } on ServerException catch (e) {
+      if (!mounted || key != _requestedKey) return;
+      if (coupon != null && e.statusCode == 400) {
+        // The coupon stopped applying (e.g. the cart fell below its minimum).
+        setState(() {
+          _couponError = e.message;
+          _appliedCoupon = null;
+          _requestedKey = null;
+        });
+      }
+    } catch (_) {
+      // Offline or timeout: keep showing the local estimate.
+    }
+  }
+
+  /// Validates a coupon by pricing the cart with it on the server, which also
+  /// applies it at checkout (cashiers need no discount permission for it).
+  Future<void> _applyCoupon(CartState cart) async {
     final code = _couponCtrl.text.trim().toUpperCase();
     if (code.isEmpty) return;
+    if (!_online) {
+      setState(() => _couponError = 'Coupons need a connection.');
+      return;
+    }
     setState(() {
       _couponValidating = true;
       _couponError = null;
     });
     try {
-      final result = await sl<PromotionRemoteDataSource>().validateCoupon(code);
-
-      if (result.minimumOrderAmount != null &&
-          cartSubtotal < result.minimumOrderAmount!) {
-        if (!mounted) return;
-        setState(() {
-          _couponError =
-              'Minimum order of ${result.minimumOrderAmount!.toStringAsFixed(0)} required';
-          _couponValidating = false;
-        });
-        return;
+      final key = CheckoutPricing.previewKey(cart, couponCode: code);
+      final preview = await sl<SaleRemoteDataSource>()
+          .preview(CheckoutPricing.previewBody(cart, couponCode: code));
+      if (!preview.hasCoupon(code)) {
+        throw ServerException(message: 'Coupon $code does not apply to this sale');
       }
-
-      final discount = result.calculateDiscount(cartSubtotal);
       if (!mounted) return;
       setState(() {
         _appliedCoupon = code;
-        _couponDiscount = discount;
+        _preview = preview;
+        _previewFor = key;
+        _requestedKey = key;
         _couponValidating = false;
       });
-
-      final discountLabel = result.discountType == 'PERCENTAGE'
-          ? '${result.discountValue.toStringAsFixed(0)}% off'
-          : 'TZS ${result.discountValue.toStringAsFixed(0)} off';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Coupon "${result.name.isNotEmpty ? result.name : code}" applied — $discountLabel',
-          ),
-        ),
-      );
     } on ServerException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -242,14 +297,95 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
     }
   }
 
-  // ignore: unused_element
   void _removeCoupon() {
     setState(() {
       _appliedCoupon = null;
       _couponDiscount = 0;
       _couponCtrl.clear();
       _couponError = null;
+      _requestedKey = null;
     });
+  }
+
+  /// Adds a loyalty-points payment worth whole points, capped by the
+  /// customer's balance and by what is still owed.
+  void _redeemPoints(CartState cart, double total) {
+    final pointValue = _freshPreview(cart)?.loyaltyPointValue ?? 10;
+    final amount = CheckoutPricing.loyaltyRedeemAmount(
+      points: cart.customerLoyaltyPoints,
+      pointValue: pointValue,
+      remaining: _remaining(total),
+    );
+    if (amount <= 0) return;
+    setState(() => _payments.add(_PaymentEntry(method: PaymentMethod.loyaltyPoints, amount: amount)));
+  }
+
+  Widget _couponAndPointsSection(CartState cart, double total) {
+    final hasPointsPayment = _payments.any((p) => p.method == PaymentMethod.loyaltyPoints);
+    final pointValue = _freshPreview(cart)?.loyaltyPointValue ?? 10;
+    final redeemable = CheckoutPricing.loyaltyRedeemAmount(
+      points: cart.customerLoyaltyPoints,
+      pointValue: pointValue,
+      remaining: _remaining(total),
+    );
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (_appliedCoupon == null)
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    key: const Key('coupon-field'),
+                    controller: _couponCtrl,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      hintText: 'Coupon code',
+                      border: OutlineInputBorder(),
+                    ),
+                    onSubmitted: (_) => _applyCoupon(cart),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  key: const Key('coupon-apply'),
+                  onPressed: _couponValidating ? null : () => _applyCoupon(cart),
+                  child: Text(_couponValidating ? 'Checking…' : 'Apply'),
+                ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Expanded(child: Text('Coupon $_appliedCoupon applied', style: const TextStyle(fontSize: 12))),
+                TextButton(onPressed: _removeCoupon, child: const Text('Remove')),
+              ],
+            ),
+          if (_couponError != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                _couponError!,
+                key: const Key('coupon-error'),
+                style: const TextStyle(fontSize: 11, color: Color(0xFFDC2626)),
+              ),
+            ),
+          if (cart.hasCustomer && cart.customerLoyaltyPoints > 0 && !hasPointsPayment)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: OutlinedButton.icon(
+                key: const Key('redeem-points'),
+                icon: const Icon(Icons.stars_outlined, size: 16),
+                onPressed: redeemable > 0 && _online ? () => _redeemPoints(cart, total) : null,
+                label: Text('Redeem points (${cart.customerLoyaltyPoints} pts, up to ${redeemable.toStringAsFixed(0)})'),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   /// Rounds a money amount to cents to strip float-arithmetic drift.
@@ -269,7 +405,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
   /// can't be converted into cash change.
   double _cappedAmount(double amount, double cartTotal) {
     if (_addMethod == PaymentMethod.cash) return amount;
-    final remaining = _remaining(cartTotal - _couponDiscount);
+    final remaining = _remaining(cartTotal);
     return amount > remaining ? remaining : amount;
   }
 
@@ -299,7 +435,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
 
   Future<void> _chargeTerminal(double cartTotal) async {
     final entered = double.tryParse(_addAmountCtrl.text) ?? 0;
-    final remaining = _remaining(cartTotal - _couponDiscount);
+    final remaining = _remaining(cartTotal);
     // Card is non-cash: never charge more than the outstanding balance.
     final base = entered > 0 ? entered : remaining;
     final chargeAmount = base > remaining ? remaining : base;
@@ -408,7 +544,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
       );
       return;
     }
-    final effectiveTotal = cart.total - _couponDiscount;
+    final effectiveTotal = _effectiveTotal(cart);
     final remaining = _remaining(effectiveTotal);
     // Allow underpayment only when a customer is selected (remainder goes on account).
     if (remaining > 0 && !cart.hasCustomer) {
@@ -440,7 +576,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
   Sale _buildSale(CartState cart, String sessionId) {
     // Stable across retries so a lost response can't duplicate the sale.
     final clientId = _pendingClientId ??= _uuid.v4();
-    final effectiveTotal = cart.total - _couponDiscount;
+    final effectiveTotal = _effectiveTotal(cart);
     final items = cart.lines
         .map(
           (l) => SaleItem(
@@ -453,6 +589,8 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
             totalPrice: l.lineTotal,
             serialNumber: l.serialNumber,
             lotNumber: l.lotNumber,
+            priceTier: l.priceTier,
+            variantId: l.product.variantId,
           ),
         )
         .toList();
@@ -479,7 +617,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
       // Order-level discount only. Per-line discounts are sent on each SaleItem
       // and applied by the backend per line — including them here would
       // double-count.
-      discountAmount: _money(cart.discount + _couponDiscount),
+      discountAmount: _money(cart.discount),
       totalAmount: _money(effectiveTotal),
       paidAmount: _money(_totalPaid),
       changeAmount: _money(change),
@@ -502,6 +640,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
           customerId: c.id,
           customerName: c.name,
           customerBalance: c.currentBalance,
+          loyaltyPoints: c.loyaltyPoints,
         ),
       );
     }
@@ -537,7 +676,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
         return BlocBuilder<CartBloc, CartState>(
           builder: (context, cart) {
             final processing = saleState.status == SaleStatus.processing;
-            final effectiveTotal = cart.total - _couponDiscount;
+            _maybeRefreshPreview(cart);
+            final effectiveTotal = _effectiveTotal(cart);
+            final fresh = _freshPreview(cart);
             final remaining = _remaining(effectiveTotal);
             final change = (_totalPaid - effectiveTotal)
                 .clamp(0, double.infinity)
@@ -553,7 +694,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
             // Visible payment methods — store credit only when customer has positive balance.
             final visibleMethods = PaymentMethod.values
                 .where(
-                  (m) => m != PaymentMethod.storeCredit || availableCredit > 0,
+                  (m) =>
+                      m != PaymentMethod.loyaltyPoints &&
+                      (m != PaymentMethod.storeCredit || availableCredit > 0),
                 )
                 .toList();
 
@@ -839,9 +982,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       color: Color(0xFFE5E7EB),
                                     ),
                                     _summaryRow('Subtotal', cart.subtotal),
-                                    if (cart.taxAmount > 0) ...[
+                                    if ((fresh?.taxAmount ?? cart.taxAmount) > 0) ...[
                                       const SizedBox(height: 4),
-                                      _summaryRow('Tax', cart.taxAmount),
+                                      _summaryRow('Tax', fresh?.taxAmount ?? cart.taxAmount),
                                     ],
                                     if (cart.discount > 0) ...[
                                       const SizedBox(height: 4),
@@ -851,14 +994,15 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                         valueColor: const Color(0xFF16A34A),
                                       ),
                                     ],
-                                    if (_couponDiscount > 0) ...[
+                                    for (final promo in fresh?.appliedPromotions ?? const <AppliedPromotion>[]) ...[
                                       const SizedBox(height: 4),
                                       _summaryRow(
-                                        'Coupon ($_appliedCoupon)',
-                                        -_couponDiscount,
+                                        promo.couponCode != null ? 'Coupon (${promo.couponCode})' : promo.name,
+                                        -promo.discountAmount,
                                         valueColor: const Color(0xFF16A34A),
                                       ),
                                     ],
+                                    _couponAndPointsSection(cart, effectiveTotal),
                                     const Padding(
                                       padding: EdgeInsets.symmetric(
                                         vertical: 8,
@@ -1209,7 +1353,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                     ),
                                   ),
                                   onChanged: (_) => setState(() {}),
-                                  onSubmitted: (_) => _addPayment(cart.total),
+                                  onSubmitted: (_) => _addPayment(effectiveTotal),
                                 ),
                                 const SizedBox(height: 10),
 
@@ -1219,22 +1363,22 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                     children: [
                                       _quickBtn(
                                         'Full',
-                                        () => _addFullPayment(cart.total),
+                                        () => _addFullPayment(effectiveTotal),
                                       ),
                                       const SizedBox(width: 6),
                                       _quickBtn('1K', () {
                                         _addAmountCtrl.text = '1000';
-                                        _addPayment(cart.total);
+                                        _addPayment(effectiveTotal);
                                       }),
                                       const SizedBox(width: 6),
                                       _quickBtn('2K', () {
                                         _addAmountCtrl.text = '2000';
-                                        _addPayment(cart.total);
+                                        _addPayment(effectiveTotal);
                                       }),
                                       const SizedBox(width: 6),
                                       _quickBtn('5K', () {
                                         _addAmountCtrl.text = '5000';
-                                        _addPayment(cart.total);
+                                        _addPayment(effectiveTotal);
                                       }),
                                     ],
                                   ),
@@ -1243,22 +1387,22 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                     children: [
                                       _quickBtn('10K', () {
                                         _addAmountCtrl.text = '10000';
-                                        _addPayment(cart.total);
+                                        _addPayment(effectiveTotal);
                                       }),
                                       const SizedBox(width: 6),
                                       _quickBtn('20K', () {
                                         _addAmountCtrl.text = '20000';
-                                        _addPayment(cart.total);
+                                        _addPayment(effectiveTotal);
                                       }),
                                       const SizedBox(width: 6),
                                       _quickBtn('50K', () {
                                         _addAmountCtrl.text = '50000';
-                                        _addPayment(cart.total);
+                                        _addPayment(effectiveTotal);
                                       }),
                                       const SizedBox(width: 6),
                                       _quickBtn('100K', () {
                                         _addAmountCtrl.text = '100000';
-                                        _addPayment(cart.total);
+                                        _addPayment(effectiveTotal);
                                       }),
                                     ],
                                   ),
@@ -1267,7 +1411,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                     children: [
                                       _quickBtn(
                                         'Full',
-                                        () => _addFullPayment(cart.total),
+                                        () => _addFullPayment(effectiveTotal),
                                       ),
                                     ],
                                   ),
@@ -1281,7 +1425,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                     child: FilledButton.icon(
                                       onPressed: _terminalProcessing
                                           ? null
-                                          : () => _chargeTerminal(cart.total),
+                                          : () => _chargeTerminal(effectiveTotal),
                                       style: FilledButton.styleFrom(
                                         backgroundColor: const Color(
                                           0xFF468432,
@@ -1346,7 +1490,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                     width: double.infinity,
                                     height: 40,
                                     child: OutlinedButton.icon(
-                                      onPressed: () => _addPayment(cart.total),
+                                      onPressed: () => _addPayment(effectiveTotal),
                                       style: OutlinedButton.styleFrom(
                                         side: const BorderSide(
                                           color: Color(0xFFE5E7EB),
@@ -1372,7 +1516,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                     width: double.infinity,
                                     height: 44,
                                     child: FilledButton.icon(
-                                      onPressed: () => _addPayment(cart.total),
+                                      onPressed: () => _addPayment(effectiveTotal),
                                       style: FilledButton.styleFrom(
                                         backgroundColor: const Color(
                                           0xFF468432,

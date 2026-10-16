@@ -106,10 +106,16 @@ class Product extends Equatable {
   final bool isActive;
   final String? imageUrl;
   final double? taxRate;
+  /// False for tax-exempt products: the backend then charges no tax whatever
+  /// the rate (JSON key `taxable`).
+  final bool taxable;
   final Map<String, double> tierPrices;
   final List<ProductVariant> variants;
   /// 'NONE', 'SERIAL', or 'LOT'
   final String trackingType;
+  /// Set when this cart product stands for a chosen variant, so the sale can
+  /// tell the server which variant (and its price) was sold.
+  final String? variantId;
 
   const Product({
     required this.id,
@@ -128,9 +134,11 @@ class Product extends Equatable {
     this.isActive = true,
     this.imageUrl,
     this.taxRate,
+    this.taxable = true,
     this.tierPrices = const {},
     this.variants = const [],
     this.trackingType = 'NONE',
+    this.variantId,
   });
 
   bool get hasVariants => variants.isNotEmpty;
@@ -217,6 +225,7 @@ class Product extends Equatable {
       isActive: json['active'] ?? json['isActive'] ?? true,
       imageUrl: json['imageUrl'],
       taxRate: json['taxRate']?.toDouble(),
+      taxable: json['taxable'] ?? json['isTaxable'] ?? true,
       tierPrices: parsedTierPrices,
       variants: parsedVariants,
       trackingType: json['trackingType'] ?? 'NONE',
@@ -240,6 +249,7 @@ class Product extends Equatable {
     'isActive': isActive,
     'imageUrl': imageUrl,
     'taxRate': taxRate,
+    'taxable': taxable,
     'tierPrices': tierPrices,
   };
 

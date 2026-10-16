@@ -75,13 +75,15 @@ class CartCustomerSelected extends CartEvent {
   final String customerId;
   final String customerName;
   final double customerBalance;
+  final int loyaltyPoints;
   const CartCustomerSelected({
     required this.customerId,
     required this.customerName,
     this.customerBalance = 0,
+    this.loyaltyPoints = 0,
   });
   @override
-  List<Object?> get props => [customerId, customerName, customerBalance];
+  List<Object?> get props => [customerId, customerName, customerBalance, loyaltyPoints];
 }
 
 class CartRestored extends CartEvent {
@@ -109,4 +111,13 @@ class CartItemPriceChanged extends CartEvent {
   const CartItemPriceChanged(this.productId, this.price);
   @override
   List<Object?> get props => [productId, price];
+}
+
+/// Price a line at a named tier (null = normal selling price).
+class CartItemTierChanged extends CartEvent {
+  final String productId;
+  final String? tier;
+  const CartItemTierChanged(this.productId, this.tier);
+  @override
+  List<Object?> get props => [productId, tier];
 }
