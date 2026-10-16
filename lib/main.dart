@@ -63,11 +63,16 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Flush any queued sales when the app returns to the foreground — covers
-    // the case where connectivity was restored while the app was backgrounded
-    // (so the reconnect push never fired).
     if (state == AppLifecycleState.resumed) {
+      // Flush any queued sales — covers the case where connectivity was
+      // restored while the app was backgrounded (so the reconnect push never
+      // fired).
       _syncBloc?.add(const SyncAutoRetryRequested());
+      // Re-check subscription status — covers the case where the user paid
+      // via the billing portal (opened in an external browser) while the app
+      // was backgrounded, so the trial/past-due gate reflects it immediately
+      // instead of only after a full app restart.
+      _authBloc?.add(const AuthSubscriptionRefreshRequested());
     }
   }
 

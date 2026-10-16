@@ -61,3 +61,11 @@ class AuthLoadBranches extends AuthEvent {
 class AuthLogoutRequested extends AuthEvent {
   const AuthLogoutRequested();
 }
+
+/// Re-fetches subscription/trial status for the current business+branch
+/// without disturbing the rest of the authenticated session. Dispatched on
+/// app resume and after the user returns from the billing portal so a
+/// completed upgrade is picked up without requiring a full app restart.
+class AuthSubscriptionRefreshRequested extends AuthEvent {
+  const AuthSubscriptionRefreshRequested();
+}

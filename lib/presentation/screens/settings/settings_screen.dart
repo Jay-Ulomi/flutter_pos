@@ -211,11 +211,21 @@ class _TrialCard extends StatelessWidget {
     IconData icon;
     String statusText;
 
+    final isPastDue = auth.isPastDue as bool;
+    final graceDays = auth.gracePeriodDaysRemaining as int?;
+
     if (isExpired) {
       bannerColor = colors.errorContainer;
       textColor = colors.error;
       icon = Icons.hourglass_bottom_outlined;
       statusText = 'Trial ended — upgrade to continue';
+    } else if (isPastDue) {
+      bannerColor = BrandColors.secondary.withValues(alpha: 0.12);
+      textColor = BrandColors.secondary;
+      icon = Icons.warning_amber_outlined;
+      statusText = graceDays != null
+          ? 'Subscription past due — $graceDays day${graceDays == 1 ? '' : 's'} left'
+          : 'Subscription past due';
     } else if (days != null && days <= 3) {
       bannerColor = BrandColors.secondary.withValues(alpha: 0.12);
       textColor = BrandColors.secondary;
@@ -259,7 +269,7 @@ class _TrialCard extends StatelessWidget {
                       color: textColor,
                     ),
                   ),
-                  if (auth.trialEndsAt != null)
+                  if (auth.isOnTrial as bool && auth.trialEndsAt != null)
                     Text(
                       isExpired
                           ? 'Expired on ${_fmt(auth.trialEndsAt!)}'
@@ -267,11 +277,18 @@ class _TrialCard extends StatelessWidget {
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colors.onSurfaceVariant,
                       ),
+                    )
+                  else if (isPastDue && auth.gracePeriodEndsAt != null)
+                    Text(
+                      'Grace period ends ${_fmt(auth.gracePeriodEndsAt!)}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
                     ),
                 ],
               ),
             ),
-            if (isExpired || (days != null && days <= 7))
+            if (isExpired || isPastDue || (days != null && days <= 7))
               TextButton(
                 onPressed: () => _showUpgradeDialog(context),
                 style: TextButton.styleFrom(

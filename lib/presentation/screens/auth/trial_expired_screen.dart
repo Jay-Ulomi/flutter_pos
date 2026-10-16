@@ -22,7 +22,13 @@ class TrialExpiredScreen extends StatelessWidget {
     final isSuspended = status == 'suspended';
     final isCanceled = status == 'canceled';
     final isExpiredSubscription = status == 'expired';
+    // Only meaningful while actually on trial — trialEndsAt is set once at
+    // trial creation and never cleared by the backend, so gate on isOnTrial
+    // to avoid showing a stale "Trial ended on ..." badge on the suspended/
+    // canceled/expired screens above, whose real cause is unrelated to the
+    // original trial date.
     final isTrialExpiredByDate =
+        auth.isOnTrial &&
         auth.trialEndsAt != null &&
         DateTime.now().isAfter(auth.trialEndsAt!);
 

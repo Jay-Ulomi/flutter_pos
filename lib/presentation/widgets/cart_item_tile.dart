@@ -43,19 +43,34 @@ class _CartItemTileState extends State<CartItemTile> {
   @override
   void initState() {
     super.initState();
-    _priceCtrl = TextEditingController(text: _priceText(widget.line.effectivePrice));
+    _priceCtrl = TextEditingController(
+      text: _priceText(widget.line.effectivePrice),
+    );
     _qtyCtrl = TextEditingController(text: _qtyText(widget.line.quantity));
     // On focus, clear the field so the user types a fresh value (the current
     // value stays visible as a gray hint). This avoids the dark select-all
     // highlight. On blur, restore the committed value if left blank/invalid.
-    _priceFocus.addListener(() => _onFocusChange(
-        _priceFocus, _priceCtrl, () => _priceText(widget.line.effectivePrice)));
-    _qtyFocus.addListener(() => _onFocusChange(
-        _qtyFocus, _qtyCtrl, () => _qtyText(widget.line.quantity)));
+    _priceFocus.addListener(
+      () => _onFocusChange(
+        _priceFocus,
+        _priceCtrl,
+        () => _priceText(widget.line.effectivePrice),
+      ),
+    );
+    _qtyFocus.addListener(
+      () => _onFocusChange(
+        _qtyFocus,
+        _qtyCtrl,
+        () => _qtyText(widget.line.quantity),
+      ),
+    );
   }
 
   void _onFocusChange(
-      FocusNode node, TextEditingController ctrl, String Function() current) {
+    FocusNode node,
+    TextEditingController ctrl,
+    String Function() current,
+  ) {
     if (node.hasFocus) {
       ctrl.clear();
     } else {
@@ -68,10 +83,10 @@ class _CartItemTileState extends State<CartItemTile> {
   @override
   void didUpdateWidget(covariant CartItemTile oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Re-sync the fields when the line changes externally (e.g. +/- buttons),
-    // but never while the field is focused (it's cleared for fresh input) and
-    // only when the numeric value actually differs — so we don't stomp the
-    // cursor while the user is typing.
+    // Re-sync the fields when the line changes externally (e.g. cart synced
+    // from another device), but never while the field is focused (it's
+    // cleared for fresh input) and only when the numeric value actually
+    // differs — so we don't stomp the cursor while the user is typing.
     if (!_priceFocus.hasFocus &&
         double.tryParse(_priceCtrl.text) != widget.line.effectivePrice) {
       _priceCtrl.text = _priceText(widget.line.effectivePrice);
@@ -100,7 +115,7 @@ class _CartItemTileState extends State<CartItemTile> {
 
   void _commitQty(String value) {
     final q = double.tryParse(value.trim());
-    // Ignore empty / 0 while typing — removal is handled by the minus button.
+    // Ignore empty / 0 while typing — removal is handled by the delete button.
     if (q != null && q > 0 && q != widget.line.quantity) {
       widget.onQtyChanged(q);
     }
@@ -144,15 +159,15 @@ class _CartItemTileState extends State<CartItemTile> {
                 child: GestureDetector(
                   onTap: widget.onRemove,
                   child: Container(
-                    width: 26,
-                    height: 26,
+                    width: 30,
+                    height: 30,
                     decoration: BoxDecoration(
                       color: const Color(0xFFFEE2E2),
-                      borderRadius: BorderRadius.circular(7),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(
                       Icons.delete_outline_rounded,
-                      size: 14,
+                      size: 16,
                       color: Color(0xFFDC2626),
                     ),
                   ),
@@ -161,175 +176,21 @@ class _CartItemTileState extends State<CartItemTile> {
             ],
           ),
 
-          const SizedBox(height: 4),
-
-          // ── Unit price (inline editable) + discount ──
-          Row(
-            children: [
-              Container(
-                height: 26,
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                decoration: BoxDecoration(
-                  color: line.hasPriceOverride
-                      ? const Color(0xFFFEF3C7)
-                      : const Color(0xFFF3F4F6),
-                  borderRadius: BorderRadius.circular(5),
-                  border: Border.all(
-                    color: line.hasPriceOverride
-                        ? const Color(0xFFFCD34D)
-                        : const Color(0xFFE5E7EB),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'TZS',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: line.hasPriceOverride
-                            ? const Color(0xFF92400E)
-                            : const Color(0xFF9CA3AF),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 3),
-                    if (!widget.canEditPrice)
-                      // Read-only: user lacks the price-override permission.
-                      Text(
-                        _priceText(line.effectivePrice),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: line.hasPriceOverride
-                              ? const Color(0xFF92400E)
-                              : const Color(0xFF374151),
-                          fontWeight: line.hasPriceOverride
-                              ? FontWeight.w700
-                              : FontWeight.w600,
-                        ),
-                      )
-                    else
-                      SizedBox(
-                        width: 72,
-                        child: TextSelectionTheme(
-                          data: const TextSelectionThemeData(
-                            selectionColor: Color(0x66FCD34D),
-                            cursorColor: Color(0xFF92400E),
-                            selectionHandleColor: Color(0xFF92400E),
-                          ),
-                          child: TextField(
-                            controller: _priceCtrl,
-                            focusNode: _priceFocus,
-                            cursorColor: const Color(0xFF92400E),
-                            keyboardAppearance: Brightness.light,
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.allow(
-                                  RegExp(r'[0-9.]')),
-                            ],
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: line.hasPriceOverride
-                                  ? const Color(0xFF92400E)
-                                  : const Color(0xFF374151),
-                              fontWeight: line.hasPriceOverride
-                                  ? FontWeight.w700
-                                  : FontWeight.w600,
-                            ),
-                            decoration: InputDecoration(
-                              isDense: true,
-                              isCollapsed: true,
-                              // Disable the global theme's dark fill so the light
-                              // container shows through (no dark box in dark mode).
-                              filled: false,
-                              fillColor: Colors.transparent,
-                              contentPadding:
-                                  const EdgeInsets.symmetric(vertical: 4),
-                              border: InputBorder.none,
-                              hintText: _priceText(line.effectivePrice),
-                              hintStyle: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF9CA3AF),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            onTap: () {
-                              // First tap on the committed value: clear it (shown
-                              // as gray hint) so there's no dark select-all box.
-                              // Subsequent taps while editing keep the input.
-                              if (_priceCtrl.text ==
-                                  _priceText(widget.line.effectivePrice)) {
-                                _priceCtrl.clear();
-                              }
-                            },
-                            onChanged: _commitPrice,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              if (line.hasDiscount) ...[
-                const SizedBox(width: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFDCFCE7),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    line.isPercentDiscount
-                        ? '-${line.discount.toStringAsFixed(0)}%'
-                        : '-${line.lineDiscount.toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF16A34A),
-                    ),
-                  ),
-                ),
-              ],
-              if (widget.onTapDiscount != null) ...[
-                const SizedBox(width: 6),
-                GestureDetector(
-                  onTap: widget.onTapDiscount,
-                  child: const Text(
-                    'Discount',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: BrandColors.primary,
-                      decoration: TextDecoration.underline,
-                      decorationColor: BrandColors.primary,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-
           const SizedBox(height: 10),
 
-          // ── Qty controls (inline editable) + line total ──
+          // ── Qty × Unit price = Line total (all inline editable) ──
           Row(
             children: [
-              _QtyButton(
-                icon: Icons.remove,
-                semanticLabel: 'Decrease quantity',
-                onTap: () => widget.onQtyChanged(line.quantity - 1),
-              ),
-              const SizedBox(width: 8),
+              // Quantity box
               Container(
-                width: 52,
-                height: 30,
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6EE),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFBBF7D0)),
-                ),
+                width: 56,
+                height: 40,
                 alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
                 child: TextSelectionTheme(
                   data: TextSelectionThemeData(
                     selectionColor: BrandColors.primary.withValues(alpha: 0.22),
@@ -341,16 +202,17 @@ class _CartItemTileState extends State<CartItemTile> {
                     focusNode: _qtyFocus,
                     cursorColor: BrandColors.primary,
                     keyboardAppearance: Brightness.light,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                     ],
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: BrandColors.primary,
+                      color: Color(0xFF111827),
                     ),
                     decoration: InputDecoration(
                       isDense: true,
@@ -358,12 +220,20 @@ class _CartItemTileState extends State<CartItemTile> {
                       filled: false,
                       fillColor: Colors.transparent,
                       contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                      // The global InputDecorationTheme sets non-null
+                      // enabledBorder/focusedBorder, which take precedence
+                      // over `border` — so those must be overridden too, or
+                      // the theme's outline paints inside this box's own
+                      // Container border (a visible double border).
                       border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
                       hintText: _qtyText(line.quantity),
                       hintStyle: const TextStyle(
-                        fontSize: 13,
+                        fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF9CA3AF),
+                        color: Color(0xFF111827),
                       ),
                     ),
                     onTap: () {
@@ -377,17 +247,143 @@ class _CartItemTileState extends State<CartItemTile> {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              _QtyButton(
-                icon: Icons.add,
-                semanticLabel: 'Increase quantity',
-                onTap: () => widget.onQtyChanged(line.quantity + 1),
+              const SizedBox(width: 10),
+              const Text(
+                '×',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Color(0xFF9CA3AF),
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-              const Spacer(),
+              const SizedBox(width: 10),
+
+              // Unit price box
+              Expanded(
+                child: Container(
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: line.hasPriceOverride
+                          ? const Color(0xFFFCD34D)
+                          : const Color(0xFFE5E7EB),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        'TZS',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: line.hasPriceOverride
+                              ? const Color(0xFF92400E)
+                              : const Color(0xFF9CA3AF),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: !widget.canEditPrice
+                            // Read-only: user lacks the price-override permission.
+                            ? Text(
+                                _priceText(line.effectivePrice),
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: line.hasPriceOverride
+                                      ? const Color(0xFF92400E)
+                                      : const Color(0xFF111827),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              )
+                            : TextSelectionTheme(
+                                data: const TextSelectionThemeData(
+                                  selectionColor: Color(0x66FCD34D),
+                                  cursorColor: Color(0xFF92400E),
+                                  selectionHandleColor: Color(0xFF92400E),
+                                ),
+                                child: TextField(
+                                  controller: _priceCtrl,
+                                  focusNode: _priceFocus,
+                                  cursorColor: const Color(0xFF92400E),
+                                  keyboardAppearance: Brightness.light,
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                      ),
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.allow(
+                                      RegExp(r'[0-9.]'),
+                                    ),
+                                  ],
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: line.hasPriceOverride
+                                        ? const Color(0xFF92400E)
+                                        : const Color(0xFF111827),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                  decoration: InputDecoration(
+                                    isDense: true,
+                                    isCollapsed: true,
+                                    // Disable the global theme's dark fill so the
+                                    // light container shows through (no dark box
+                                    // in dark mode).
+                                    filled: false,
+                                    fillColor: Colors.transparent,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      vertical: 4,
+                                    ),
+                                    // See the qty box's comment above — the
+                                    // theme's enabledBorder/focusedBorder
+                                    // must be overridden too, not just border.
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    disabledBorder: InputBorder.none,
+                                    hintText: _priceText(line.effectivePrice),
+                                    hintStyle: const TextStyle(
+                                      fontSize: 15,
+                                      color: Color(0xFF111827),
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    // First tap on the committed value: clear it
+                                    // (shown as gray hint) so there's no dark
+                                    // select-all box. Subsequent taps while
+                                    // editing keep the input.
+                                    if (_priceCtrl.text ==
+                                        _priceText(
+                                          widget.line.effectivePrice,
+                                        )) {
+                                      _priceCtrl.clear();
+                                    }
+                                  },
+                                  onChanged: _commitPrice,
+                                ),
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                '=',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Color(0xFF9CA3AF),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 10),
               MoneyText(
                 line.lineTotal,
                 style: const TextStyle(
-                  fontSize: 14,
+                  fontSize: 16,
                   fontWeight: FontWeight.w800,
                   color: Color(0xFF111827),
                 ),
@@ -395,13 +391,61 @@ class _CartItemTileState extends State<CartItemTile> {
             ],
           ),
 
+          // ── Discount badge + link ──
+          if (line.hasDiscount || widget.onTapDiscount != null) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                if (line.hasDiscount) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 1,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDCFCE7),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      line.isPercentDiscount
+                          ? '-${line.discount.toStringAsFixed(0)}%'
+                          : '-${line.lineDiscount.toStringAsFixed(0)}',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF16A34A),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                if (widget.onTapDiscount != null)
+                  GestureDetector(
+                    onTap: widget.onTapDiscount,
+                    child: const Text(
+                      'Discount',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: BrandColors.primary,
+                        decoration: TextDecoration.underline,
+                        decorationColor: BrandColors.primary,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+
           // ── Insufficient-stock warning ──
           if (line.exceedsStock) ...[
             const SizedBox(height: 6),
             Row(
               children: [
-                const Icon(Icons.warning_amber_rounded,
-                    size: 13, color: Color(0xFFDC2626)),
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  size: 13,
+                  color: Color(0xFFDC2626),
+                ),
                 const SizedBox(width: 4),
                 Text(
                   'Only ${_stockText(line.product.stockQuantity)} in stock',
@@ -425,39 +469,4 @@ String _stockText(double? stock) {
   return stock == stock.floorToDouble()
       ? stock.toInt().toString()
       : stock.toStringAsFixed(2);
-}
-
-// ---------------------------------------------------------------------------
-
-class _QtyButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  final String semanticLabel;
-
-  const _QtyButton({
-    required this.icon,
-    required this.onTap,
-    required this.semanticLabel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: semanticLabel,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
-          ),
-          child: Icon(icon, size: 14, color: const Color(0xFF374151)),
-        ),
-      ),
-    );
-  }
 }
