@@ -134,11 +134,13 @@ class SubscriptionInfo extends Equatable {
   final String status;          // lowercase: trial, active, expired, suspended…
   final DateTime? trialEndDate; // null when not on trial
   final DateTime? endDate;
+  final DateTime? gracePeriodEndDate; // set while status is past_due
 
   const SubscriptionInfo({
     required this.status,
     this.trialEndDate,
     this.endDate,
+    this.gracePeriodEndDate,
   });
 
   factory SubscriptionInfo.fromJson(Map<String, dynamic> json) {
@@ -150,11 +152,14 @@ class SubscriptionInfo extends Equatable {
       endDate: json['endDate'] != null
           ? DateTime.tryParse(json['endDate'].toString())
           : null,
+      gracePeriodEndDate: json['gracePeriodEndDate'] != null
+          ? DateTime.tryParse(json['gracePeriodEndDate'].toString())
+          : null,
     );
   }
 
   @override
-  List<Object?> get props => [status, trialEndDate, endDate];
+  List<Object?> get props => [status, trialEndDate, endDate, gracePeriodEndDate];
 }
 
 class SwitchContextRequest {

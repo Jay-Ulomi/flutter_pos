@@ -69,14 +69,19 @@ class _PastDueBanner extends StatelessWidget {
     final isPastDue =
         context.select<AuthBloc, bool>((b) => b.state.isPastDue);
     if (!isPastDue) return const SizedBox.shrink();
+    final daysLeft =
+        context.select<AuthBloc, int?>((b) => b.state.gracePeriodDaysRemaining);
+    final message = daysLeft != null
+        ? '⚠️  Subscription past due — $daysLeft day${daysLeft == 1 ? '' : 's'} left to restore access before service is suspended.'
+        : '⚠️  Subscription past due — contact your administrator to restore full access.';
     return Container(
       width: double.infinity,
       // amber-700 for legible white-on-amber contrast (amber-500 failed WCAG).
       color: const Color(0xFFB45309),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: const Text(
-        '⚠️  Subscription past due — contact your administrator to restore full access.',
-        style: TextStyle(
+      child: Text(
+        message,
+        style: const TextStyle(
           color: Colors.white,
           fontSize: 12,
           fontWeight: FontWeight.w500,

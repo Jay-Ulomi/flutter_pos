@@ -216,11 +216,13 @@ class _PosScreenState extends State<PosScreen> {
     }
 
     if (context.mounted) {
-      context.read<CartBloc>().add(CartItemAdded(
-        effectiveProduct,
-        serialNumber: serialNumber,
-        lotNumber: lotNumber,
-      ));
+      context.read<CartBloc>().add(
+        CartItemAdded(
+          effectiveProduct,
+          serialNumber: serialNumber,
+          lotNumber: lotNumber,
+        ),
+      );
     }
   }
 
@@ -238,8 +240,10 @@ class _PosScreenState extends State<PosScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(productName,
-                style: const TextStyle(fontSize: 13, color: Colors.grey)),
+            Text(
+              productName,
+              style: const TextStyle(fontSize: 13, color: Colors.grey),
+            ),
             const SizedBox(height: 12),
             TextField(
               controller: ctrl,
@@ -250,7 +254,8 @@ class _PosScreenState extends State<PosScreen> {
                 border: const OutlineInputBorder(),
               ),
               onSubmitted: (v) {
-                if (v.trim().isNotEmpty) Navigator.of(ctx).pop(v.trim().toUpperCase());
+                if (v.trim().isNotEmpty)
+                  Navigator.of(ctx).pop(v.trim().toUpperCase());
               },
             ),
           ],
@@ -419,8 +424,9 @@ class _PosScreenState extends State<PosScreen> {
         ? null
         : FloatingActionButton(
             onPressed: _openScanner,
-            tooltip:
-                Platform.isMacOS ? 'Enter Barcode (manual)' : 'Scan Barcode',
+            tooltip: Platform.isMacOS
+                ? 'Enter Barcode (manual)'
+                : 'Scan Barcode',
             child: const Icon(Icons.qr_code_scanner),
           );
 
@@ -539,20 +545,27 @@ class _PosScreenState extends State<PosScreen> {
                             tooltip: 'Scan barcode',
                             onPressed: _openScanner,
                           ),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 0,
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
+                            borderSide: BorderSide(
+                              color: theme.colorScheme.outlineVariant,
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
+                            borderSide: BorderSide(
+                              color: theme.colorScheme.outlineVariant,
+                            ),
                           ),
                           filled: true,
                           fillColor: theme.colorScheme.surfaceContainerLow,
                         ),
-                        onChanged: (v) =>
-                            context.read<ProductBloc>().add(ProductSearchChanged(v)),
+                        onChanged: (v) => context.read<ProductBloc>().add(
+                          ProductSearchChanged(v),
+                        ),
                       ),
                     ),
                   ),
@@ -604,18 +617,12 @@ class _PosScreenState extends State<PosScreen> {
                       icon: Icons.inventory_2_outlined,
                     );
                   }
-                  return GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 88),
-                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 160,
-                      mainAxisSpacing: 10,
-                      crossAxisSpacing: 10,
-                      childAspectRatio: 0.78,
-                    ),
+                  return ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(0, 8, 0, 88),
                     itemCount: state.products.length,
                     itemBuilder: (_, i) {
                       final p = state.products[i];
-                      return ProductCard(
+                      return ProductListTile(
                         product: p,
                         onTap: () => _addProductToCart(context, p),
                       );
@@ -627,11 +634,7 @@ class _PosScreenState extends State<PosScreen> {
           ],
         ),
         // Floating cart button
-        Positioned(
-          right: 16,
-          bottom: 16,
-          child: _mobileCartFab(),
-        ),
+        Positioned(right: 16, bottom: 16, child: _mobileCartFab()),
       ],
     );
   }
@@ -702,25 +705,52 @@ class _PosScreenState extends State<PosScreen> {
       ProductState,
       ({List<Category> categories, String? selectedId})
     >(
-      selector: (state) => (
-        categories: state.categories,
-        selectedId: state.selectedCategoryId,
-      ),
+      selector: (state) =>
+          (categories: state.categories, selectedId: state.selectedCategoryId),
       builder: (context, data) {
         if (data.categories.isEmpty) return const SizedBox.shrink();
         return SizedBox(
           height: 40,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: data.categories.length + 1,
-            separatorBuilder: (_, _) => const SizedBox(width: 6),
-            itemBuilder: (context, i) {
-              final cs = Theme.of(context).colorScheme;
-              if (i == 0) {
-                final selected = data.selectedId == null;
+          child: ShaderMask(
+            shaderCallback: (bounds) => const LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [Colors.white, Colors.white, Colors.transparent],
+              stops: [0.0, 0.92, 1.0],
+            ).createShader(bounds),
+            blendMode: BlendMode.dstIn,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: data.categories.length + 1,
+              separatorBuilder: (_, _) => const SizedBox(width: 6),
+              itemBuilder: (context, i) {
+                final cs = Theme.of(context).colorScheme;
+                if (i == 0) {
+                  final selected = data.selectedId == null;
+                  return FilterChip(
+                    label: const Text('All'),
+                    selected: selected,
+                    selectedColor: cs.primary,
+                    checkmarkColor: cs.onPrimary,
+                    labelStyle: TextStyle(
+                      color: selected ? cs.onPrimary : cs.onSurfaceVariant,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                      fontSize: 12,
+                    ),
+                    side: BorderSide(
+                      color: selected ? cs.primary : cs.outlineVariant,
+                    ),
+                    visualDensity: VisualDensity.compact,
+                    onSelected: (_) => context.read<ProductBloc>().add(
+                      const ProductCategoryChanged(null),
+                    ),
+                  );
+                }
+                final cat = data.categories[i - 1];
+                final selected = data.selectedId == cat.id;
                 return FilterChip(
-                  label: const Text('All'),
+                  label: Text(cat.name),
                   selected: selected,
                   selectedColor: cs.primary,
                   checkmarkColor: cs.onPrimary,
@@ -734,31 +764,11 @@ class _PosScreenState extends State<PosScreen> {
                   ),
                   visualDensity: VisualDensity.compact,
                   onSelected: (_) => context.read<ProductBloc>().add(
-                    const ProductCategoryChanged(null),
+                    ProductCategoryChanged(cat.id),
                   ),
                 );
-              }
-              final cat = data.categories[i - 1];
-              final selected = data.selectedId == cat.id;
-              return FilterChip(
-                label: Text(cat.name),
-                selected: selected,
-                selectedColor: cs.primary,
-                checkmarkColor: cs.onPrimary,
-                labelStyle: TextStyle(
-                  color: selected ? cs.onPrimary : cs.onSurfaceVariant,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  fontSize: 12,
-                ),
-                side: BorderSide(
-                  color: selected ? cs.primary : cs.outlineVariant,
-                ),
-                visualDensity: VisualDensity.compact,
-                onSelected: (_) => context.read<ProductBloc>().add(
-                  ProductCategoryChanged(cat.id),
-                ),
-              );
-            },
+              },
+            ),
           ),
         );
       },
@@ -835,7 +845,9 @@ class _PosScreenState extends State<PosScreen> {
                       checkmarkColor: cs.onPrimary,
                       labelStyle: TextStyle(
                         color: selected ? cs.onPrimary : cs.onSurfaceVariant,
-                        fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                        fontWeight: selected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
                       ),
                       side: BorderSide(
                         color: selected ? cs.primary : cs.outlineVariant,
@@ -914,283 +926,336 @@ class _PosScreenState extends State<PosScreen> {
 
   // ---- cart pane (desktop sidebar + mobile sheet) ----
 
-  Widget _cartPane() {
+  /// The scrollable cart-line-items region. Factored out of [_cartPane] so
+  /// the [compact]-vs-not branching (Flexible+shrinkWrap vs Expanded) can
+  /// wrap the whole thing without duplicating the ListView.builder body.
+  Widget _buildItemsSection({
+    required BuildContext context,
+    required CartState cart,
+    required bool compact,
+    required double keyboardHeight,
+  }) {
+    // Inflate the bottom inset by the Done-bar height so a focused
+    // price/qty field scrolls above the bar, not behind it.
+    final itemsList = MediaQuery(
+      data: MediaQuery.of(context).copyWith(
+        viewInsets: MediaQuery.of(context).viewInsets.copyWith(
+          bottom:
+              keyboardHeight +
+              (keyboardHeight > 0 ? KeyboardDoneBar.height : 0),
+        ),
+      ),
+      child: cart.isEmpty
+          ? const EmptyState(
+              title: 'Cart is empty',
+              subtitle: 'Tap a product to add',
+              icon: Icons.shopping_bag_outlined,
+            )
+          : ListView.builder(
+              shrinkWrap: compact,
+              physics: compact ? const ClampingScrollPhysics() : null,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              itemCount: cart.lines.length,
+              itemBuilder: (_, i) {
+                final line = cart.lines[i];
+                final auth = context.read<AuthBloc>().state;
+                final canOverridePrice = auth.can('override_price');
+                final canDiscount = auth.can('apply_discount');
+                return CartItemTile(
+                  key: ValueKey(
+                    '${line.product.id}_${line.serialNumber}_${line.lotNumber}',
+                  ),
+                  line: line,
+                  canEditPrice: canOverridePrice,
+                  onQtyChanged: (q) => context.read<CartBloc>().add(
+                    CartItemQtyChanged(line.product.id, q),
+                  ),
+                  onPriceChanged: (p) => context.read<CartBloc>().add(
+                    CartItemPriceChanged(line.product.id, p),
+                  ),
+                  onRemove: () => context.read<CartBloc>().add(
+                    CartItemRemoved(line.product.id),
+                  ),
+                  // Hidden entirely when the user lacks discount permission.
+                  onTapDiscount: !canDiscount
+                      ? null
+                      : () async {
+                          final result = await showDiscountDialog(
+                            context,
+                            productName: line.product.name,
+                            currentDiscount: line.discount,
+                            currentIsPercent: line.isPercentDiscount,
+                          );
+                          if (result != null && context.mounted) {
+                            context.read<CartBloc>().add(
+                              CartItemDiscountApplied(
+                                line.product.id,
+                                discount: result.value,
+                                isPercent: result.isPercent,
+                              ),
+                            );
+                          }
+                        },
+                );
+              },
+            ),
+    );
+
+    return compact ? Flexible(child: itemsList) : Expanded(child: itemsList);
+  }
+
+  // [compact] is used by the mobile bottom sheet (_showCartSheet): the items
+  // list sizes to its own content (via shrinkWrap) instead of force-filling
+  // all remaining space, so a short cart doesn't leave a large gap before the
+  // totals/checkout button. The desktop side-panel call site leaves this
+  // false, keeping checkout pinned to the bottom of the full-height panel.
+  Widget _cartPane({bool compact = false}) {
     return GestureDetector(
       // Numeric keyboards have no "done" key — tap anywhere outside a field to
       // dismiss it (child buttons/fields still handle their own taps first).
       behavior: HitTestBehavior.translucent,
       onTap: () => FocusScope.of(context).unfocus(),
       child: BlocBuilder<CartBloc, CartState>(
-      builder: (context, cart) {
-        final keyboardHeight = MediaQuery.viewInsetsOf(context).bottom;
-        return Stack(
-          children: [
-            Positioned.fill(
-              child: Column(
-                children: [
-            // ── Header ──
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 12, 10),
-              child: Row(
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: BrandColors.primary.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.shopping_bag_outlined,
-                      size: 18,
-                      color: BrandColors.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  const Text(
-                    'Cart',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF111827),
-                    ),
-                  ),
-                  if (cart.isNotEmpty) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: BrandColors.primary,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        '${cart.lines.length}',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                  const Spacer(),
-                  BlocBuilder<HeldSalesCubit, List<HeldSale>>(
-                    builder: (context, held) {
-                      if (held.isEmpty) return const SizedBox.shrink();
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 6),
-                        child: GestureDetector(
-                          onTap: () => showHeldSalesSheet(context),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 9, vertical: 6),
+        builder: (context, cart) {
+          final keyboardHeight = MediaQuery.viewInsetsOf(context).bottom;
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: Column(
+                  children: [
+                    // ── Header ──
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 14, 12, 10),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 34,
+                            height: 34,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFEF3C7),
-                              borderRadius: BorderRadius.circular(8),
+                              color: BrandColors.primary.withValues(
+                                alpha: 0.10,
+                              ),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.pause_circle_outline,
-                                    size: 13, color: Color(0xFFD97706)),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Held (${held.length})',
+                            child: const Icon(
+                              Icons.shopping_bag_outlined,
+                              size: 18,
+                              color: BrandColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          const Text(
+                            'Cart',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF111827),
+                            ),
+                          ),
+                          if (cart.isNotEmpty) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: BrandColors.primary,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                '${cart.lines.length}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                          const Spacer(),
+                          BlocBuilder<HeldSalesCubit, List<HeldSale>>(
+                            builder: (context, held) {
+                              if (held.isEmpty) return const SizedBox.shrink();
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: GestureDetector(
+                                  onTap: () => showHeldSalesSheet(context),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 9,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFEF3C7),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.pause_circle_outline,
+                                          size: 13,
+                                          color: Color(0xFFD97706),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Held (${held.length})',
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFFD97706),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          if (cart.isNotEmpty) ...[
+                            GestureDetector(
+                              onTap: () {
+                                context.read<HeldSalesCubit>().hold(cart);
+                                context.read<CartBloc>().add(
+                                  const CartCleared(),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 7,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF3F4F6),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.back_hand_outlined,
+                                  size: 15,
+                                  color: Color(0xFF6B7280),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            GestureDetector(
+                              onTap: () => context.read<CartBloc>().add(
+                                const CartCleared(),
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 7,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEE2E2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.delete_outline,
+                                  size: 15,
+                                  color: Color(0xFFDC2626),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+
+                    // ── Customer row ──
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                      child: _customerRow(context, cart),
+                    ),
+
+                    const Divider(height: 1, color: Color(0xFFE5E7EB)),
+
+                    // ── Items ──
+                    // In compact mode (mobile bottom sheet) the list sizes to its
+                    // own content via shrinkWrap, so a short cart doesn't leave a
+                    // gap before totals/checkout — any leftover space collects
+                    // harmlessly below the checkout button instead. The desktop
+                    // panel keeps Expanded so checkout stays pinned to the bottom
+                    // of the full-height panel regardless of cart size.
+                    _buildItemsSection(
+                      context: context,
+                      cart: cart,
+                      compact: compact,
+                      keyboardHeight: keyboardHeight,
+                    ),
+
+                    if (cart.isNotEmpty) ...[
+                      const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                      _totalsSection(cart),
+                    ],
+
+                    // ── Checkout button ──
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                      child: SizedBox(
+                        height: 52,
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: cart.isEmpty ? null : _handleCheckout,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: BrandColors.primary,
+                            disabledBackgroundColor: const Color(0xFFD1D5DB),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text(
+                                'Checkout',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              if (cart.isNotEmpty) ...[
+                                const SizedBox(width: 10),
+                                Container(
+                                  width: 1,
+                                  height: 16,
+                                  color: Colors.white.withValues(alpha: 0.4),
+                                ),
+                                const SizedBox(width: 10),
+                                MoneyText(
+                                  cart.total,
                                   style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFFD97706),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
                                   ),
                                 ),
                               ],
-                            ),
+                            ],
                           ),
                         ),
-                      );
-                    },
-                  ),
-                  if (cart.isNotEmpty) ...[
-                    GestureDetector(
-                      onTap: () {
-                        context.read<HeldSalesCubit>().hold(cart);
-                        context.read<CartBloc>().add(const CartCleared());
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 7),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF3F4F6),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.back_hand_outlined,
-                            size: 15, color: Color(0xFF6B7280)),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    GestureDetector(
-                      onTap: () =>
-                          context.read<CartBloc>().add(const CartCleared()),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 7),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFEE2E2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.delete_outline,
-                            size: 15, color: Color(0xFFDC2626)),
                       ),
                     ),
                   ],
-                ],
-              ),
-            ),
-
-            // ── Customer row ──
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-              child: _customerRow(context, cart),
-            ),
-
-            const Divider(height: 1, color: Color(0xFFE5E7EB)),
-
-            // ── Items ──
-            Expanded(
-              // Inflate the bottom inset by the Done-bar height so a focused
-              // price/qty field scrolls above the bar, not behind it.
-              child: MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  viewInsets: MediaQuery.of(context).viewInsets.copyWith(
-                    bottom: keyboardHeight +
-                        (keyboardHeight > 0 ? KeyboardDoneBar.height : 0),
-                  ),
                 ),
-                child: cart.isEmpty
-                  ? const EmptyState(
-                      title: 'Cart is empty',
-                      subtitle: 'Tap a product to add',
-                      icon: Icons.shopping_bag_outlined,
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      itemCount: cart.lines.length,
-                      itemBuilder: (_, i) {
-                        final line = cart.lines[i];
-                        final auth = context.read<AuthBloc>().state;
-                        final canOverridePrice = auth.can('override_price');
-                        final canDiscount = auth.can('apply_discount');
-                        return CartItemTile(
-                          key: ValueKey(
-                            '${line.product.id}_${line.serialNumber}_${line.lotNumber}',
-                          ),
-                          line: line,
-                          canEditPrice: canOverridePrice,
-                          onQtyChanged: (q) => context.read<CartBloc>().add(
-                            CartItemQtyChanged(line.product.id, q),
-                          ),
-                          onPriceChanged: (p) => context.read<CartBloc>().add(
-                            CartItemPriceChanged(line.product.id, p),
-                          ),
-                          onRemove: () => context.read<CartBloc>().add(
-                            CartItemRemoved(line.product.id),
-                          ),
-                          // Hidden entirely when the user lacks discount permission.
-                          onTapDiscount: !canDiscount
-                              ? null
-                              : () async {
-                                  final result = await showDiscountDialog(
-                                    context,
-                                    productName: line.product.name,
-                                    currentDiscount: line.discount,
-                                    currentIsPercent: line.isPercentDiscount,
-                                  );
-                                  if (result != null && context.mounted) {
-                                    context.read<CartBloc>().add(
-                                      CartItemDiscountApplied(
-                                        line.product.id,
-                                        discount: result.value,
-                                        isPercent: result.isPercent,
-                                      ),
-                                    );
-                                  }
-                                },
-                        );
-                      },
-                    ),
               ),
-            ),
-
-            if (cart.isNotEmpty) ...[
-              const Divider(height: 1, color: Color(0xFFE5E7EB)),
-              _totalsSection(cart),
+              // "Done" bar pinned above the soft keyboard — numeric keyboards have
+              // no return/done key, so this gives an explicit way to dismiss it.
+              if (keyboardHeight > 0)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: keyboardHeight,
+                  child: const KeyboardDoneBar(),
+                ),
             ],
-
-            // ── Checkout button ──
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-              child: SizedBox(
-                height: 52,
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: cart.isEmpty ? null : _handleCheckout,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: BrandColors.primary,
-                    disabledBackgroundColor: const Color(0xFFD1D5DB),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'Checkout',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                      if (cart.isNotEmpty) ...[
-                        const SizedBox(width: 10),
-                        Container(
-                          width: 1,
-                          height: 16,
-                          color: Colors.white.withValues(alpha: 0.4),
-                        ),
-                        const SizedBox(width: 10),
-                        MoneyText(
-                          cart.total,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            ),
-                ],
-              ),
-            ),
-            // "Done" bar pinned above the soft keyboard — numeric keyboards have
-            // no return/done key, so this gives an explicit way to dismiss it.
-            if (keyboardHeight > 0)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: keyboardHeight,
-                child: const KeyboardDoneBar(),
-              ),
-          ],
-        );
-      },
+          );
+        },
       ),
     );
   }
@@ -1229,8 +1294,9 @@ class _PosScreenState extends State<PosScreen> {
                 name,
                 style: TextStyle(
                   fontSize: 13,
-                  fontWeight:
-                      cart.hasCustomer ? FontWeight.w600 : FontWeight.w400,
+                  fontWeight: cart.hasCustomer
+                      ? FontWeight.w600
+                      : FontWeight.w400,
                   color: cart.hasCustomer
                       ? const Color(0xFF166534)
                       : const Color(0xFF9CA3AF),
@@ -1241,12 +1307,18 @@ class _PosScreenState extends State<PosScreen> {
               GestureDetector(
                 onTap: () =>
                     context.read<CartBloc>().add(const CartCustomerCleared()),
-                child: const Icon(Icons.close,
-                    size: 15, color: Color(0xFF9CA3AF)),
+                child: const Icon(
+                  Icons.close,
+                  size: 15,
+                  color: Color(0xFF9CA3AF),
+                ),
               )
             else
-              const Icon(Icons.chevron_right,
-                  size: 16, color: Color(0xFF9CA3AF)),
+              const Icon(
+                Icons.chevron_right,
+                size: 16,
+                color: Color(0xFF9CA3AF),
+              ),
           ],
         ),
       ),
@@ -1263,8 +1335,11 @@ class _PosScreenState extends State<PosScreen> {
           _totalRow('Tax', cart.taxAmount),
           if (cart.discount > 0) ...[
             const SizedBox(height: 4),
-            _totalRow('Discount', -cart.discount,
-                valueColor: const Color(0xFF16A34A)),
+            _totalRow(
+              'Discount',
+              -cart.discount,
+              valueColor: const Color(0xFF16A34A),
+            ),
           ],
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 8),
@@ -1300,12 +1375,16 @@ class _PosScreenState extends State<PosScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label,
-            style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+        ),
         MoneyText(
           amount,
           style: TextStyle(
-              fontSize: 13, color: valueColor ?? const Color(0xFF374151)),
+            fontSize: 13,
+            color: valueColor ?? const Color(0xFF374151),
+          ),
         ),
       ],
     );
@@ -1423,7 +1502,9 @@ class _CartSheetState extends State<_CartSheet> {
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(
-                            color: BrandColors.primary, width: 1.5),
+                          color: BrandColors.primary,
+                          width: 1.5,
+                        ),
                       ),
                       filled: true,
                       fillColor: const Color(0xFFF9FAFB),
@@ -1459,14 +1540,12 @@ class _CartSheetState extends State<_CartSheet> {
 
         const Divider(height: 1, color: Color(0xFFE5E7EB)),
 
-        Expanded(
-          child: _hasQuery ? _searchResults(context) : widget.cartPane,
-        ),
+        Expanded(child: _hasQuery ? _searchArea(context) : widget.cartPane),
       ],
     );
   }
 
-  Widget _searchResults(BuildContext context) {
+  Widget _searchArea(BuildContext context) {
     return BlocBuilder<ProductBloc, ProductState>(
       builder: (context, state) {
         if (state.status == ProductStatus.loading) {
@@ -1481,109 +1560,146 @@ class _CartSheetState extends State<_CartSheet> {
           );
         }
         if (state.products.isEmpty) {
-          return const EmptyState(
-            title: 'No products found',
-            icon: Icons.search_off_rounded,
-          );
-        }
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          itemCount: state.products.length,
-          itemBuilder: (_, i) {
-            final p = state.products[i];
-            return ListTile(
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-              leading: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3F4F6),
-                  borderRadius: BorderRadius.circular(10),
+          // No matches for the in-sheet search — keep the cart visible below
+          // a small notice instead of hiding items/totals/checkout behind a
+          // full-screen empty state.
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
                 ),
-                child: p.imageUrl != null && p.imageUrl!.isNotEmpty
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.network(
-                          p.imageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, err, stack) => const Icon(
-                            Icons.inventory_2_outlined,
-                            size: 18,
-                            color: Color(0xFF9CA3AF),
-                          ),
-                        ),
-                      )
-                    : const Icon(
-                        Icons.inventory_2_outlined,
-                        size: 18,
-                        color: Color(0xFF9CA3AF),
-                      ),
-              ),
-              title: Text(
-                p.name,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF111827),
-                ),
-              ),
-              subtitle: Row(
-                children: [
-                  MoneyText(
-                    p.sellingPrice,
-                    style: const TextStyle(
-                        fontSize: 12, color: Color(0xFF6B7280)),
-                  ),
-                  if (p.stockLabel != null) ...[
-                    const Text(
-                      '  ·  ',
-                      style: TextStyle(fontSize: 12, color: Color(0xFFD1D5DB)),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.search_off_rounded,
+                      size: 16,
+                      color: Color(0xFF9CA3AF),
                     ),
-                    Icon(
-                      Icons.inventory_2_outlined,
-                      size: 11,
-                      color: p.isOutOfStock
-                          ? const Color(0xFFDC2626)
-                          : const Color(0xFF9CA3AF),
-                    ),
-                    const SizedBox(width: 3),
-                    Flexible(
+                    const SizedBox(width: 8),
+                    Expanded(
                       child: Text(
-                        p.stockLabel!,
+                        'No products found for "${_searchCtrl.text}"',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: p.isOutOfStock
-                              ? const Color(0xFFDC2626)
-                              : p.isLowStock
-                                  ? const Color(0xFFD97706)
-                                  : const Color(0xFF6B7280),
+                          color: Color(0xFF6B7280),
                         ),
                       ),
                     ),
                   ],
-                ],
-              ),
-              trailing: GestureDetector(
-                onTap: () async {
-                await widget.onAddProduct(context, p);
-                if (mounted) _clearSearch();
-              },
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: BrandColors.primary,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.add, size: 18, color: Colors.white),
                 ),
               ),
-            );
-          },
+              const Divider(height: 1, color: Color(0xFFE5E7EB)),
+              Expanded(child: widget.cartPane),
+            ],
+          );
+        }
+        return _searchResultsList(state);
+      },
+    );
+  }
+
+  Widget _searchResultsList(ProductState state) {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: state.products.length,
+      itemBuilder: (_, i) {
+        final p = state.products[i];
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 2,
+          ),
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: p.imageUrl != null && p.imageUrl!.isNotEmpty
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.network(
+                      p.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, err, stack) => const Icon(
+                        Icons.inventory_2_outlined,
+                        size: 18,
+                        color: Color(0xFF9CA3AF),
+                      ),
+                    ),
+                  )
+                : const Icon(
+                    Icons.inventory_2_outlined,
+                    size: 18,
+                    color: Color(0xFF9CA3AF),
+                  ),
+          ),
+          title: Text(
+            p.name,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF111827),
+            ),
+          ),
+          subtitle: Row(
+            children: [
+              MoneyText(
+                p.sellingPrice,
+                style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+              ),
+              if (p.stockLabel != null) ...[
+                const Text(
+                  '  ·  ',
+                  style: TextStyle(fontSize: 12, color: Color(0xFFD1D5DB)),
+                ),
+                Icon(
+                  Icons.inventory_2_outlined,
+                  size: 11,
+                  color: p.isOutOfStock
+                      ? const Color(0xFFDC2626)
+                      : const Color(0xFF9CA3AF),
+                ),
+                const SizedBox(width: 3),
+                Flexible(
+                  child: Text(
+                    p.stockLabel!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: p.isOutOfStock
+                          ? const Color(0xFFDC2626)
+                          : p.isLowStock
+                          ? const Color(0xFFD97706)
+                          : const Color(0xFF6B7280),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          trailing: GestureDetector(
+            onTap: () async {
+              await widget.onAddProduct(context, p);
+              if (mounted) _clearSearch();
+            },
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: BrandColors.primary,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.add, size: 18, color: Colors.white),
+            ),
+          ),
         );
       },
     );

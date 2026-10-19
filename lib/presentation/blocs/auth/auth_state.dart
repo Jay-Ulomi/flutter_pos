@@ -24,6 +24,7 @@ class AuthState extends Equatable {
   // Subscription / trial
   final DateTime? trialEndsAt;
   final String? subscriptionStatus; // 'trial', 'active', 'expired', 'suspended'
+  final DateTime? gracePeriodEndsAt; // set while subscriptionStatus == 'past_due'
   // Effective permissions for the active business. Contains '*' for privileged roles.
   final Set<String> permissions;
 
@@ -38,6 +39,7 @@ class AuthState extends Equatable {
     this.errorMessage,
     this.trialEndsAt,
     this.subscriptionStatus,
+    this.gracePeriodEndsAt,
     this.permissions = const <String>{},
   });
 
@@ -57,6 +59,7 @@ class AuthState extends Equatable {
     bool clearError = false,
     DateTime? trialEndsAt,
     String? subscriptionStatus,
+    DateTime? gracePeriodEndsAt,
     bool clearTrial = false,
     Set<String>? permissions,
   }) {
@@ -71,6 +74,7 @@ class AuthState extends Equatable {
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       trialEndsAt: clearTrial ? null : (trialEndsAt ?? this.trialEndsAt),
       subscriptionStatus: clearTrial ? null : (subscriptionStatus ?? this.subscriptionStatus),
+      gracePeriodEndsAt: clearTrial ? null : (gracePeriodEndsAt ?? this.gracePeriodEndsAt),
       permissions: permissions ?? this.permissions,
     );
   }
@@ -87,13 +91,18 @@ class AuthState extends Equatable {
   }
 
   /// True when the subscription/trial has expired and the app should be blocked.
+  ///
+  /// `trialEndsAt` is set once when the trial starts and the backend never
+  /// clears it after conversion, so the date comparison must only apply
+  /// while the subscription is still actually on trial — otherwise a paying
+  /// (active) tenant that once had a trial would be blocked forever.
   bool get isTrialExpired {
     if (subscriptionStatus == 'expired' ||
         subscriptionStatus == 'suspended' ||
         subscriptionStatus == 'canceled') {
       return true;
     }
-    if (trialEndsAt != null && DateTime.now().isAfter(trialEndsAt!)) {
+    if (isOnTrial && trialEndsAt != null && DateTime.now().isAfter(trialEndsAt!)) {
       return true;
     }
     return false;
@@ -102,10 +111,11 @@ class AuthState extends Equatable {
   /// True when in grace period — reads allowed, writes blocked.
   bool get isPastDue => subscriptionStatus == 'past_due';
 
-  /// Days remaining in trial. Null if not on trial. 0 = expired today.
-  int? get trialDaysRemaining {
-    if (trialEndsAt == null) return null;
-    final diff = trialEndsAt!.difference(DateTime.now()).inDays;
+  /// Days remaining in the past-due grace period. Null if not past due or
+  /// the backend hasn't set a grace period end date.
+  int? get gracePeriodDaysRemaining {
+    if (!isPastDue || gracePeriodEndsAt == null) return null;
+    final diff = gracePeriodEndsAt!.difference(DateTime.now()).inDays;
     return diff < 0 ? 0 : diff;
   }
 
@@ -113,6 +123,16 @@ class AuthState extends Equatable {
   bool get isOnTrial =>
       subscriptionStatus == 'trial' ||
       (subscriptionStatus == null && trialEndsAt != null);
+
+  /// Days remaining in trial. Null if not currently on trial. 0 = expired
+  /// today. Gated on [isOnTrial] since the backend never clears
+  /// `trialEndsAt` after conversion — without the gate a paying customer
+  /// who once had a trial would show 0 days remaining forever.
+  int? get trialDaysRemaining {
+    if (!isOnTrial || trialEndsAt == null) return null;
+    final diff = trialEndsAt!.difference(DateTime.now()).inDays;
+    return diff < 0 ? 0 : diff;
+  }
 
   @override
   List<Object?> get props => [
@@ -126,6 +146,7 @@ class AuthState extends Equatable {
     errorMessage,
     trialEndsAt,
     subscriptionStatus,
+    gracePeriodEndsAt,
     permissions,
   ];
 }

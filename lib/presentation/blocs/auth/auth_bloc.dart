@@ -23,6 +23,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthLoadBusinesses>(_onLoadBusinesses);
     on<AuthLoadBranches>(_onLoadBranches);
     on<AuthLogoutRequested>(_onLogoutRequested);
+    on<AuthSubscriptionRefreshRequested>(_onSubscriptionRefreshRequested);
   }
 
   Future<
@@ -30,6 +31,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       Set<String> features,
       DateTime? trialEndsAt,
       String? subscriptionStatus,
+      DateTime? gracePeriodEndsAt,
     })
   >
   _loadTenantData() async {
@@ -51,6 +53,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       features: enabled,
       trialEndsAt: subscription?.trialEndDate,
       subscriptionStatus: subscription?.status,
+      gracePeriodEndsAt: subscription?.gracePeriodEndDate,
     );
   }
 
@@ -115,6 +118,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             enabledFeatures: tenantData.features,
             trialEndsAt: tenantData.trialEndsAt,
             subscriptionStatus: tenantData.subscriptionStatus,
+            gracePeriodEndsAt: tenantData.gracePeriodEndsAt,
             permissions: perms,
           ),
         );
@@ -297,6 +301,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           enabledFeatures: tenantData.features,
           trialEndsAt: tenantData.trialEndsAt,
           subscriptionStatus: tenantData.subscriptionStatus,
+          gracePeriodEndsAt: tenantData.gracePeriodEndsAt,
           permissions: perms,
         ),
       );
@@ -308,6 +313,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           errorMessage: humanizeError(e),
         ),
       );
+    }
+  }
+
+  // ── Subscription refresh (app resume / return from billing portal) ────────
+  // Re-fetches trial/subscription status in place without touching business,
+  // branch, or permissions — so an upgrade completed outside the app (e.g. in
+  // the billing portal browser tab) is reflected without a full restart.
+  Future<void> _onSubscriptionRefreshRequested(
+    AuthSubscriptionRefreshRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    if (state.status != AuthStatus.authenticated) return;
+    try {
+      final subscription = await _authRepository.getSubscription();
+      if (subscription == null) return;
+      emit(
+        state.copyWith(
+          trialEndsAt: subscription.trialEndDate,
+          subscriptionStatus: subscription.status,
+          gracePeriodEndsAt: subscription.gracePeriodEndDate,
+        ),
+      );
+    } catch (_) {
+      // Best-effort — offline or transient errors leave the cached state as-is.
     }
   }
 
