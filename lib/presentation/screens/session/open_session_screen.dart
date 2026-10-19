@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../widgets/aduinola/app_page.dart';
+import '../../widgets/aduinola/ui.dart';
+
 import '../../blocs/session/session_bloc.dart';
 import '../../blocs/session/session_event.dart';
 import '../../blocs/session/session_state.dart';
@@ -44,8 +47,10 @@ class _OpenSessionScreenState extends State<OpenSessionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Open Session')),
+    // Pre-till screen: like login and the pickers, a centred card (the shell's
+    // tabs would only redirect back here until a session is open).
+    return GradientScaffold(
+      title: 'Open Session',
       body: BlocConsumer<SessionBloc, SessionState>(
         listener: (context, state) {
           if (state.status == SessionStatus.error &&
@@ -57,59 +62,71 @@ class _OpenSessionScreenState extends State<OpenSessionScreen> {
         },
         builder: (context, state) {
           final loading = state.status == SessionStatus.loading;
-          return Padding(
-            padding: const EdgeInsets.all(20),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text(
-                    'Enter the opening cash float to start your shift.',
-                  ),
-                  const SizedBox(height: 20),
-                  TextFormField(
-                    controller: _cashCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
+          return Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: PageCard(
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text(
+                          'Enter the opening cash float to start your shift.',
+                        ),
+                        const SizedBox(height: 20),
+                        TextFormField(
+                          controller: _cashCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                              RegExp(r'[0-9.]'),
+                            ),
+                          ],
+                          decoration: const InputDecoration(
+                            labelText: 'Opening cash',
+                            hintText: '0.00',
+                            prefixIcon: Icon(Icons.attach_money),
+                          ),
+                          validator: (v) {
+                            // Empty = 0, allowed.
+                            if (v == null || v.isEmpty) return null;
+                            final n = double.tryParse(v);
+                            if (n == null || n < 0) return 'Invalid amount';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 14),
+                        TextFormField(
+                          controller: _notesCtrl,
+                          maxLines: 2,
+                          decoration: const InputDecoration(
+                            labelText: 'Notes (optional)',
+                            prefixIcon: Icon(Icons.note_outlined),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        FilledButton.icon(
+                          onPressed: loading ? null : _submit,
+                          icon: loading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.play_arrow),
+                          label: const Text('Open Session'),
+                        ),
+                      ],
                     ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                    ],
-                    decoration: const InputDecoration(
-                      labelText: 'Opening cash',
-                      hintText: '0.00',
-                      prefixIcon: Icon(Icons.attach_money),
-                    ),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return null; // empty = 0, allowed
-                      final n = double.tryParse(v);
-                      if (n == null || n < 0) return 'Invalid amount';
-                      return null;
-                    },
                   ),
-                  const SizedBox(height: 14),
-                  TextFormField(
-                    controller: _notesCtrl,
-                    maxLines: 2,
-                    decoration: const InputDecoration(
-                      labelText: 'Notes (optional)',
-                      prefixIcon: Icon(Icons.note_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  FilledButton.icon(
-                    onPressed: loading ? null : _submit,
-                    icon: loading
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.play_arrow),
-                    label: const Text('Open Session'),
-                  ),
-                ],
+                ),
               ),
             ),
           );

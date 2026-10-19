@@ -5,9 +5,9 @@ import 'package:intl/intl.dart';
 import '../../blocs/session/session_bloc.dart';
 import '../../blocs/session/session_event.dart';
 import '../../blocs/session/session_state.dart';
+import '../../widgets/aduinola/app_page.dart';
 import '../../widgets/loading_indicator.dart';
 import '../../widgets/money_text.dart';
-import '../../widgets/responsive_shell.dart';
 
 class ShiftReportScreen extends StatefulWidget {
   final String? sessionId;
@@ -32,9 +32,10 @@ class _ShiftReportScreenState extends State<ShiftReportScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return ResponsiveShell(
-      appBar: AppBar(title: const Text('Shift Report (Z-Report)')),
-      child: BlocBuilder<SessionBloc, SessionState>(
+    return AppPage(
+      title: 'Shift Report (Z-Report)',
+      padBody: false,
+      body: BlocBuilder<SessionBloc, SessionState>(
         builder: (context, state) {
           final summary = state.summary;
           final session = state.current;
@@ -44,7 +45,7 @@ class _ShiftReportScreenState extends State<ShiftReportScreen> {
           }
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: AppPage.insets(context),
             children: [
               // ── Session info ──
               if (session != null)

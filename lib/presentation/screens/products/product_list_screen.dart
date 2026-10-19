@@ -12,10 +12,10 @@ import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/product/product_bloc.dart';
 import '../../blocs/product/product_event.dart';
 import '../../blocs/product/product_state.dart';
+import '../../widgets/aduinola/app_page.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/loading_indicator.dart';
-import '../../widgets/responsive_shell.dart';
 import 'add_product_screen.dart';
 
 class ProductListScreen extends StatefulWidget {
@@ -44,9 +44,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
     if (Platform.isMacOS) {
       _openMacBarcodeDialog();
     } else {
-      final barcode = await Navigator.of(context).push<String>(
-        MaterialPageRoute(builder: (_) => const _ScannerPage()),
-      );
+      final barcode = await Navigator.of(
+        context,
+      ).push<String>(MaterialPageRoute(builder: (_) => const _ScannerPage()));
       if (barcode != null && mounted) {
         _searchCtrl.text = barcode;
         context.read<ProductBloc>().add(ProductSearchChanged(barcode));
@@ -96,7 +96,22 @@ class _ProductListScreenState extends State<ProductListScreen> {
     final canAdd = context.select<AuthBloc, bool>(
       (b) => b.state.can(AddProductScreen.permission),
     );
-    return ResponsiveShell(
+    return AppPage(
+      title: '',
+      titleWidget: Text(context.tr('inv.title')),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.qr_code_scanner),
+          tooltip: 'Scan barcode',
+          onPressed: _openScanner,
+        ),
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          tooltip: 'Refresh',
+          onPressed: () =>
+              context.read<ProductBloc>().add(const ProductSyncRequested()),
+        ),
+      ],
       floatingActionButton: canAdd
           ? FloatingActionButton.extended(
               heroTag: 'add-product',
@@ -106,26 +121,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
               label: Text(context.tr('inv.add_product')),
             )
           : null,
-      appBar: AppBar(
-        title: Text(context.tr('inv.title')),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.qr_code_scanner),
-            tooltip: 'Scan barcode',
-            onPressed: _openScanner,
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-            onPressed: () =>
-                context.read<ProductBloc>().add(const ProductSyncRequested()),
-          ),
-        ],
-      ),
-      child: Column(
+      padBody: false,
+      body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            padding: AppPage.insets(context, top: 12, bottom: 8),
             child: TextField(
               controller: _searchCtrl,
               decoration: InputDecoration(
@@ -171,7 +171,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         checkmarkColor: cs.onPrimary,
                         labelStyle: TextStyle(
                           color: selected ? cs.onPrimary : cs.onSurfaceVariant,
-                          fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                          fontWeight: selected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
                         ),
                         side: BorderSide(
                           color: selected ? cs.primary : cs.outlineVariant,
@@ -191,7 +193,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
                       checkmarkColor: cs.onPrimary,
                       labelStyle: TextStyle(
                         color: selected ? cs.onPrimary : cs.onSurfaceVariant,
-                        fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                        fontWeight: selected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
                       ),
                       side: BorderSide(
                         color: selected ? cs.primary : cs.outlineVariant,

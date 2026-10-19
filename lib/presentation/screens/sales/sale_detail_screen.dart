@@ -13,9 +13,9 @@ import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/business/business_bloc.dart';
 import '../../blocs/sale/sale_bloc.dart';
 import '../../blocs/sale/sale_state.dart';
+import '../../widgets/aduinola/app_page.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/money_text.dart';
-import '../../widgets/responsive_shell.dart';
 
 class SaleDetailScreen extends StatefulWidget {
   final String? saleId;
@@ -113,9 +113,10 @@ class _SaleDetailScreenState extends State<SaleDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ResponsiveShell(
-      appBar: AppBar(title: const Text('Sale Detail')),
-      child: BlocBuilder<SaleBloc, SaleState>(
+    return AppPage(
+      title: 'Sale Detail',
+      padBody: false,
+      body: BlocBuilder<SaleBloc, SaleState>(
         builder: (context, state) {
           final sale = _find(state);
           if (sale == null || sale.items.isEmpty) {
@@ -125,112 +126,103 @@ class _SaleDetailScreenState extends State<SaleDetailScreen> {
             );
           }
 
-          return Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 980),
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            sale.saleNumber ?? '#${sale.id ?? ''}',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          if (sale.createdAt != null)
-                            Text(Formatters.dateTime(sale.createdAt!)),
-                          if (sale.customerName != null)
-                            Text('Customer: ${sale.customerName}'),
-                          Text('Status: ${sale.status}'),
-                        ],
+          return ListView(
+            padding: AppPage.insets(context),
+            children: [
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        sale.saleNumber ?? '#${sale.id ?? ''}',
+                        style: Theme.of(context).textTheme.titleLarge,
                       ),
-                    ),
+                      if (sale.createdAt != null)
+                        Text(Formatters.dateTime(sale.createdAt!)),
+                      if (sale.customerName != null)
+                        Text('Customer: ${sale.customerName}'),
+                      Text('Status: ${sale.status}'),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        children: [
-                          for (final i in sale.items)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      '${i.productName} × ${Formatters.quantity(i.quantity)}',
-                                    ),
-                                  ),
-                                  MoneyText(i.totalPrice),
-                                ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    children: [
+                      for (final i in sale.items)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '${i.productName} × ${Formatters.quantity(i.quantity)}',
+                                ),
                               ),
-                            ),
-                          const Divider(),
-                          _row('Subtotal', sale.subtotal),
-                          _row('Tax', sale.taxAmount),
-                          if (sale.discountAmount > 0)
-                            _row('Discount', -sale.discountAmount),
-                          _row('Total', sale.totalAmount, emphasize: true),
-                          const SizedBox(height: 6),
-                          _row('Paid', sale.paidAmount),
-                          _row('Change', sale.changeAmount),
-                        ],
-                      ),
+                              MoneyText(i.totalPrice),
+                            ],
+                          ),
+                        ),
+                      const Divider(),
+                      _row('Subtotal', sale.subtotal),
+                      _row('Tax', sale.taxAmount),
+                      if (sale.discountAmount > 0)
+                        _row('Discount', -sale.discountAmount),
+                      _row('Total', sale.totalAmount, emphasize: true),
+                      const SizedBox(height: 6),
+                      _row('Paid', sale.paidAmount),
+                      _row('Change', sale.changeAmount),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _busy ? null : () => _onPrint(sale),
+                      icon: _busy
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.print_outlined),
+                      label: const Text('Print'),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _busy ? null : () => _onPrint(sale),
-                          icon: _busy
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.print_outlined),
-                          label: const Text('Print'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _busy ? null : () => _onShare(sale),
-                          icon: const Icon(Icons.share_outlined),
-                          label: const Text('Share'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: sale.id != null
-                              ? () => context.push(
-                                  '/sales/return?saleId=${sale.id}',
-                                )
-                              : null,
-                          icon: const Icon(Icons.undo),
-                          label: const Text('Refund'),
-                        ),
-                      ),
-                    ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _busy ? null : () => _onShare(sale),
+                      icon: const Icon(Icons.share_outlined),
+                      label: const Text('Share'),
+                    ),
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: sale.id != null
+                          ? () =>
+                                context.push('/sales/return?saleId=${sale.id}')
+                          : null,
+                      icon: const Icon(Icons.undo),
+                      label: const Text('Refund'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           );
         },
       ),

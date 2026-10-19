@@ -21,9 +21,9 @@ import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/business/business_bloc.dart';
 import '../../blocs/sync/sync_bloc.dart';
 import '../../blocs/sync/sync_event.dart';
+import '../../widgets/aduinola/app_page.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/loading_indicator.dart';
-import '../../widgets/responsive_shell.dart';
 import '../../widgets/customer_picker_sheet.dart';
 import '../../../core/utils/formatters.dart';
 
@@ -651,38 +651,35 @@ class _LaundryOrdersScreenState extends State<LaundryOrdersScreen> {
   @override
   Widget build(BuildContext context) {
     if (widget.ordersOnly) {
-      return ResponsiveShell(
-        appBar: AppBar(
-          title: const Text('Laundry Tickets'),
-          actions: [
-            IconButton(
-              tooltip: 'Refresh',
-              onPressed: _load,
-              icon: const Icon(Icons.refresh),
-            ),
-          ],
-        ),
-        child: _buildOrdersPane(context),
-      );
-    }
-
-    final isWide = MediaQuery.of(context).size.width >= 1100;
-    return ResponsiveShell(
-      appBar: AppBar(
-        title: const Text('POS • Laundry'),
+      return AppPage(
+        title: 'Laundry Tickets',
         actions: [
-          IconButton(
-            tooltip: 'Load products',
-            onPressed: _loadProducts,
-            icon: const Icon(Icons.inventory_2_outlined),
-          ),
           IconButton(
             tooltip: 'Refresh',
             onPressed: _load,
             icon: const Icon(Icons.refresh),
           ),
         ],
-      ),
+        padBody: false,
+        body: _buildOrdersPane(context),
+      );
+    }
+
+    final isWide = MediaQuery.of(context).size.width >= 1100;
+    return AppPage(
+      title: 'POS • Laundry',
+      actions: [
+        IconButton(
+          tooltip: 'Load products',
+          onPressed: _loadProducts,
+          icon: const Icon(Icons.inventory_2_outlined),
+        ),
+        IconButton(
+          tooltip: 'Refresh',
+          onPressed: _load,
+          icon: const Icon(Icons.refresh),
+        ),
+      ],
       floatingActionButton: isWide
           ? null
           : FloatingActionButton.extended(
@@ -690,7 +687,8 @@ class _LaundryOrdersScreenState extends State<LaundryOrdersScreen> {
               icon: const Icon(Icons.add),
               label: const Text('New Ticket'),
             ),
-      child: isWide
+      padBody: false,
+      body: isWide
           ? Row(
               children: [
                 Expanded(child: _buildProductPickerPane(context)),
@@ -1672,7 +1670,9 @@ class _CreateLaundryTicketDialogState
       content: SizedBox(
         // Cap to the available width (minus the dialog's own insets) so it
         // never overflows a phone, up to 520 on wider screens.
-        width: (MediaQuery.of(context).size.width - 80).clamp(280, 520).toDouble(),
+        width: (MediaQuery.of(context).size.width - 80)
+            .clamp(280, 520)
+            .toDouble(),
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
@@ -1993,7 +1993,9 @@ class _LaundryOrderDetailsDialog extends StatelessWidget {
     return AlertDialog(
       title: Text('Ticket Details • ${order.ticketNumber}'),
       content: SizedBox(
-        width: (MediaQuery.of(context).size.width - 80).clamp(280, 620).toDouble(),
+        width: (MediaQuery.of(context).size.width - 80)
+            .clamp(280, 620)
+            .toDouble(),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

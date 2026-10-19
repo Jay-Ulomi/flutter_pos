@@ -235,3 +235,68 @@ class FormActions extends StatelessWidget {
     ]);
   }
 }
+
+/// Marks the start of a section inside [PageSections].
+class PageSectionTitle extends StatelessWidget {
+  const PageSectionTitle(this.text, {super.key});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+      child: Text(
+        text.toUpperCase(),
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+              letterSpacing: 0.8,
+            ),
+      ),
+    );
+  }
+}
+
+/// A scrolling page of sections laid out full width: each [PageSectionTitle]
+/// starts a section, and sections flow in one column on phones and two from
+/// 900 px (three from 1280 when [maxColumns] allows). Bare spacer
+/// `SizedBox`es between sections are dropped.
+class PageSections extends StatelessWidget {
+  const PageSections({super.key, required this.children, this.maxColumns = 2, this.footer});
+
+  final List<Widget> children;
+  final int maxColumns;
+
+  /// Full-width widgets after the sections.
+  final List<Widget>? footer;
+
+  @override
+  Widget build(BuildContext context) {
+    final sections = <List<Widget>>[];
+    for (final w in children) {
+      if (w is SizedBox && w.child == null) continue;
+      if (w is PageSectionTitle || sections.isEmpty) sections.add([]);
+      sections.last.add(w);
+    }
+    return ListView(
+      padding: AppPage.insets(context),
+      children: [
+        LayoutBuilder(builder: (context, c) {
+          final cols = responsiveColumns(c.maxWidth, max: maxColumns);
+          final width = (c.maxWidth - 16 * (cols - 1)) / cols;
+          return Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              for (final s in sections)
+                SizedBox(
+                  width: width,
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: s),
+                ),
+            ],
+          );
+        }),
+        ...?footer,
+      ],
+    );
+  }
+}

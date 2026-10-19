@@ -5,10 +5,10 @@ import '../../../data/models/customer_models.dart';
 import '../../blocs/customer_group/customer_group_bloc.dart';
 import '../../blocs/customer_group/customer_group_event.dart';
 import '../../blocs/customer_group/customer_group_state.dart';
+import '../../widgets/aduinola/app_page.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/loading_indicator.dart';
-import '../../widgets/responsive_shell.dart';
 
 class CustomerGroupsScreen extends StatefulWidget {
   const CustomerGroupsScreen({super.key});
@@ -66,14 +66,15 @@ class _CustomerGroupsScreenState extends State<CustomerGroupsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ResponsiveShell(
-      appBar: AppBar(title: const Text('Customer Groups')),
+    return AppPage(
+      title: 'Customer Groups',
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openEditor(),
         icon: const Icon(Icons.add),
         label: const Text('New group'),
       ),
-      child: BlocConsumer<CustomerGroupBloc, CustomerGroupState>(
+      padBody: false,
+      body: BlocConsumer<CustomerGroupBloc, CustomerGroupState>(
         listenWhen: (prev, curr) =>
             prev.errorMessage != curr.errorMessage && curr.errorMessage != null,
         listener: (context, state) {

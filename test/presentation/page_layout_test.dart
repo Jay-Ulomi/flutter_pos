@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_pos/data/datasources/remote/feed_remote.dart';
 import 'package:flutter_pos/presentation/screens/products/add_product_screen.dart';
@@ -100,5 +102,57 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('page-back')));
     await tester.pumpAndSettle();
     expect(find.text('home'), findsOneWidget);
+  });
+
+  testWidgets('PageSections: two section columns on desktop, one on phones', (tester) async {
+    Future<List<Rect>> layout(Size size) async {
+      useSize(tester, size);
+      await pumpRoutes(tester, initial: '/s', routes: [
+        GoRoute(
+          path: '/s',
+          builder: (_, _) => const AppPage(
+            title: 'Settings',
+            padBody: false,
+            body: PageSections(children: [
+              PageSectionTitle('User'),
+              Card(child: SizedBox(height: 80)),
+              SizedBox(height: 16),
+              PageSectionTitle('Session'),
+              Card(child: SizedBox(height: 80)),
+            ]),
+          ),
+        ),
+      ]);
+      await tester.pumpAndSettle();
+      return [tester.getRect(find.text('USER')), tester.getRect(find.text('SESSION'))];
+    }
+
+    final wide = await layout(const Size(1400, 900));
+    expect(wide[1].left, greaterThan(wide[0].left + 300), reason: 'side by side');
+    expect((wide[1].top - wide[0].top).abs(), lessThan(1));
+
+    final phone = await layout(const Size(390, 844));
+    expect(phone[1].top, greaterThan(phone[0].top + 80), reason: 'stacked');
+  });
+
+  test('in-shell screens have no centred max-width caps', () {
+    // Only pre-till screens (splash, login, forgot password, trial expired,
+    // business/branch pickers, open session, lock) and the receipt paper may
+    // constrain their width.
+    const allowed = {
+      'auth/login_screen.dart',
+      'auth/forgot_password_screen.dart',
+      'auth/trial_expired_screen.dart',
+      'session/open_session_screen.dart',
+    };
+    final offenders = <String>[];
+    for (final f in Directory('lib/presentation/screens').listSync(recursive: true).whereType<File>()) {
+      final rel = f.path.split('lib/presentation/screens/').last;
+      if (allowed.contains(rel)) continue;
+      if (RegExp(r'BoxConstraints\(maxWidth:').hasMatch(f.readAsStringSync())) offenders.add(rel);
+    }
+    final shell = File('lib/presentation/widgets/responsive_shell.dart').readAsStringSync();
+    if (shell.contains('BoxConstraints(maxWidth')) offenders.add('responsive_shell.dart');
+    expect(offenders, isEmpty);
   });
 }

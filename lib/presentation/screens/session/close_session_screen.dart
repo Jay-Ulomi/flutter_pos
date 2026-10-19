@@ -6,9 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../blocs/session/session_bloc.dart';
 import '../../blocs/session/session_event.dart';
 import '../../blocs/session/session_state.dart';
+import '../../widgets/aduinola/app_page.dart';
 import '../../widgets/loading_indicator.dart';
 import '../../widgets/money_text.dart';
-import '../../widgets/responsive_shell.dart';
 
 class CloseSessionScreen extends StatefulWidget {
   const CloseSessionScreen({super.key});
@@ -60,9 +60,10 @@ class _CloseSessionScreenState extends State<CloseSessionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ResponsiveShell(
-      appBar: AppBar(title: const Text('Close Session')),
-      child: BlocConsumer<SessionBloc, SessionState>(
+    return AppPage(
+      title: 'Close Session',
+      padBody: false,
+      body: BlocConsumer<SessionBloc, SessionState>(
         listener: (context, state) {
           if (state.status == SessionStatus.closed) {
             ScaffoldMessenger.of(
@@ -339,47 +340,40 @@ class _CloseSessionScreenState extends State<CloseSessionScreen> {
             ],
           );
 
-          return Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1180),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Form(
-                  key: _formKey,
-                  child: isDesktop
-                      ? SingleChildScrollView(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                flex: 6,
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    summaryCard,
-                                    const SizedBox(height: 16),
-                                    cashCountSection,
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 18),
-                              Expanded(flex: 5, child: actionSection),
-                            ],
+          return Padding(
+            padding: AppPage.insets(context),
+            child: Form(
+              key: _formKey,
+              child: isDesktop
+                  ? SingleChildScrollView(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            flex: 6,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                summaryCard,
+                                const SizedBox(height: 16),
+                                cashCountSection,
+                              ],
+                            ),
                           ),
-                        )
-                      : ListView(
-                          children: [
-                            summaryCard,
-                            const SizedBox(height: 16),
-                            cashCountSection,
-                            const SizedBox(height: 14),
-                            actionSection,
-                          ],
-                        ),
-                ),
-              ),
+                          const SizedBox(width: 18),
+                          Expanded(flex: 5, child: actionSection),
+                        ],
+                      ),
+                    )
+                  : ListView(
+                      children: [
+                        summaryCard,
+                        const SizedBox(height: 16),
+                        cashCountSection,
+                        const SizedBox(height: 14),
+                        actionSection,
+                      ],
+                    ),
             ),
           );
         },

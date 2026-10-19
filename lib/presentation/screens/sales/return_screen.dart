@@ -6,6 +6,7 @@ import '../../../data/models/sale_models.dart';
 import '../../blocs/sale/sale_bloc.dart';
 import '../../blocs/sale/sale_event.dart';
 import '../../blocs/sale/sale_state.dart';
+import '../../widgets/aduinola/app_page.dart';
 import '../../widgets/money_text.dart';
 
 class ReturnScreen extends StatefulWidget {
@@ -79,8 +80,10 @@ class _ReturnScreenState extends State<ReturnScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Process Return')),
+    return AppPage(
+      title: 'Process Return',
+      showBottomNav: false,
+      padBody: false,
       body: BlocListener<SaleBloc, SaleState>(
         listener: (context, state) {
           if (state.status == SaleStatus.returned) {
@@ -100,7 +103,7 @@ class _ReturnScreenState extends State<ReturnScreen> {
             final processing = saleState.status == SaleStatus.returning;
 
             return ListView(
-              padding: const EdgeInsets.all(16),
+              padding: AppPage.insets(context),
               children: [
                 Card(
                   child: Padding(
@@ -120,7 +123,9 @@ class _ReturnScreenState extends State<ReturnScreen> {
                             child: Text(
                               'Additional charges (${widget.sale.additionalCharges.map((c) => c.name).join(', ')}) are not refunded.',
                               key: const ValueKey('charges-not-refunded'),
-                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.secondary),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.secondary,
+                              ),
                             ),
                           ),
                       ],

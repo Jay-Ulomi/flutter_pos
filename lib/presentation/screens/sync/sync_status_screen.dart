@@ -7,7 +7,7 @@ import '../../../di/injection.dart';
 import '../../blocs/sync/sync_bloc.dart';
 import '../../blocs/sync/sync_event.dart';
 import '../../blocs/sync/sync_state.dart';
-import '../../widgets/responsive_shell.dart';
+import '../../widgets/aduinola/app_page.dart';
 
 class SyncStatusScreen extends StatefulWidget {
   const SyncStatusScreen({super.key});
@@ -89,9 +89,10 @@ class _SyncStatusScreenState extends State<SyncStatusScreen> {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
 
-    return ResponsiveShell(
-      appBar: AppBar(title: const Text('Sync')),
-      child: BlocConsumer<SyncBloc, SyncBlocState>(
+    return AppPage(
+      title: 'Sync',
+      padBody: false,
+      body: BlocConsumer<SyncBloc, SyncBlocState>(
         listener: (context, state) {
           if (state.phase == SyncPhase.error && state.errorMessage != null) {
             ScaffoldMessenger.of(
@@ -104,304 +105,300 @@ class _SyncStatusScreenState extends State<SyncStatusScreen> {
           final hasBranch = _branchId != null;
           final isOnline = state.status.isOnline;
 
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 600),
-              child: ListView(
+          return ListView(
+            padding: AppPage.insets(context),
+            children: [
+              // ── Connection status ──
+              Container(
                 padding: const EdgeInsets.all(16),
-                children: [
-                  // ── Connection status ──
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: (isOnline ? colors.primary : colors.error)
-                          .withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: (isOnline ? colors.primary : colors.error)
-                            .withValues(alpha: 0.3),
+                decoration: BoxDecoration(
+                  color: (isOnline ? colors.primary : colors.error).withValues(
+                    alpha: 0.1,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: (isOnline ? colors.primary : colors.error)
+                        .withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: isOnline
+                            ? colors.primaryContainer
+                            : colors.errorContainer,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        isOnline ? Icons.cloud_done : Icons.cloud_off,
+                        color: isOnline
+                            ? colors.onPrimaryContainer
+                            : colors.onErrorContainer,
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: isOnline
-                                ? colors.primaryContainer
-                                : colors.errorContainer,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(
-                            isOnline ? Icons.cloud_done : Icons.cloud_off,
-                            color: isOnline
-                                ? colors.onPrimaryContainer
-                                : colors.onErrorContainer,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                isOnline ? 'Online' : 'Offline',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              if (state.status.lastSyncTime != null)
-                                Text(
-                                  'Last sync: ${Formatters.dateTime(state.status.lastSyncTime!)}',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: colors.onSurfaceVariant,
-                                  ),
-                                )
-                              else
-                                Text(
-                                  'Never synced',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: colors.onSurfaceVariant,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        if (syncing)
-                          const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // ── Sales queue stats ──
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
+                    const SizedBox(width: 14),
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Sales Queue',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              color: colors.onSurfaceVariant,
+                            isOnline ? 'Online' : 'Offline',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              _statTile(
-                                context,
-                                state.status.pendingSalesCount,
-                                'Pending',
-                                colors.secondary,
+                          if (state.status.lastSyncTime != null)
+                            Text(
+                              'Last sync: ${Formatters.dateTime(state.status.lastSyncTime!)}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colors.onSurfaceVariant,
                               ),
-                              _statTile(
-                                context,
-                                state.status.failedSalesCount,
-                                'Failed',
-                                colors.error,
+                            )
+                          else
+                            Text(
+                              'Never synced',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colors.onSurfaceVariant,
                               ),
-                            ],
-                          ),
+                            ),
                         ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // ── Laundry queue stats ──
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Laundry Queue',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              _statTile(
-                                context,
-                                state.status.pendingLaundryCount,
-                                'Pending',
-                                colors.secondary,
-                              ),
-                              _statTile(
-                                context,
-                                state.status.failedLaundryCount,
-                                'Failed',
-                                colors.error,
-                              ),
-                            ],
-                          ),
-                        ],
+                    if (syncing)
+                      const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // ── Combined queue stats ──
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Combined Queue',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              _statTile(
-                                context,
-                                state.status.pendingCount,
-                                'Pending',
-                                colors.secondary,
-                              ),
-                              _statTile(
-                                context,
-                                state.status.syncingCount,
-                                'Syncing',
-                                colors.primary,
-                              ),
-                              _statTile(
-                                context,
-                                state.status.failedCount,
-                                'Failed',
-                                colors.error,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // ── Last push result ──
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Last Push Result',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              _statTile(
-                                context,
-                                state.status.lastAcceptedCount,
-                                'Accepted',
-                                colors.primary,
-                              ),
-                              _statTile(
-                                context,
-                                state.status.lastRejectedCount,
-                                'Rejected',
-                                colors.error,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // ── Actions ──
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _actionButton(
-                          icon: Icons.cloud_download,
-                          label: 'Full Sync',
-                          onPressed: (syncing || !hasBranch)
-                              ? null
-                              : () => _confirmFullSync(context),
-                          filled: true,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _actionButton(
-                          icon: Icons.sync,
-                          label: 'Sync Changes',
-                          onPressed: (syncing || !hasBranch)
-                              ? null
-                              : () => context.read<SyncBloc>().add(
-                                  SyncDeltaRequested(_branchId!),
-                                ),
-                          filled: true,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _actionButton(
-                          icon: Icons.upload,
-                          label: 'Push Queue',
-                          onPressed: syncing
-                              ? null
-                              : () => context.read<SyncBloc>().add(
-                                  const SyncPushRequested(),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _actionButton(
-                          icon: Icons.flash_on,
-                          label: 'Quick Sync',
-                          onPressed: syncing
-                              ? null
-                              : () => context.read<SyncBloc>().add(
-                                  const SyncTriggered(),
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  // Clearing stuck (permanently-rejected) sales — only shown
-                  // when there is something to clear.
-                  if (state.status.failedSalesCount > 0) ...[
-                    const SizedBox(height: 12),
-                    _actionButton(
-                      icon: Icons.delete_sweep_outlined,
-                      label:
-                          'Clear ${state.status.failedSalesCount} Failed Sale'
-                          '${state.status.failedSalesCount == 1 ? '' : 's'}',
-                      onPressed: syncing
-                          ? null
-                          : () => _confirmClearFailed(context),
-                    ),
                   ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // ── Sales queue stats ──
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Sales Queue',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          _statTile(
+                            context,
+                            state.status.pendingSalesCount,
+                            'Pending',
+                            colors.secondary,
+                          ),
+                          _statTile(
+                            context,
+                            state.status.failedSalesCount,
+                            'Failed',
+                            colors.error,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // ── Laundry queue stats ──
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Laundry Queue',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          _statTile(
+                            context,
+                            state.status.pendingLaundryCount,
+                            'Pending',
+                            colors.secondary,
+                          ),
+                          _statTile(
+                            context,
+                            state.status.failedLaundryCount,
+                            'Failed',
+                            colors.error,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // ── Combined queue stats ──
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Combined Queue',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          _statTile(
+                            context,
+                            state.status.pendingCount,
+                            'Pending',
+                            colors.secondary,
+                          ),
+                          _statTile(
+                            context,
+                            state.status.syncingCount,
+                            'Syncing',
+                            colors.primary,
+                          ),
+                          _statTile(
+                            context,
+                            state.status.failedCount,
+                            'Failed',
+                            colors.error,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // ── Last push result ──
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Last Push Result',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          _statTile(
+                            context,
+                            state.status.lastAcceptedCount,
+                            'Accepted',
+                            colors.primary,
+                          ),
+                          _statTile(
+                            context,
+                            state.status.lastRejectedCount,
+                            'Rejected',
+                            colors.error,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // ── Actions ──
+              Row(
+                children: [
+                  Expanded(
+                    child: _actionButton(
+                      icon: Icons.cloud_download,
+                      label: 'Full Sync',
+                      onPressed: (syncing || !hasBranch)
+                          ? null
+                          : () => _confirmFullSync(context),
+                      filled: true,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _actionButton(
+                      icon: Icons.sync,
+                      label: 'Sync Changes',
+                      onPressed: (syncing || !hasBranch)
+                          ? null
+                          : () => context.read<SyncBloc>().add(
+                              SyncDeltaRequested(_branchId!),
+                            ),
+                      filled: true,
+                    ),
+                  ),
                 ],
               ),
-            ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _actionButton(
+                      icon: Icons.upload,
+                      label: 'Push Queue',
+                      onPressed: syncing
+                          ? null
+                          : () => context.read<SyncBloc>().add(
+                              const SyncPushRequested(),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _actionButton(
+                      icon: Icons.flash_on,
+                      label: 'Quick Sync',
+                      onPressed: syncing
+                          ? null
+                          : () => context.read<SyncBloc>().add(
+                              const SyncTriggered(),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+              // Clearing stuck (permanently-rejected) sales — only shown
+              // when there is something to clear.
+              if (state.status.failedSalesCount > 0) ...[
+                const SizedBox(height: 12),
+                _actionButton(
+                  icon: Icons.delete_sweep_outlined,
+                  label:
+                      'Clear ${state.status.failedSalesCount} Failed Sale'
+                      '${state.status.failedSalesCount == 1 ? '' : 's'}',
+                  onPressed: syncing
+                      ? null
+                      : () => _confirmClearFailed(context),
+                ),
+              ],
+            ],
           );
         },
       ),

@@ -11,6 +11,7 @@ import '../../../data/models/business_models.dart';
 import '../../../data/models/laundry_models.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/business/business_bloc.dart';
+import '../../widgets/aduinola/app_page.dart';
 import '../../widgets/money_text.dart';
 
 class LaundryReceiptScreen extends StatefulWidget {
@@ -99,13 +100,15 @@ class _LaundryReceiptScreenState extends State<LaundryReceiptScreen> {
     final order = widget.order;
     final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Laundry Receipt')),
+    return AppPage(
+      title: 'Laundry Receipt',
+      showBottomNav: false,
+      padBody: false,
       body: Column(
         children: [
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.all(16),
+              padding: AppPage.insets(context),
               children: [
                 Center(
                   child: Column(
@@ -209,7 +212,7 @@ class _LaundryReceiptScreenState extends State<LaundryReceiptScreen> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: AppPage.insets(context),
             child: FilledButton.icon(
               onPressed: () => context.go('/pos'),
               icon: const Icon(Icons.add),

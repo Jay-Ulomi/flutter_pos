@@ -36,7 +36,7 @@ import '../../widgets/loading_indicator.dart';
 import '../../widgets/money_text.dart';
 import '../../widgets/aduinola/sale_product_tile.dart';
 import '../../widgets/aduinola/ui.dart';
-import '../../widgets/responsive_shell.dart';
+import '../../widgets/aduinola/app_page.dart';
 
 // ---------------------------------------------------------------------------
 // Keyboard shortcut intents
@@ -312,8 +312,8 @@ class _PosScreenState extends State<PosScreen> {
       builder: (sheetCtx) {
         return Container(
           height: MediaQuery.of(context).size.height * 0.92,
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
@@ -323,7 +323,7 @@ class _PosScreenState extends State<PosScreen> {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFC3CEC0),
+                  color: Theme.of(context).colorScheme.outline,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -356,8 +356,8 @@ class _PosScreenState extends State<PosScreen> {
         maxChildSize: 0.92,
         expand: false,
         builder: (_, scrollController) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
@@ -367,7 +367,7 @@ class _PosScreenState extends State<PosScreen> {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFC3CEC0),
+                  color: Theme.of(context).colorScheme.outline,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -402,9 +402,7 @@ class _PosScreenState extends State<PosScreen> {
     final isWide = MediaQuery.sizeOf(context).width >= 900;
     final isMobile = MediaQuery.sizeOf(context).width < 720;
 
-    final appBar = AppBar(
-      title: const BrandWordmark(height: 30),
-      actions: [
+    final actions = <Widget>[
         IconButton(
           icon: const Icon(Icons.tv_outlined),
           tooltip: 'Customer Display',
@@ -426,8 +424,7 @@ class _PosScreenState extends State<PosScreen> {
           tooltip: 'Settings',
           onPressed: () => context.push('/settings'),
         ),
-      ],
-    );
+    ];
 
     final fab = isMobile
         ? null
@@ -517,10 +514,14 @@ class _PosScreenState extends State<PosScreen> {
         },
         child: Focus(
           autofocus: true,
-          child: ResponsiveShell(
-            appBar: appBar,
+          child: AppPage(
+            title: 'Home',
+            titleWidget: const BrandWordmark(height: 30),
+            showBack: false,
+            actions: actions,
             floatingActionButton: fab,
-            child: body,
+            padBody: false,
+            body: body,
           ),
         ),
       ),
@@ -536,7 +537,7 @@ class _PosScreenState extends State<PosScreen> {
           children: [
             // Search pill + custom item
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+              padding: AppPage.insets(context, top: 8, bottom: 10),
               child: Row(
                 children: [
                   Expanded(
@@ -570,7 +571,12 @@ class _PosScreenState extends State<PosScreen> {
           ],
         ),
         // Cart summary bar: "⌃ 2 items · total   [Next]"
-        Positioned(left: 12, right: 12, bottom: 12, child: _cartSummaryBar()),
+        Positioned(
+          left: AppPage.gutterOf(context),
+          right: AppPage.gutterOf(context),
+          bottom: 12,
+          child: _cartSummaryBar(),
+        ),
       ],
     );
   }
@@ -624,7 +630,7 @@ class _PosScreenState extends State<PosScreen> {
               }
             }
             return GridView.builder(
-              padding: EdgeInsets.fromLTRB(16, 4, 16, bottomPadding),
+              padding: AppPage.insets(context, top: 4, bottom: bottomPadding),
               gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                 maxCrossAxisExtent: 210,
                 mainAxisSpacing: 12,
@@ -723,6 +729,7 @@ class _PosScreenState extends State<PosScreen> {
         if (data.categories.isEmpty) return const SizedBox.shrink();
         final all = <Category?>[null, ...data.categories];
         return PillChips<Category?>(
+          padding: EdgeInsets.symmetric(horizontal: AppPage.gutterOf(context)),
           items: all,
           selected: all.firstWhere((c) => c?.id == data.selectedId, orElse: () => null),
           labelOf: (c) => c?.name ?? context.tr('common.all'),
@@ -738,7 +745,7 @@ class _PosScreenState extends State<PosScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+          padding: AppPage.insets(context, top: 12, bottom: 10),
           child: Row(
             children: [
               Expanded(
@@ -892,12 +899,12 @@ class _PosScreenState extends State<PosScreen> {
                             ),
                           ),
                           const SizedBox(width: 10),
-                          const Text(
+                          Text(
                             'Cart',
                             style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF14261A),
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                           if (cart.isNotEmpty) ...[
@@ -976,13 +983,13 @@ class _PosScreenState extends State<PosScreen> {
                                   vertical: 7,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFEDF2EB),
+                                  color: Theme.of(context).colorScheme.surfaceContainer,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.back_hand_outlined,
                                   size: 15,
-                                  color: Color(0xFF4E5E52),
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ),
@@ -997,13 +1004,13 @@ class _PosScreenState extends State<PosScreen> {
                                   vertical: 7,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFFEE2E2),
+                                  color: Theme.of(context).colorScheme.errorContainer,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.delete_outline,
                                   size: 15,
-                                  color: Color(0xFFD93A2B),
+                                  color: Theme.of(context).colorScheme.error,
                                 ),
                               ),
                             ),
@@ -1018,7 +1025,7 @@ class _PosScreenState extends State<PosScreen> {
                       child: _customerRow(context, cart),
                     ),
 
-                    const Divider(height: 1, color: Color(0xFFDCE4D8)),
+                    Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
 
                     // ── Items ──
                     // In compact mode (mobile bottom sheet) the list sizes to its
@@ -1035,7 +1042,7 @@ class _PosScreenState extends State<PosScreen> {
                     ),
 
                     if (cart.isNotEmpty) ...[
-                      const Divider(height: 1, color: Color(0xFFDCE4D8)),
+                      Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
                       _totalsSection(cart),
                     ],
 
@@ -1049,7 +1056,7 @@ class _PosScreenState extends State<PosScreen> {
                           onPressed: cart.isEmpty ? null : _handleCheckout,
                           style: FilledButton.styleFrom(
                             backgroundColor: BrandColors.primary,
-                            disabledBackgroundColor: const Color(0xFFC3CEC0),
+                            disabledBackgroundColor: Theme.of(context).colorScheme.outline,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
                             ),
@@ -1117,13 +1124,13 @@ class _PosScreenState extends State<PosScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         decoration: BoxDecoration(
           color: cart.hasCustomer
-              ? const Color(0xFFDCFCE7)
-              : const Color(0xFFEDF2EB),
+              ? Theme.of(context).colorScheme.primaryContainer
+              : Theme.of(context).colorScheme.surfaceContainer,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: cart.hasCustomer
-                ? const Color(0xFFBBF7D0)
-                : const Color(0xFFDCE4D8),
+                ? Theme.of(context).colorScheme.primaryContainer
+                : Theme.of(context).colorScheme.outlineVariant,
           ),
         ),
         child: Row(
@@ -1133,7 +1140,7 @@ class _PosScreenState extends State<PosScreen> {
               size: 16,
               color: cart.hasCustomer
                   ? BrandColors.primary
-                  : const Color(0xFF8A968D),
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -1145,8 +1152,8 @@ class _PosScreenState extends State<PosScreen> {
                       ? FontWeight.w600
                       : FontWeight.w400,
                   color: cart.hasCustomer
-                      ? const Color(0xFF166534)
-                      : const Color(0xFF8A968D),
+                      ? Theme.of(context).colorScheme.onPrimaryContainer
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
@@ -1154,17 +1161,17 @@ class _PosScreenState extends State<PosScreen> {
               GestureDetector(
                 onTap: () =>
                     context.read<CartBloc>().add(const CartCustomerCleared()),
-                child: const Icon(
+                child: Icon(
                   Icons.close,
                   size: 15,
-                  color: Color(0xFF8A968D),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               )
             else
-              const Icon(
+              Icon(
                 Icons.chevron_right,
                 size: 16,
-                color: Color(0xFF8A968D),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
           ],
         ),
@@ -1188,19 +1195,19 @@ class _PosScreenState extends State<PosScreen> {
               valueColor: const Color(0xFF2E8B3E),
             ),
           ],
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(vertical: 8),
-            child: Divider(height: 1, color: Color(0xFFDCE4D8)),
+            child: Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Total',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF14261A),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               MoneyText(
@@ -1224,13 +1231,13 @@ class _PosScreenState extends State<PosScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 13, color: Color(0xFF4E5E52)),
+          style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
         MoneyText(
           amount,
           style: TextStyle(
             fontSize: 13,
-            color: valueColor ?? const Color(0xFF2E3D33),
+            color: valueColor ?? Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ],
@@ -1244,8 +1251,8 @@ class _PosScreenState extends State<PosScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
         height: MediaQuery.of(context).size.height * 0.88,
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: _CartSheet(
@@ -1311,7 +1318,7 @@ class _CartSheetState extends State<_CartSheet> {
           width: 36,
           height: 4,
           decoration: BoxDecoration(
-            color: const Color(0xFFC3CEC0),
+            color: Theme.of(context).colorScheme.outline,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -1340,11 +1347,11 @@ class _CartSheetState extends State<_CartSheet> {
                       contentPadding: const EdgeInsets.symmetric(vertical: 0),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFDCE4D8)),
+                        borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFDCE4D8)),
+                        borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -1354,7 +1361,7 @@ class _CartSheetState extends State<_CartSheet> {
                         ),
                       ),
                       filled: true,
-                      fillColor: const Color(0xFFF4F7F2),
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
                     ),
                     onChanged: (v) {
                       context.read<ProductBloc>().add(ProductSearchChanged(v));
@@ -1370,14 +1377,14 @@ class _CartSheetState extends State<_CartSheet> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEDF2EB),
+                    color: Theme.of(context).colorScheme.surfaceContainer,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFDCE4D8)),
+                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.qr_code_scanner,
                     size: 20,
-                    color: Color(0xFF2E3D33),
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -1385,7 +1392,7 @@ class _CartSheetState extends State<_CartSheet> {
           ),
         ),
 
-        const Divider(height: 1, color: Color(0xFFDCE4D8)),
+        Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
 
         Expanded(child: _hasQuery ? _searchArea(context) : widget.cartPane),
       ],
@@ -1419,10 +1426,10 @@ class _CartSheetState extends State<_CartSheet> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.search_off_rounded,
                       size: 16,
-                      color: Color(0xFF8A968D),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -1430,16 +1437,16 @@ class _CartSheetState extends State<_CartSheet> {
                         'No products found for "${_searchCtrl.text}"',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF4E5E52),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const Divider(height: 1, color: Color(0xFFDCE4D8)),
+              Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
               Expanded(child: widget.cartPane),
             ],
           );
@@ -1464,7 +1471,7 @@ class _CartSheetState extends State<_CartSheet> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFFEDF2EB),
+              color: Theme.of(context).colorScheme.surfaceContainer,
               borderRadius: BorderRadius.circular(10),
             ),
             child: p.imageUrl != null && p.imageUrl!.isNotEmpty
@@ -1473,44 +1480,44 @@ class _CartSheetState extends State<_CartSheet> {
                     child: Image.network(
                       p.imageUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, err, stack) => const Icon(
+                      errorBuilder: (context, err, stack) => Icon(
                         Icons.inventory_2_outlined,
                         size: 18,
-                        color: Color(0xFF8A968D),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   )
-                : const Icon(
+                : Icon(
                     Icons.inventory_2_outlined,
                     size: 18,
-                    color: Color(0xFF8A968D),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
           ),
           title: Text(
             p.name,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF14261A),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           subtitle: Row(
             children: [
               MoneyText(
                 p.sellingPrice,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF4E5E52)),
+                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
               if (p.stockLabel != null) ...[
-                const Text(
+                Text(
                   '  ·  ',
-                  style: TextStyle(fontSize: 12, color: Color(0xFFC3CEC0)),
+                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline),
                 ),
                 Icon(
                   Icons.inventory_2_outlined,
                   size: 11,
                   color: p.isOutOfStock
-                      ? const Color(0xFFD93A2B)
-                      : const Color(0xFF8A968D),
+                      ? Theme.of(context).colorScheme.error
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 3),
                 Flexible(
@@ -1522,10 +1529,10 @@ class _CartSheetState extends State<_CartSheet> {
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: p.isOutOfStock
-                          ? const Color(0xFFD93A2B)
+                          ? Theme.of(context).colorScheme.error
                           : p.isLowStock
                           ? const Color(0xFFD97706)
-                          : const Color(0xFF4E5E52),
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),

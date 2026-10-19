@@ -8,11 +8,11 @@ import '../../blocs/customer/customer_state.dart';
 import '../../blocs/customer_group/customer_group_bloc.dart';
 import '../../blocs/customer_group/customer_group_event.dart';
 import '../../blocs/customer_group/customer_group_state.dart';
+import '../../widgets/aduinola/app_page.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/loading_indicator.dart';
 import '../../widgets/money_text.dart';
-import '../../widgets/responsive_shell.dart';
 import 'customer_form_sheet.dart';
 
 class CustomerDetailScreen extends StatefulWidget {
@@ -104,9 +104,10 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ResponsiveShell(
-      appBar: AppBar(title: const Text('Customer')),
-      child: BlocConsumer<CustomerBloc, CustomerState>(
+    return AppPage(
+      title: 'Customer',
+      padBody: false,
+      body: BlocConsumer<CustomerBloc, CustomerState>(
         listenWhen: (prev, curr) =>
             prev.errorMessage != curr.errorMessage && curr.errorMessage != null,
         listener: (context, state) {
@@ -178,7 +179,7 @@ class _DetailBody extends StatelessWidget {
     final theme = Theme.of(context);
     final c = customer;
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: AppPage.insets(context),
       children: [
         Row(
           children: [

@@ -12,10 +12,10 @@ import '../../blocs/sale/sale_state.dart';
 import '../../blocs/sync/sync_bloc.dart';
 import '../../blocs/sync/sync_state.dart';
 import '../laundry/laundry_orders_screen.dart';
+import '../../widgets/aduinola/app_page.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/loading_indicator.dart';
-import '../../widgets/responsive_shell.dart';
 
 class SalesHistoryScreen extends StatefulWidget {
   const SalesHistoryScreen({super.key});
@@ -45,19 +45,18 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
       return const LaundryOrdersScreen(ordersOnly: true);
     }
 
-    return ResponsiveShell(
-      appBar: AppBar(
-        title: const Text('Sales History'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-            onPressed: () =>
-                context.read<SaleBloc>().add(const SaleRecentLoadRequested()),
-          ),
-        ],
-      ),
-      child: BlocListener<SyncBloc, SyncBlocState>(
+    return AppPage(
+      title: 'Sales History',
+      padBody: false,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          tooltip: 'Refresh',
+          onPressed: () =>
+              context.read<SaleBloc>().add(const SaleRecentLoadRequested()),
+        ),
+      ],
+      body: BlocListener<SyncBloc, SyncBlocState>(
         // When the background sync flushes the queue, the pending count changes
         // but SaleBloc still holds the stale list — reload so cleared sales
         // stop showing as "Pending".
@@ -66,71 +65,72 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
         listener: (context, _) =>
             context.read<SaleBloc>().add(const SaleRecentLoadRequested()),
         child: BlocBuilder<SaleBloc, SaleState>(
-        builder: (context, state) {
-          if (state.status == SaleStatus.loadingRecent) {
-            return const LoadingIndicator();
-          }
-          if (state.status == SaleStatus.error) {
-            return ErrorView(
-              message: state.errorMessage ?? 'Failed to load sales',
-              onRetry: () =>
+          builder: (context, state) {
+            if (state.status == SaleStatus.loadingRecent) {
+              return const LoadingIndicator();
+            }
+            if (state.status == SaleStatus.error) {
+              return ErrorView(
+                message: state.errorMessage ?? 'Failed to load sales',
+                onRetry: () => context.read<SaleBloc>().add(
+                  const SaleRecentLoadRequested(),
+                ),
+              );
+            }
+            if (state.recent.isEmpty && state.pending.isEmpty) {
+              return const EmptyState(
+                title: 'No sales yet',
+                subtitle: 'Completed sales will appear here.',
+                icon: Icons.receipt_long_outlined,
+              );
+            }
+
+            // Combine pending + recent
+            final pendingCount = state.pending.length;
+            final recentCount = state.recent.length;
+            final hasPending = pendingCount > 0;
+            final hasRecent = recentCount > 0;
+
+            final headerCount = (hasPending ? 1 : 0) + (hasRecent ? 1 : 0);
+            final totalCount = pendingCount + recentCount + headerCount;
+
+            return RefreshIndicator(
+              onRefresh: () async =>
                   context.read<SaleBloc>().add(const SaleRecentLoadRequested()),
+              child: ListView.builder(
+                padding: AppPage.insets(context),
+                itemCount: totalCount,
+                itemBuilder: (context, i) {
+                  // Pending header
+                  if (hasPending && i == 0) {
+                    return _sectionHeader(context, 'Pending ($pendingCount)');
+                  }
+
+                  final pendingStart = hasPending ? 1 : 0;
+                  final pendingEnd = pendingStart + pendingCount;
+
+                  if (i >= pendingStart && i < pendingEnd) {
+                    final pending = state.pending[i - pendingStart];
+                    return _SaleCard(
+                      sale: pending.sale,
+                      isPending: true,
+                      status: pending.status.name,
+                    );
+                  }
+
+                  final completedHeaderIndex = pendingEnd;
+                  if (hasRecent && i == completedHeaderIndex) {
+                    return _sectionHeader(context, 'Completed ($recentCount)');
+                  }
+
+                  final recentStart =
+                      completedHeaderIndex + (hasRecent ? 1 : 0);
+                  final recentIndex = i - recentStart;
+                  return _SaleCard(sale: state.recent[recentIndex]);
+                },
+              ),
             );
-          }
-          if (state.recent.isEmpty && state.pending.isEmpty) {
-            return const EmptyState(
-              title: 'No sales yet',
-              subtitle: 'Completed sales will appear here.',
-              icon: Icons.receipt_long_outlined,
-            );
-          }
-
-          // Combine pending + recent
-          final pendingCount = state.pending.length;
-          final recentCount = state.recent.length;
-          final hasPending = pendingCount > 0;
-          final hasRecent = recentCount > 0;
-
-          final headerCount = (hasPending ? 1 : 0) + (hasRecent ? 1 : 0);
-          final totalCount = pendingCount + recentCount + headerCount;
-
-          return RefreshIndicator(
-            onRefresh: () async => context.read<SaleBloc>().add(
-              const SaleRecentLoadRequested(),
-            ),
-            child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: totalCount,
-            itemBuilder: (context, i) {
-              // Pending header
-              if (hasPending && i == 0) {
-                return _sectionHeader(context, 'Pending ($pendingCount)');
-              }
-
-              final pendingStart = hasPending ? 1 : 0;
-              final pendingEnd = pendingStart + pendingCount;
-
-              if (i >= pendingStart && i < pendingEnd) {
-                final pending = state.pending[i - pendingStart];
-                return _SaleCard(
-                  sale: pending.sale,
-                  isPending: true,
-                  status: pending.status.name,
-                );
-              }
-
-              final completedHeaderIndex = pendingEnd;
-              if (hasRecent && i == completedHeaderIndex) {
-                return _sectionHeader(context, 'Completed ($recentCount)');
-              }
-
-              final recentStart = completedHeaderIndex + (hasRecent ? 1 : 0);
-              final recentIndex = i - recentStart;
-              return _SaleCard(sale: state.recent[recentIndex]);
-            },
-          ),
-          );
-        },
+          },
         ),
       ),
     );

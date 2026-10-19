@@ -9,9 +9,9 @@ import '../../blocs/customer/customer_state.dart';
 import '../../blocs/customer_group/customer_group_bloc.dart';
 import '../../blocs/customer_group/customer_group_event.dart';
 import '../../blocs/customer_group/customer_group_state.dart';
+import '../../widgets/aduinola/app_page.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/loading_indicator.dart';
-import '../../widgets/responsive_shell.dart';
 import 'customer_form_sheet.dart';
 
 class CustomerSearchScreen extends StatefulWidget {
@@ -54,26 +54,25 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
 
-    return ResponsiveShell(
-      appBar: AppBar(
-        title: const Text('Customers'),
-        actions: [
-          TextButton.icon(
-            onPressed: () => context.go('/customers/groups'),
-            icon: const Icon(Icons.group_work_outlined),
-            label: const Text('Manage Groups'),
-          ),
-        ],
-      ),
+    return AppPage(
+      title: 'Customers',
+      actions: [
+        TextButton.icon(
+          onPressed: () => context.go('/customers/groups'),
+          icon: const Icon(Icons.group_work_outlined),
+          label: const Text('Manage Groups'),
+        ),
+      ],
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openCreate,
         icon: const Icon(Icons.person_add),
         label: const Text('New'),
       ),
-      child: Column(
+      padBody: false,
+      body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            padding: AppPage.insets(context, top: 12, bottom: 8),
             child: TextField(
               controller: _searchCtrl,
               decoration: const InputDecoration(
