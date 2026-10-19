@@ -102,67 +102,75 @@ class _ReturnScreenState extends State<ReturnScreen> {
           builder: (context, saleState) {
             final processing = saleState.status == SaleStatus.returning;
 
-            return ListView(
-              padding: AppPage.insets(context),
-              children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Original Sale: ${widget.sale.saleNumber ?? '#${widget.sale.id}'}',
-                          style: theme.textTheme.titleMedium,
+            final header = PageCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Original Sale: ${widget.sale.saleNumber ?? '#${widget.sale.id}'}',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  if (widget.sale.customerName != null)
+                    Text('Customer: ${widget.sale.customerName}'),
+                  if (widget.sale.additionalCharges.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        'Additional charges (${widget.sale.additionalCharges.map((c) => c.name).join(', ')}) are not refunded.',
+                        key: const ValueKey('charges-not-refunded'),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.secondary,
                         ),
-                        if (widget.sale.customerName != null)
-                          Text('Customer: ${widget.sale.customerName}'),
-                        if (widget.sale.additionalCharges.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Text(
-                              'Additional charges (${widget.sale.additionalCharges.map((c) => c.name).join(', ')}) are not refunded.',
-                              key: const ValueKey('charges-not-refunded'),
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.secondary,
-                              ),
-                            ),
-                          ),
-                      ],
+                      ),
+                    ),
+                ],
+              ),
+            );
+
+            final items = PageCard(
+              key: const ValueKey('return-items'),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                    child: Text(
+                      'Select items to return',
+                      style: theme.textTheme.titleMedium,
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Select items to return',
-                  style: theme.textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                Card(
-                  child: Column(
-                    children: [
-                      for (var i = 0; i < widget.sale.items.length; i++)
-                        _itemRow(i, widget.sale.items[i], theme),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                if (_hasSelection) ...[
+                  for (var i = 0; i < widget.sale.items.length; i++) ...[
+                    if (i > 0) const Divider(indent: 16, endIndent: 16),
+                    _itemRow(i, widget.sale.items[i], theme),
+                  ],
+                ],
+              ),
+            );
+
+            final summary = PageCard(
+              key: const ValueKey('return-summary'),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.errorContainer.withValues(
                         alpha: 0.4,
                       ),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Refund amount',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                        const Flexible(
+                          child: Text(
+                            'Refund amount',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         MoneyText(
                           _returnTotal,
                           style: TextStyle(
@@ -174,32 +182,58 @@ class _ReturnScreenState extends State<ReturnScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  TextField(
+                    controller: _reasonCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Reason for return',
+                      hintText: 'e.g. Defective product, wrong item',
+                      prefixIcon: Icon(Icons.note_alt_outlined),
+                    ),
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 20),
+                  FilledButton.icon(
+                    onPressed: (processing || !_hasSelection) ? null : _submit,
+                    icon: processing
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.undo),
+                    label: const Text('Process Return'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: theme.colorScheme.error,
+                      foregroundColor: theme.colorScheme.onError,
+                    ),
+                  ),
                 ],
-                TextField(
-                  controller: _reasonCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Reason for return',
-                    hintText: 'e.g. Defective product, wrong item',
-                    prefixIcon: Icon(Icons.note_alt_outlined),
-                  ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: (processing || !_hasSelection) ? null : _submit,
-                  icon: processing
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.undo),
-                  label: const Text('Process Return'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: theme.colorScheme.error,
-                    foregroundColor: theme.colorScheme.onError,
-                  ),
-                ),
+              ),
+            );
+
+            // Wide: items to return | refund summary. Phone: stacked.
+            final wide =
+                MediaQuery.sizeOf(context).width >=
+                AppBreakpoints.formTwoColumns;
+            return ListView(
+              padding: AppPage.insets(context),
+              children: [
+                header,
+                const SizedBox(height: 16),
+                if (wide)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 3, child: items),
+                      const SizedBox(width: 16),
+                      Expanded(flex: 2, child: summary),
+                    ],
+                  )
+                else ...[
+                  items,
+                  const SizedBox(height: 16),
+                  summary,
+                ],
               ],
             );
           },
@@ -211,7 +245,7 @@ class _ReturnScreenState extends State<ReturnScreen> {
   Widget _itemRow(int index, SaleItem item, ThemeData theme) {
     final qty = _returnQtys[index] ?? 0;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(
         children: [
           Expanded(

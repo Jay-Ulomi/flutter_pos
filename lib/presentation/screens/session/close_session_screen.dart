@@ -88,73 +88,73 @@ class _CloseSessionScreenState extends State<CloseSessionScreen> {
               (session.openingCash + (summary?.totalCashReceived ?? 0));
           final variance = _actual - expected;
           final loading = state.status == SessionStatus.loading;
-          final isDesktop = MediaQuery.sizeOf(context).width >= 1100;
+          // Two columns (count | summary & difference) on wide screens.
+          final isDesktop =
+              MediaQuery.sizeOf(context).width >= AppBreakpoints.formTwoColumns;
 
           final theme = Theme.of(context);
           final colors = theme.colorScheme;
 
-          Widget summaryCard = Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Session Summary',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
+          Widget summaryCard = PageCard(
+            key: const ValueKey('close-summary'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Session Summary',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: colors.onSurfaceVariant,
                   ),
-                  const SizedBox(height: 12),
-                  _row('Opening cash', session.openingCash),
+                ),
+                const SizedBox(height: 12),
+                _row('Opening cash', session.openingCash),
+                const Divider(),
+                _row(
+                  'Total revenue',
+                  summary?.totalRevenue ?? 0,
+                  emphasize: true,
+                ),
+                _row('Cash sales', summary?.totalCashReceived ?? 0),
+                _row('Card sales', summary?.totalCardReceived ?? 0),
+                _row('Mobile sales', summary?.totalMobileReceived ?? 0),
+                if (summary != null && summary.totalSales > 0)
+                  _row('Sales count', summary.totalSales.toDouble()),
+                if (summary != null &&
+                    (summary.totalReturns > 0 || summary.totalRefunds > 0)) ...[
                   const Divider(),
-                  _row(
-                    'Total revenue',
-                    summary?.totalRevenue ?? 0,
-                    emphasize: true,
-                  ),
-                  _row('Cash sales', summary?.totalCashReceived ?? 0),
-                  _row('Card sales', summary?.totalCardReceived ?? 0),
-                  _row('Mobile sales', summary?.totalMobileReceived ?? 0),
-                  if (summary != null && summary.totalSales > 0)
-                    _row('Sales count', summary.totalSales.toDouble()),
-                  if (summary != null &&
-                      (summary.totalReturns > 0 ||
-                          summary.totalRefunds > 0)) ...[
-                    const Divider(),
-                    _row('Returns', summary.totalReturns.toDouble()),
-                    _row('Refunds', summary.totalRefunds),
-                  ],
-                  const Divider(),
-                  _row('Expected cash in drawer', expected, emphasize: true),
-                  if (summary == null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            size: 14,
-                            color: colors.tertiary,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              'Summary unavailable \u2014 amounts may be inaccurate offline.',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colors.tertiary,
-                              ),
+                  _row('Returns', summary.totalReturns.toDouble()),
+                  _row('Refunds', summary.totalRefunds),
+                ],
+                const Divider(),
+                _row('Expected cash in drawer', expected, emphasize: true),
+                if (summary == null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 14,
+                          color: colors.tertiary,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Summary unavailable \u2014 amounts may be inaccurate offline.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colors.tertiary,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
           );
 
           Widget cashCountSection = Column(
+            key: const ValueKey('close-count'),
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -349,19 +349,18 @@ class _CloseSessionScreenState extends State<CloseSessionScreen> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Expanded(child: PageCard(child: cashCountSection)),
+                          const SizedBox(width: 16),
                           Expanded(
-                            flex: 6,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 summaryCard,
                                 const SizedBox(height: 16),
-                                cashCountSection,
+                                PageCard(child: actionSection),
                               ],
                             ),
                           ),
-                          const SizedBox(width: 18),
-                          Expanded(flex: 5, child: actionSection),
                         ],
                       ),
                     )
@@ -369,9 +368,9 @@ class _CloseSessionScreenState extends State<CloseSessionScreen> {
                       children: [
                         summaryCard,
                         const SizedBox(height: 16),
-                        cashCountSection,
-                        const SizedBox(height: 14),
-                        actionSection,
+                        PageCard(child: cashCountSection),
+                        const SizedBox(height: 16),
+                        PageCard(child: actionSection),
                       ],
                     ),
             ),
@@ -417,12 +416,13 @@ class _CloseSessionScreenState extends State<CloseSessionScreen> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text('Variance'),
+          const Flexible(child: Text('Variance')),
+          const SizedBox(width: 8),
           MoneyText(
             variance,
             style: TextStyle(color: color, fontWeight: FontWeight.w600),
