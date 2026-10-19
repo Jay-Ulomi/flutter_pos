@@ -257,9 +257,9 @@ class PageSectionTitle extends StatelessWidget {
 }
 
 /// A scrolling page of sections laid out full width: each [PageSectionTitle]
-/// starts a section, and sections flow in one column on phones and two from
-/// 900 px (three from 1280 when [maxColumns] allows). Bare spacer
-/// `SizedBox`es between sections are dropped.
+/// or [SectionLabel] starts a section, and sections flow in one column on
+/// phones and two from 900 px (three from 1280 when [maxColumns] allows).
+/// Bare spacer `SizedBox`es between sections are dropped.
 class PageSections extends StatelessWidget {
   const PageSections({super.key, required this.children, this.maxColumns = 2, this.footer});
 
@@ -274,7 +274,7 @@ class PageSections extends StatelessWidget {
     final sections = <List<Widget>>[];
     for (final w in children) {
       if (w is SizedBox && w.child == null) continue;
-      if (w is PageSectionTitle || sections.isEmpty) sections.add([]);
+      if (w is PageSectionTitle || w is SectionLabel || sections.isEmpty) sections.add([]);
       sections.last.add(w);
     }
     return ListView(

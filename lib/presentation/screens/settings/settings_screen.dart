@@ -12,6 +12,7 @@ import '../../../core/constants/api_constants.dart';
 import '../../../core/theme/brand_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../widgets/aduinola/app_page.dart';
+import '../../widgets/aduinola/ui.dart';
 
 /// "tenant_owner" -> "Tenant owner".
 String _humanizeRole(String role) {
@@ -60,10 +61,15 @@ class SettingsScreen extends StatelessWidget {
                   subtitle: Text(auth.user?.email ?? ''),
                 ),
                 Divider(height: 1, color: colors.outlineVariant),
+                // Label-left, value-right \u2014 same "Label \u2026\u2026 Value" row App
+                // Settings uses for every row.
                 ListTile(
                   leading: const Icon(Icons.badge_outlined),
-                  title: Text(auth.user?.role != null ? _humanizeRole(auth.user!.role) : '\u2014'),
-                  subtitle: const Text('Role'),
+                  title: const Text('Role'),
+                  trailing: Text(
+                    auth.user?.role != null ? _humanizeRole(auth.user!.role) : '\u2014',
+                    style: TextStyle(color: colors.onSurfaceVariant),
+                  ),
                 ),
               ],
             ),
@@ -130,27 +136,13 @@ class SettingsScreen extends StatelessWidget {
           // ── Appearance ──
           _sectionLabel(context, 'Appearance'),
           Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  const Icon(Icons.light_mode),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Theme', style: theme.textTheme.bodyLarge),
-                        Text(
-                          'Light — dark mode coming soon',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+            // Same "Label …… Value" row App Settings' Theme row uses.
+            child: ListTile(
+              leading: const Icon(Icons.light_mode),
+              title: const Text('Theme'),
+              trailing: Text(
+                'Light (dark mode soon)',
+                style: TextStyle(color: colors.onSurfaceVariant),
               ),
             ),
           ),
@@ -179,8 +171,10 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _sectionLabel(BuildContext context, String title) =>
-      PageSectionTitle(title);
+  // Same section-header style as App Settings and Sales Report
+  // (SectionLabel), not the uppercase/brand-coloured PageSectionTitle this
+  // screen used to be the only one using.
+  Widget _sectionLabel(BuildContext context, String title) => SectionLabel(title);
 }
 
 class _TrialCard extends StatelessWidget {
