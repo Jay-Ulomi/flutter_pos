@@ -10,7 +10,14 @@ import '../../blocs/session/session_state.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/theme/brand_colors.dart';
+import '../../../core/utils/formatters.dart';
 import '../../widgets/aduinola/app_page.dart';
+
+/// "tenant_owner" -> "Tenant owner".
+String _humanizeRole(String role) {
+  final words = role.split('_').where((w) => w.isNotEmpty);
+  return words.map((w) => w[0].toUpperCase() + w.substring(1)).join(' ');
+}
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -55,7 +62,7 @@ class SettingsScreen extends StatelessWidget {
                 Divider(height: 1, color: colors.outlineVariant),
                 ListTile(
                   leading: const Icon(Icons.badge_outlined),
-                  title: Text(auth.user?.role ?? '\u2014'),
+                  title: Text(auth.user?.role != null ? _humanizeRole(auth.user!.role) : '\u2014'),
                   subtitle: const Text('Role'),
                 ),
               ],
@@ -108,7 +115,7 @@ class SettingsScreen extends StatelessWidget {
                     : 'No open session',
               ),
               subtitle: session.current != null
-                  ? Text('Opened: ${session.current!.openedAt}')
+                  ? Text('Opened: ${Formatters.dateTime(session.current!.openedAt)}')
                   : null,
               trailing: session.status == SessionStatus.open
                   ? FilledButton.tonal(

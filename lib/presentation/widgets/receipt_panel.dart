@@ -323,10 +323,15 @@ class _ReceiptPanelState extends State<ReceiptPanel> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  '${Formatters.quantity(item.quantity)} x TZS ${Formatters.money(item.unitPrice)}',
-                  style: itemDetailStyle,
+                Expanded(
+                  child: Text(
+                    '${Formatters.quantity(item.quantity)} x TZS ${Formatters.money(item.unitPrice)}',
+                    style: itemDetailStyle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Text(
                   'TZS ${Formatters.money(item.totalPrice)}',
                   style: valueStyle,

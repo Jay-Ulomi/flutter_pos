@@ -216,7 +216,10 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
   /// The server's preview when it matches the current cart, else null.
   SalePreview? _freshPreview(CartState cart) {
     if (_preview == null) return null;
-    return _previewFor == CheckoutPricing.previewKey(cart, couponCode: _appliedCoupon) ? _preview : null;
+    return _previewFor ==
+            CheckoutPricing.previewKey(cart, couponCode: _appliedCoupon)
+        ? _preview
+        : null;
   }
 
   /// Total to collect: the server's price when known, else the local estimate.
@@ -230,13 +233,16 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
     if (key == _requestedKey) return;
     _requestedKey = key;
     final coupon = _appliedCoupon;
-    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchPreview(cart, coupon, key));
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _fetchPreview(cart, coupon, key),
+    );
   }
 
   Future<void> _fetchPreview(CartState cart, String? coupon, String key) async {
     try {
-      final preview = await sl<SaleRemoteDataSource>()
-          .preview(CheckoutPricing.previewBody(cart, couponCode: coupon));
+      final preview = await sl<SaleRemoteDataSource>().preview(
+        CheckoutPricing.previewBody(cart, couponCode: coupon),
+      );
       if (!mounted || key != _requestedKey) return;
       setState(() {
         _preview = preview;
@@ -272,10 +278,13 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
     });
     try {
       final key = CheckoutPricing.previewKey(cart, couponCode: code);
-      final preview = await sl<SaleRemoteDataSource>()
-          .preview(CheckoutPricing.previewBody(cart, couponCode: code));
+      final preview = await sl<SaleRemoteDataSource>().preview(
+        CheckoutPricing.previewBody(cart, couponCode: code),
+      );
       if (!preview.hasCoupon(code)) {
-        throw ServerException(message: 'Coupon $code does not apply to this sale');
+        throw ServerException(
+          message: 'Coupon $code does not apply to this sale',
+        );
       }
       if (!mounted) return;
       setState(() {
@@ -320,7 +329,11 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
       remaining: _remaining(total),
     );
     if (amount <= 0) return;
-    setState(() => _payments.add(_PaymentEntry(method: PaymentMethod.loyaltyPoints, amount: amount)));
+    setState(
+      () => _payments.add(
+        _PaymentEntry(method: PaymentMethod.loyaltyPoints, amount: amount),
+      ),
+    );
   }
 
   /// Invoice number/date and the customer with a Change button, as on the
@@ -329,34 +342,42 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
     final cs = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     Widget box(String label, String value, {IconData? icon}) => Expanded(
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
-            decoration: BoxDecoration(
-              color: cs.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: cs.outlineVariant),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: cs.outlineVariant),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: textTheme.bodySmall),
+            const SizedBox(height: 4),
+            Row(
               children: [
-                Text(label, style: textTheme.bodySmall),
-                const SizedBox(height: 4),
-                Row(children: [
-                  Expanded(child: Text(value, style: textTheme.titleSmall)),
-                  if (icon != null) Icon(icon, size: 18, color: cs.onSurfaceVariant),
-                ]),
+                Expanded(child: Text(value, style: textTheme.titleSmall)),
+                if (icon != null)
+                  Icon(icon, size: 18, color: cs.onSurfaceVariant),
               ],
             ),
-          ),
-        );
+          ],
+        ),
+      ),
+    );
     return Column(
       children: [
-        Row(children: [
-          box(context.tr('sale.invoice_no'), 'Auto'),
-          const SizedBox(width: 10),
-          box(context.tr('common.date'), Formatters.date(DateTime.now()),
-              icon: Icons.calendar_month_outlined),
-        ]),
+        Row(
+          children: [
+            box(context.tr('sale.invoice_no'), 'Auto'),
+            const SizedBox(width: 10),
+            box(
+              context.tr('common.date'),
+              Formatters.date(DateTime.now()),
+              icon: Icons.calendar_month_outlined,
+            ),
+          ],
+        ),
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
@@ -365,38 +386,49 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: cs.outlineVariant),
           ),
-          child: Row(children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: cs.surfaceContainerLow,
-              child: Icon(cart.hasCustomer ? Icons.person_rounded : Icons.payments_outlined,
-                  size: 20, color: cs.primary),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                cart.hasCustomer ? (cart.selectedCustomerName ?? '') : context.tr('sale.walk_in'),
-                style: textTheme.titleSmall,
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: cs.surfaceContainerLow,
+                child: Icon(
+                  cart.hasCustomer
+                      ? Icons.person_rounded
+                      : Icons.payments_outlined,
+                  size: 20,
+                  color: cs.primary,
+                ),
               ),
-            ),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(0, 36),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                foregroundColor: cs.primary,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  cart.hasCustomer
+                      ? (cart.selectedCustomerName ?? '')
+                      : context.tr('sale.walk_in'),
+                  style: textTheme.titleSmall,
+                ),
               ),
-              onPressed: _pickCustomer,
-              icon: const Icon(Icons.sync_rounded, size: 16),
-              label: Text(context.tr('sale.change')),
-            ),
-          ]),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, 36),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  foregroundColor: cs.primary,
+                ),
+                onPressed: _pickCustomer,
+                icon: const Icon(Icons.sync_rounded, size: 16),
+                label: Text(context.tr('sale.change')),
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
 
   Widget _couponAndPointsSection(CartState cart, double total) {
-    final hasPointsPayment = _payments.any((p) => p.method == PaymentMethod.loyaltyPoints);
+    final hasPointsPayment = _payments.any(
+      (p) => p.method == PaymentMethod.loyaltyPoints,
+    );
     final pointValue = _freshPreview(cart)?.loyaltyPointValue ?? 10;
     final redeemable = CheckoutPricing.loyaltyRedeemAmount(
       points: cart.customerLoyaltyPoints,
@@ -427,7 +459,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                 const SizedBox(width: 8),
                 TextButton(
                   key: const Key('coupon-apply'),
-                  onPressed: _couponValidating ? null : () => _applyCoupon(cart),
+                  onPressed: _couponValidating
+                      ? null
+                      : () => _applyCoupon(cart),
                   child: Text(_couponValidating ? 'Checking…' : 'Apply'),
                 ),
               ],
@@ -435,8 +469,16 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
           else
             Row(
               children: [
-                Expanded(child: Text('Coupon $_appliedCoupon applied', style: const TextStyle(fontSize: 12))),
-                TextButton(onPressed: _removeCoupon, child: const Text('Remove')),
+                Expanded(
+                  child: Text(
+                    'Coupon $_appliedCoupon applied',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _removeCoupon,
+                  child: const Text('Remove'),
+                ),
               ],
             ),
           if (_couponError != null)
@@ -445,17 +487,26 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
               child: Text(
                 _couponError!,
                 key: const Key('coupon-error'),
-                style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.error),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.error,
+                ),
               ),
             ),
-          if (cart.hasCustomer && cart.customerLoyaltyPoints > 0 && !hasPointsPayment)
+          if (cart.hasCustomer &&
+              cart.customerLoyaltyPoints > 0 &&
+              !hasPointsPayment)
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: OutlinedButton.icon(
                 key: const Key('redeem-points'),
                 icon: const Icon(Icons.stars_outlined, size: 16),
-                onPressed: redeemable > 0 && _online ? () => _redeemPoints(cart, total) : null,
-                label: Text('Redeem points (${cart.customerLoyaltyPoints} pts, up to ${redeemable.toStringAsFixed(0)})'),
+                onPressed: redeemable > 0 && _online
+                    ? () => _redeemPoints(cart, total)
+                    : null,
+                label: Text(
+                  'Redeem points (${cart.customerLoyaltyPoints} pts, up to ${redeemable.toStringAsFixed(0)})',
+                ),
               ),
             ),
         ],
@@ -689,7 +740,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
       // Round money to cents so submitted values carry no float drift.
       subtotal: _money(cart.subtotal),
       // Includes the charges' tax, matching the server's taxAmount.
-      taxAmount: _money(cart.taxAmount + cart.charges.fold(0.0, (t, c) => t + c.taxAmount)),
+      taxAmount: _money(
+        cart.taxAmount + cart.charges.fold(0.0, (t, c) => t + c.taxAmount),
+      ),
       // Order-level discount only. Per-line discounts are sent on each SaleItem
       // and applied by the backend per line — including them here would
       // double-count.
@@ -795,81 +848,114 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                   width: 36,
                                   height: 36,
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.surfaceContainer,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainer,
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Icon(
                                     Icons.arrow_back,
                                     size: 18,
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                               ),
                               const SizedBox(width: 10),
                             ],
-                            Text(
-                              context.tr('sale.title'),
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700,
-                                color: Theme.of(context).colorScheme.onSurface,
+                            Flexible(
+                              child: Text(
+                                context.tr('sale.title'),
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             const Spacer(),
-                            GestureDetector(
-                              onTap: _pickCustomer,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: cart.hasCustomer
-                                      ? Theme.of(context).colorScheme.primaryContainer
-                                      : Theme.of(context).colorScheme.surfaceContainer,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: cart.hasCustomer
-                                        ? Theme.of(context).colorScheme.primaryContainer
-                                        : Theme.of(context).colorScheme.outlineVariant,
+                            Flexible(
+                              child: GestureDetector(
+                                onTap: _pickCustomer,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
                                   ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      cart.hasCustomer
-                                          ? Icons.person_rounded
-                                          : Icons.person_outline,
-                                      size: 13,
+                                  decoration: BoxDecoration(
+                                    color: cart.hasCustomer
+                                        ? Theme.of(
+                                            context,
+                                          ).colorScheme.primaryContainer
+                                        : Theme.of(
+                                            context,
+                                          ).colorScheme.surfaceContainer,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
                                       color: cart.hasCustomer
-                                          ? const Color(0xFF2E8B3E)
-                                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.primaryContainer
+                                          : Theme.of(
+                                              context,
+                                            ).colorScheme.outlineVariant,
                                     ),
-                                    const SizedBox(width: 5),
-                                    Text(
-                                      cart.hasCustomer
-                                          ? (cart.selectedCustomerName ??
-                                                'Customer')
-                                          : 'Walk-in',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: cart.hasCustomer
-                                            ? FontWeight.w600
-                                            : FontWeight.w400,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        cart.hasCustomer
+                                            ? Icons.person_rounded
+                                            : Icons.person_outline,
+                                        size: 13,
                                         color: cart.hasCustomer
-                                            ? Theme.of(context).colorScheme.onPrimaryContainer
-                                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                                            ? const Color(0xFF2E8B3E)
+                                            : Theme.of(
+                                                context,
+                                              ).colorScheme.onSurfaceVariant,
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(width: 5),
+                                      Flexible(
+                                        child: Text(
+                                          cart.hasCustomer
+                                              ? (cart.selectedCustomerName ??
+                                                    'Customer')
+                                              : 'Walk-in',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: cart.hasCustomer
+                                                ? FontWeight.w600
+                                                : FontWeight.w400,
+                                            color: cart.hasCustomer
+                                                ? Theme.of(context)
+                                                      .colorScheme
+                                                      .onPrimaryContainer
+                                                : Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
+                      Divider(
+                        height: 1,
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
 
                       // ── Body ──
                       Expanded(
@@ -899,10 +985,14 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                               Container(
                                 padding: const EdgeInsets.all(14),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surfaceContainerLow,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerLow,
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
-                                    color: Theme.of(context).colorScheme.outlineVariant,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.outlineVariant,
                                   ),
                                 ),
                                 child: Column(
@@ -931,7 +1021,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                                 style: TextStyle(
                                                   fontSize: 13,
                                                   fontWeight: FontWeight.w600,
-                                                  color: Theme.of(context).colorScheme.onSurface,
+                                                  color: Theme.of(
+                                                    context,
+                                                  ).colorScheme.onSurface,
                                                 ),
                                               ),
                                             ),
@@ -942,7 +1034,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w600,
-                                                color: Theme.of(context).colorScheme.primary,
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.primary,
                                               ),
                                             ),
                                             Icon(
@@ -950,7 +1044,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                                   ? Icons.keyboard_arrow_up
                                                   : Icons.keyboard_arrow_down,
                                               size: 18,
-                                              color: Theme.of(context).colorScheme.primary,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.primary,
                                             ),
                                           ],
                                         ),
@@ -1014,7 +1110,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                                       fontSize: 13,
                                                       fontWeight:
                                                           FontWeight.w600,
-                                                      color: Theme.of(context).colorScheme.onSurface,
+                                                      color: Theme.of(
+                                                        context,
+                                                      ).colorScheme.onSurface,
                                                     ),
                                                   ),
                                                 ],
@@ -1058,12 +1156,18 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                     ],
                                     Divider(
                                       height: 16,
-                                      color: Theme.of(context).colorScheme.outlineVariant,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.outlineVariant,
                                     ),
                                     _summaryRow('Subtotal', cart.subtotal),
-                                    if ((fresh?.taxAmount ?? cart.taxAmount) > 0) ...[
+                                    if ((fresh?.taxAmount ?? cart.taxAmount) >
+                                        0) ...[
                                       const SizedBox(height: 4),
-                                      _summaryRow('Tax', fresh?.taxAmount ?? cart.taxAmount),
+                                      _summaryRow(
+                                        'Tax',
+                                        fresh?.taxAmount ?? cart.taxAmount,
+                                      ),
                                     ],
                                     if (cart.discount > 0) ...[
                                       const SizedBox(height: 4),
@@ -1073,26 +1177,36 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                         valueColor: const Color(0xFF2E8B3E),
                                       ),
                                     ],
-                                    for (final promo in fresh?.appliedPromotions ?? const <AppliedPromotion>[]) ...[
+                                    for (final promo
+                                        in fresh?.appliedPromotions ??
+                                            const <AppliedPromotion>[]) ...[
                                       const SizedBox(height: 4),
                                       _summaryRow(
-                                        promo.couponCode != null ? 'Coupon (${promo.couponCode})' : promo.name,
+                                        promo.couponCode != null
+                                            ? 'Coupon (${promo.couponCode})'
+                                            : promo.name,
                                         -promo.discountAmount,
                                         valueColor: const Color(0xFF2E8B3E),
                                       ),
                                     ],
                                     AdditionalChargesSection(
                                       cart: cart,
-                                      priced: fresh?.additionalCharges ?? const [],
+                                      priced:
+                                          fresh?.additionalCharges ?? const [],
                                     ),
-                                    _couponAndPointsSection(cart, effectiveTotal),
+                                    _couponAndPointsSection(
+                                      cart,
+                                      effectiveTotal,
+                                    ),
                                     Padding(
                                       padding: EdgeInsets.symmetric(
                                         vertical: 8,
                                       ),
                                       child: Divider(
                                         height: 1,
-                                        color: Theme.of(context).colorScheme.outlineVariant,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.outlineVariant,
                                       ),
                                     ),
                                     Row(
@@ -1104,7 +1218,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                           style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.w700,
-                                            color: Theme.of(context).colorScheme.onSurface,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
                                           ),
                                         ),
                                         MoneyText(
@@ -1112,7 +1228,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                           style: TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.w800,
-                                            color: Theme.of(context).colorScheme.primary,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
                                           ),
                                         ),
                                       ],
@@ -1137,10 +1255,14 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                     vertical: 10,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.primaryContainer,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primaryContainer,
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: Theme.of(context).colorScheme.primaryContainer,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primaryContainer,
                                     ),
                                   ),
                                   child: Row(
@@ -1156,7 +1278,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                           'Store credit available: TZS ${availableCredit.toStringAsFixed(0)}',
                                           style: TextStyle(
                                             fontSize: 12,
-                                            color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onPrimaryContainer,
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
@@ -1228,13 +1352,21 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       ),
                                       decoration: BoxDecoration(
                                         color: selected
-                                            ? Theme.of(context).colorScheme.primary
-                                            : Theme.of(context).colorScheme.surface,
+                                            ? Theme.of(
+                                                context,
+                                              ).colorScheme.primary
+                                            : Theme.of(
+                                                context,
+                                              ).colorScheme.surface,
                                         borderRadius: BorderRadius.circular(10),
                                         border: Border.all(
                                           color: selected
-                                              ? Theme.of(context).colorScheme.primary
-                                              : Theme.of(context).colorScheme.outlineVariant,
+                                              ? Theme.of(
+                                                  context,
+                                                ).colorScheme.primary
+                                              : Theme.of(
+                                                  context,
+                                                ).colorScheme.outlineVariant,
                                           width: selected ? 1.5 : 1,
                                         ),
                                         boxShadow: selected
@@ -1258,7 +1390,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                             size: 14,
                                             color: selected
                                                 ? Colors.white
-                                                : Theme.of(context).colorScheme.onSurfaceVariant,
+                                                : Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
                                           ),
                                           const SizedBox(width: 5),
                                           Text(
@@ -1268,7 +1402,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                               fontWeight: FontWeight.w600,
                                               color: selected
                                                   ? Colors.white
-                                                  : Theme.of(context).colorScheme.onSurface,
+                                                  : Theme.of(
+                                                      context,
+                                                    ).colorScheme.onSurface,
                                             ),
                                           ),
                                         ],
@@ -1297,7 +1433,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                         ? 'Gift card code'
                                         : 'Reference / Transaction ID',
                                     hintStyle: TextStyle(
-                                      color: Theme.of(context).colorScheme.outline,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.outline,
                                       fontSize: 14,
                                     ),
                                     contentPadding: const EdgeInsets.symmetric(
@@ -1305,23 +1443,31 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       vertical: 12,
                                     ),
                                     filled: true,
-                                    fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
+                                    fillColor: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerLow,
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: BorderSide(
-                                        color: Theme.of(context).colorScheme.outlineVariant,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.outlineVariant,
                                       ),
                                     ),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: BorderSide(
-                                        color: Theme.of(context).colorScheme.outlineVariant,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.outlineVariant,
                                       ),
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: BorderSide(
-                                        color: Theme.of(context).colorScheme.primary,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
                                         width: 1.5,
                                       ),
                                     ),
@@ -1341,7 +1487,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,
-                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                     Container(
@@ -1350,7 +1498,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                         vertical: 3,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Theme.of(context).colorScheme.errorContainer,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.errorContainer,
                                         borderRadius: BorderRadius.circular(20),
                                       ),
                                       child: Row(
@@ -1368,7 +1518,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                             style: TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w700,
-                                              color: Theme.of(context).colorScheme.error,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.error,
                                             ),
                                           ),
                                         ],
@@ -1394,7 +1546,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w700,
-                                    color: Theme.of(context).colorScheme.onSurface,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
                                   ),
                                   textAlign: TextAlign.center,
                                   decoration: InputDecoration(
@@ -1402,41 +1556,54 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                     hintStyle: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w700,
-                                      color: Theme.of(context).colorScheme.outline,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.outline,
                                     ),
                                     prefixText: 'TZS  ',
                                     prefixStyle: TextStyle(
                                       fontSize: 13,
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
                                       fontWeight: FontWeight.w500,
                                     ),
                                     contentPadding: const EdgeInsets.symmetric(
                                       vertical: 10,
                                     ),
                                     filled: true,
-                                    fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
+                                    fillColor: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerLow,
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: BorderSide(
-                                        color: Theme.of(context).colorScheme.outlineVariant,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.outlineVariant,
                                       ),
                                     ),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: BorderSide(
-                                        color: Theme.of(context).colorScheme.outlineVariant,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.outlineVariant,
                                       ),
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: BorderSide(
-                                        color: Theme.of(context).colorScheme.primary,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
                                         width: 1.5,
                                       ),
                                     ),
                                   ),
                                   onChanged: (_) => setState(() {}),
-                                  onSubmitted: (_) => _addPayment(effectiveTotal),
+                                  onSubmitted: (_) =>
+                                      _addPayment(effectiveTotal),
                                 ),
                                 const SizedBox(height: 10),
 
@@ -1508,7 +1675,8 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                     child: FilledButton.icon(
                                       onPressed: _terminalProcessing
                                           ? null
-                                          : () => _chargeTerminal(effectiveTotal),
+                                          : () =>
+                                                _chargeTerminal(effectiveTotal),
                                       style: FilledButton.styleFrom(
                                         backgroundColor: const Color(
                                           0xFF0E5023,
@@ -1563,7 +1731,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                         _terminalError!,
                                         style: TextStyle(
                                           fontSize: 11,
-                                          color: Theme.of(context).colorScheme.error,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.error,
                                         ),
                                         textAlign: TextAlign.center,
                                       ),
@@ -1573,10 +1743,13 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                     width: double.infinity,
                                     height: 40,
                                     child: OutlinedButton.icon(
-                                      onPressed: () => _addPayment(effectiveTotal),
+                                      onPressed: () =>
+                                          _addPayment(effectiveTotal),
                                       style: OutlinedButton.styleFrom(
                                         side: BorderSide(
-                                          color: Theme.of(context).colorScheme.outlineVariant,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.outlineVariant,
                                         ),
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
@@ -1599,7 +1772,8 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                     width: double.infinity,
                                     height: 44,
                                     child: FilledButton.icon(
-                                      onPressed: () => _addPayment(effectiveTotal),
+                                      onPressed: () =>
+                                          _addPayment(effectiveTotal),
                                       style: FilledButton.styleFrom(
                                         backgroundColor: const Color(
                                           0xFF0E5023,
@@ -1634,10 +1808,14 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       vertical: 10,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.surfaceContainerLow,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainerLow,
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: Theme.of(context).colorScheme.outlineVariant,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.outlineVariant,
                                       ),
                                     ),
                                     child: Row(
@@ -1656,7 +1834,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                           child: Icon(
                                             _payments[i].method.icon,
                                             size: 16,
-                                            color: Theme.of(context).colorScheme.primary,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
                                           ),
                                         ),
                                         const SizedBox(width: 10),
@@ -1670,7 +1850,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                                 style: TextStyle(
                                                   fontSize: 13,
                                                   fontWeight: FontWeight.w600,
-                                                  color: Theme.of(context).colorScheme.onSurface,
+                                                  color: Theme.of(
+                                                    context,
+                                                  ).colorScheme.onSurface,
                                                 ),
                                               ),
                                               if ((_payments[i].reference ?? '')
@@ -1679,7 +1861,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                                   '#${_payments[i].reference}',
                                                   style: TextStyle(
                                                     fontSize: 11,
-                                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurfaceVariant,
                                                   ),
                                                 ),
                                             ],
@@ -1690,7 +1874,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                           style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w700,
-                                            color: Theme.of(context).colorScheme.onSurface,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
                                           ),
                                         ),
                                         const SizedBox(width: 8),
@@ -1700,14 +1886,18 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                             width: 24,
                                             height: 24,
                                             decoration: BoxDecoration(
-                                              color: Theme.of(context).colorScheme.errorContainer,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.errorContainer,
                                               borderRadius:
                                                   BorderRadius.circular(6),
                                             ),
                                             child: Icon(
                                               Icons.close,
                                               size: 13,
-                                              color: Theme.of(context).colorScheme.error,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.error,
                                             ),
                                           ),
                                         ),
@@ -1728,14 +1918,18 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       Icon(
                                         Icons.note_add_outlined,
                                         size: 15,
-                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
                                       ),
                                       SizedBox(width: 6),
                                       Text(
                                         'Add note',
                                         style: TextStyle(
                                           fontSize: 13,
-                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
                                         ),
                                       ),
                                     ],
@@ -1757,7 +1951,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                           child: Icon(
                                             Icons.close,
                                             size: 14,
-                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
                                           ),
                                         ),
                                       ],
@@ -1772,19 +1968,25 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       decoration: InputDecoration(
                                         hintText: 'e.g. Gift wrap, table 3',
                                         hintStyle: TextStyle(
-                                          color: Theme.of(context).colorScheme.outline,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.outline,
                                         ),
                                         contentPadding: const EdgeInsets.all(
                                           12,
                                         ),
                                         filled: true,
-                                        fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
+                                        fillColor: Theme.of(
+                                          context,
+                                        ).colorScheme.surfaceContainerLow,
                                         border: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(
                                             12,
                                           ),
                                           borderSide: BorderSide(
-                                            color: Theme.of(context).colorScheme.outlineVariant,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.outlineVariant,
                                           ),
                                         ),
                                         enabledBorder: OutlineInputBorder(
@@ -1792,7 +1994,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                             12,
                                           ),
                                           borderSide: BorderSide(
-                                            color: Theme.of(context).colorScheme.outlineVariant,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.outlineVariant,
                                           ),
                                         ),
                                         focusedBorder: OutlineInputBorder(
@@ -1800,7 +2004,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                             12,
                                           ),
                                           borderSide: BorderSide(
-                                            color: Theme.of(context).colorScheme.primary,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
                                             width: 1.5,
                                           ),
                                         ),
@@ -1820,9 +2026,13 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                         margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerLow,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                          ),
                         ),
                         child: Column(
                           children: [
@@ -1872,8 +2082,12 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                 ? null
                                 : () => _complete(cart),
                             style: FilledButton.styleFrom(
-                              backgroundColor: Theme.of(context).colorScheme.primary,
-                              disabledBackgroundColor: Theme.of(context).colorScheme.outline,
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.primary,
+                              disabledBackgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.outline,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
@@ -1973,7 +2187,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
-            color: bold ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
+            color: bold
+                ? Theme.of(context).colorScheme.onSurface
+                : Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
         MoneyText(
@@ -1995,10 +2211,14 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
         child: Container(
           height: 36,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+            color: Theme.of(
+              context,
+            ).colorScheme.primary.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.2),
             ),
           ),
           alignment: Alignment.center,
