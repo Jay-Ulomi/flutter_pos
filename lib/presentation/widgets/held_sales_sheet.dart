@@ -92,6 +92,7 @@ class _HeldSalesSheet extends StatelessWidget {
                                   discount: sale.discount,
                                   customerId: sale.customerId,
                                   customerName: sale.customerName,
+                                  charges: sale.charges,
                                 ),
                               );
                               context.read<HeldSalesCubit>().remove(sale.id);

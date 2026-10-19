@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../data/models/product_models.dart';
+import '../../../data/models/sale_models.dart';
 import 'cart_event.dart';
 import 'cart_state.dart';
 
@@ -18,6 +19,20 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     on<CartCustomerCleared>(_onCustomerCleared);
     on<CartItemPriceChanged>(_onPriceChanged);
     on<CartItemTierChanged>(_onTierChanged);
+    on<CartChargeAdded>(_onChargeAdded);
+    on<CartChargeRemoved>(_onChargeRemoved);
+  }
+
+  void _onChargeAdded(CartChargeAdded event, Emitter<CartState> emit) {
+    final c = event.charge;
+    if (c.name.trim().isEmpty || c.amount <= 0) return;
+    if (state.charges.length >= SaleCharge.maxPerSale) return;
+    emit(state.copyWith(charges: [...state.charges, c]));
+  }
+
+  void _onChargeRemoved(CartChargeRemoved event, Emitter<CartState> emit) {
+    if (event.index < 0 || event.index >= state.charges.length) return;
+    emit(state.copyWith(charges: [...state.charges]..removeAt(event.index)));
   }
 
   void _onRestored(CartRestored event, Emitter<CartState> emit) {
@@ -27,6 +42,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         discount: event.discount,
         selectedCustomerId: event.customerId,
         selectedCustomerName: event.customerName,
+        charges: event.charges,
       ),
     );
   }

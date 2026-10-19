@@ -17,6 +17,7 @@ import '../blocs/sale/sale_bloc.dart';
 import '../blocs/sale/sale_event.dart';
 import '../blocs/sale/sale_state.dart';
 import '../blocs/session/session_bloc.dart';
+import 'additional_charges.dart';
 import 'checkout_pricing.dart';
 import 'customer_picker_sheet.dart';
 import 'keyboard_done_bar.dart';
@@ -370,7 +371,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
               child: Text(
                 _couponError!,
                 key: const Key('coupon-error'),
-                style: const TextStyle(fontSize: 11, color: Color(0xFFDC2626)),
+                style: const TextStyle(fontSize: 11, color: Color(0xFFD93A2B)),
               ),
             ),
           if (cart.hasCustomer && cart.customerLoyaltyPoints > 0 && !hasPointsPayment)
@@ -613,7 +614,8 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
       payments: payments,
       // Round money to cents so submitted values carry no float drift.
       subtotal: _money(cart.subtotal),
-      taxAmount: _money(cart.taxAmount),
+      // Includes the charges' tax, matching the server's taxAmount.
+      taxAmount: _money(cart.taxAmount + cart.charges.fold(0.0, (t, c) => t + c.taxAmount)),
       // Order-level discount only. Per-line discounts are sent on each SaleItem
       // and applied by the backend per line — including them here would
       // double-count.
@@ -625,6 +627,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
       customerName: cart.selectedCustomerName,
       couponCode: _appliedCoupon,
       notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+      additionalCharges: cart.charges,
     );
   }
 
@@ -718,13 +721,13 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                   width: 36,
                                   height: 36,
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFF3F4F6),
+                                    color: const Color(0xFFEDF2EB),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: const Icon(
                                     Icons.arrow_back,
                                     size: 18,
-                                    color: Color(0xFF6B7280),
+                                    color: Color(0xFF4E5E52),
                                   ),
                                 ),
                               ),
@@ -735,7 +738,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                               style: TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF111827),
+                                color: Color(0xFF14261A),
                               ),
                             ),
                             const Spacer(),
@@ -749,12 +752,12 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                 decoration: BoxDecoration(
                                   color: cart.hasCustomer
                                       ? const Color(0xFFDCFCE7)
-                                      : const Color(0xFFF3F4F6),
+                                      : const Color(0xFFEDF2EB),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
                                     color: cart.hasCustomer
                                         ? const Color(0xFFBBF7D0)
-                                        : const Color(0xFFE5E7EB),
+                                        : const Color(0xFFDCE4D8),
                                   ),
                                 ),
                                 child: Row(
@@ -766,8 +769,8 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                           : Icons.person_outline,
                                       size: 13,
                                       color: cart.hasCustomer
-                                          ? const Color(0xFF16A34A)
-                                          : const Color(0xFF9CA3AF),
+                                          ? const Color(0xFF2E8B3E)
+                                          : const Color(0xFF8A968D),
                                     ),
                                     const SizedBox(width: 5),
                                     Text(
@@ -782,7 +785,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                             : FontWeight.w400,
                                         color: cart.hasCustomer
                                             ? const Color(0xFF166534)
-                                            : const Color(0xFF6B7280),
+                                            : const Color(0xFF4E5E52),
                                       ),
                                     ),
                                   ],
@@ -792,7 +795,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                           ],
                         ),
                       ),
-                      const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                      const Divider(height: 1, color: Color(0xFFDCE4D8)),
 
                       // ── Body ──
                       Expanded(
@@ -820,10 +823,10 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                               Container(
                                 padding: const EdgeInsets.all(14),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF9FAFB),
+                                  color: const Color(0xFFF4F7F2),
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
-                                    color: const Color(0xFFE5E7EB),
+                                    color: const Color(0xFFDCE4D8),
                                   ),
                                 ),
                                 child: Column(
@@ -852,7 +855,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                                 style: const TextStyle(
                                                   fontSize: 13,
                                                   fontWeight: FontWeight.w600,
-                                                  color: Color(0xFF374151),
+                                                  color: Color(0xFF2E3D33),
                                                 ),
                                               ),
                                             ),
@@ -863,7 +866,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                               style: const TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w600,
-                                                color: Color(0xFF468432),
+                                                color: Color(0xFF0E5023),
                                               ),
                                             ),
                                             Icon(
@@ -871,7 +874,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                                   ? Icons.keyboard_arrow_up
                                                   : Icons.keyboard_arrow_down,
                                               size: 18,
-                                              color: const Color(0xFF468432),
+                                              color: const Color(0xFF0E5023),
                                             ),
                                           ],
                                         ),
@@ -909,7 +912,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                                         style: const TextStyle(
                                                           fontSize: 13,
                                                           color: Color(
-                                                            0xFF374151,
+                                                            0xFF2E3D33,
                                                           ),
                                                         ),
                                                         children: [
@@ -918,7 +921,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                                             style:
                                                                 const TextStyle(
                                                                   color: Color(
-                                                                    0xFF9CA3AF,
+                                                                    0xFF8A968D,
                                                                   ),
                                                                 ),
                                                           ),
@@ -935,7 +938,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                                       fontSize: 13,
                                                       fontWeight:
                                                           FontWeight.w600,
-                                                      color: Color(0xFF111827),
+                                                      color: Color(0xFF14261A),
                                                     ),
                                                   ),
                                                 ],
@@ -953,7 +956,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                                             .warning_amber_rounded,
                                                         size: 12,
                                                         color: Color(
-                                                          0xFFDC2626,
+                                                          0xFFD93A2B,
                                                         ),
                                                       ),
                                                       const SizedBox(width: 4),
@@ -965,7 +968,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                                           fontWeight:
                                                               FontWeight.w600,
                                                           color: Color(
-                                                            0xFFDC2626,
+                                                            0xFFD93A2B,
                                                           ),
                                                         ),
                                                       ),
@@ -979,7 +982,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                     ],
                                     const Divider(
                                       height: 16,
-                                      color: Color(0xFFE5E7EB),
+                                      color: Color(0xFFDCE4D8),
                                     ),
                                     _summaryRow('Subtotal', cart.subtotal),
                                     if ((fresh?.taxAmount ?? cart.taxAmount) > 0) ...[
@@ -991,7 +994,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       _summaryRow(
                                         'Discount',
                                         -cart.discount,
-                                        valueColor: const Color(0xFF16A34A),
+                                        valueColor: const Color(0xFF2E8B3E),
                                       ),
                                     ],
                                     for (final promo in fresh?.appliedPromotions ?? const <AppliedPromotion>[]) ...[
@@ -999,9 +1002,13 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       _summaryRow(
                                         promo.couponCode != null ? 'Coupon (${promo.couponCode})' : promo.name,
                                         -promo.discountAmount,
-                                        valueColor: const Color(0xFF16A34A),
+                                        valueColor: const Color(0xFF2E8B3E),
                                       ),
                                     ],
+                                    AdditionalChargesSection(
+                                      cart: cart,
+                                      priced: fresh?.additionalCharges ?? const [],
+                                    ),
                                     _couponAndPointsSection(cart, effectiveTotal),
                                     const Padding(
                                       padding: EdgeInsets.symmetric(
@@ -1009,7 +1016,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       ),
                                       child: Divider(
                                         height: 1,
-                                        color: Color(0xFFE5E7EB),
+                                        color: Color(0xFFDCE4D8),
                                       ),
                                     ),
                                     Row(
@@ -1021,7 +1028,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                           style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.w700,
-                                            color: Color(0xFF111827),
+                                            color: Color(0xFF14261A),
                                           ),
                                         ),
                                         MoneyText(
@@ -1029,7 +1036,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                           style: const TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.w800,
-                                            color: Color(0xFF468432),
+                                            color: Color(0xFF0E5023),
                                           ),
                                         ),
                                       ],
@@ -1065,7 +1072,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       const Icon(
                                         Icons.wallet,
                                         size: 16,
-                                        color: Color(0xFF16A34A),
+                                        color: Color(0xFF2E8B3E),
                                       ),
                                       const SizedBox(width: 8),
                                       Expanded(
@@ -1101,7 +1108,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                             vertical: 4,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFF16A34A),
+                                            color: const Color(0xFF2E8B3E),
                                             borderRadius: BorderRadius.circular(
                                               8,
                                             ),
@@ -1145,20 +1152,20 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       ),
                                       decoration: BoxDecoration(
                                         color: selected
-                                            ? const Color(0xFF468432)
+                                            ? const Color(0xFF0E5023)
                                             : Colors.white,
                                         borderRadius: BorderRadius.circular(10),
                                         border: Border.all(
                                           color: selected
-                                              ? const Color(0xFF468432)
-                                              : const Color(0xFFE5E7EB),
+                                              ? const Color(0xFF0E5023)
+                                              : const Color(0xFFDCE4D8),
                                           width: selected ? 1.5 : 1,
                                         ),
                                         boxShadow: selected
                                             ? [
                                                 BoxShadow(
                                                   color: const Color(
-                                                    0xFF468432,
+                                                    0xFF0E5023,
                                                   ).withValues(alpha: 0.20),
                                                   blurRadius: 6,
                                                   offset: const Offset(0, 2),
@@ -1175,7 +1182,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                             size: 14,
                                             color: selected
                                                 ? Colors.white
-                                                : const Color(0xFF6B7280),
+                                                : const Color(0xFF4E5E52),
                                           ),
                                           const SizedBox(width: 5),
                                           Text(
@@ -1185,7 +1192,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                               fontWeight: FontWeight.w600,
                                               color: selected
                                                   ? Colors.white
-                                                  : const Color(0xFF374151),
+                                                  : const Color(0xFF2E3D33),
                                             ),
                                           ),
                                         ],
@@ -1214,7 +1221,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                         ? 'Gift card code'
                                         : 'Reference / Transaction ID',
                                     hintStyle: const TextStyle(
-                                      color: Color(0xFFD1D5DB),
+                                      color: Color(0xFFC3CEC0),
                                       fontSize: 14,
                                     ),
                                     contentPadding: const EdgeInsets.symmetric(
@@ -1222,23 +1229,23 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       vertical: 12,
                                     ),
                                     filled: true,
-                                    fillColor: const Color(0xFFF9FAFB),
+                                    fillColor: const Color(0xFFF4F7F2),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: const BorderSide(
-                                        color: Color(0xFFE5E7EB),
+                                        color: Color(0xFFDCE4D8),
                                       ),
                                     ),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: const BorderSide(
-                                        color: Color(0xFFE5E7EB),
+                                        color: Color(0xFFDCE4D8),
                                       ),
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: const BorderSide(
-                                        color: Color(0xFF468432),
+                                        color: Color(0xFF0E5023),
                                         width: 1.5,
                                       ),
                                     ),
@@ -1258,7 +1265,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,
-                                        color: Color(0xFF9CA3AF),
+                                        color: Color(0xFF8A968D),
                                       ),
                                     ),
                                     Container(
@@ -1285,7 +1292,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                             style: const TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w700,
-                                              color: Color(0xFFDC2626),
+                                              color: Color(0xFFD93A2B),
                                             ),
                                           ),
                                         ],
@@ -1311,7 +1318,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xFF111827),
+                                    color: Color(0xFF14261A),
                                   ),
                                   textAlign: TextAlign.center,
                                   decoration: InputDecoration(
@@ -1319,35 +1326,35 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                     hintStyle: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w700,
-                                      color: Color(0xFFD1D5DB),
+                                      color: Color(0xFFC3CEC0),
                                     ),
                                     prefixText: 'TZS  ',
                                     prefixStyle: const TextStyle(
                                       fontSize: 13,
-                                      color: Color(0xFF9CA3AF),
+                                      color: Color(0xFF8A968D),
                                       fontWeight: FontWeight.w500,
                                     ),
                                     contentPadding: const EdgeInsets.symmetric(
                                       vertical: 10,
                                     ),
                                     filled: true,
-                                    fillColor: const Color(0xFFF9FAFB),
+                                    fillColor: const Color(0xFFF4F7F2),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: const BorderSide(
-                                        color: Color(0xFFE5E7EB),
+                                        color: Color(0xFFDCE4D8),
                                       ),
                                     ),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: const BorderSide(
-                                        color: Color(0xFFE5E7EB),
+                                        color: Color(0xFFDCE4D8),
                                       ),
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: const BorderSide(
-                                        color: Color(0xFF468432),
+                                        color: Color(0xFF0E5023),
                                         width: 1.5,
                                       ),
                                     ),
@@ -1428,7 +1435,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                           : () => _chargeTerminal(effectiveTotal),
                                       style: FilledButton.styleFrom(
                                         backgroundColor: const Color(
-                                          0xFF468432,
+                                          0xFF0E5023,
                                         ),
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
@@ -1480,7 +1487,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                         _terminalError!,
                                         style: const TextStyle(
                                           fontSize: 11,
-                                          color: Color(0xFFDC2626),
+                                          color: Color(0xFFD93A2B),
                                         ),
                                         textAlign: TextAlign.center,
                                       ),
@@ -1493,7 +1500,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       onPressed: () => _addPayment(effectiveTotal),
                                       style: OutlinedButton.styleFrom(
                                         side: const BorderSide(
-                                          color: Color(0xFFE5E7EB),
+                                          color: Color(0xFFDCE4D8),
                                         ),
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
@@ -1519,7 +1526,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       onPressed: () => _addPayment(effectiveTotal),
                                       style: FilledButton.styleFrom(
                                         backgroundColor: const Color(
-                                          0xFF468432,
+                                          0xFF0E5023,
                                         ),
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
@@ -1551,10 +1558,10 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       vertical: 10,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFF9FAFB),
+                                      color: const Color(0xFFF4F7F2),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: const Color(0xFFE5E7EB),
+                                        color: const Color(0xFFDCE4D8),
                                       ),
                                     ),
                                     child: Row(
@@ -1564,7 +1571,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                           height: 32,
                                           decoration: BoxDecoration(
                                             color: const Color(
-                                              0xFF468432,
+                                              0xFF0E5023,
                                             ).withValues(alpha: 0.10),
                                             borderRadius: BorderRadius.circular(
                                               8,
@@ -1573,7 +1580,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                           child: Icon(
                                             _payments[i].method.icon,
                                             size: 16,
-                                            color: const Color(0xFF468432),
+                                            color: const Color(0xFF0E5023),
                                           ),
                                         ),
                                         const SizedBox(width: 10),
@@ -1587,7 +1594,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                                 style: const TextStyle(
                                                   fontSize: 13,
                                                   fontWeight: FontWeight.w600,
-                                                  color: Color(0xFF111827),
+                                                  color: Color(0xFF14261A),
                                                 ),
                                               ),
                                               if ((_payments[i].reference ?? '')
@@ -1596,7 +1603,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                                   '#${_payments[i].reference}',
                                                   style: const TextStyle(
                                                     fontSize: 11,
-                                                    color: Color(0xFF9CA3AF),
+                                                    color: Color(0xFF8A968D),
                                                   ),
                                                 ),
                                             ],
@@ -1607,7 +1614,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                           style: const TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w700,
-                                            color: Color(0xFF111827),
+                                            color: Color(0xFF14261A),
                                           ),
                                         ),
                                         const SizedBox(width: 8),
@@ -1624,7 +1631,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                             child: const Icon(
                                               Icons.close,
                                               size: 13,
-                                              color: Color(0xFFDC2626),
+                                              color: Color(0xFFD93A2B),
                                             ),
                                           ),
                                         ),
@@ -1645,14 +1652,14 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       Icon(
                                         Icons.note_add_outlined,
                                         size: 15,
-                                        color: Color(0xFF9CA3AF),
+                                        color: Color(0xFF8A968D),
                                       ),
                                       SizedBox(width: 6),
                                       Text(
                                         'Add note',
                                         style: TextStyle(
                                           fontSize: 13,
-                                          color: Color(0xFF6B7280),
+                                          color: Color(0xFF4E5E52),
                                         ),
                                       ),
                                     ],
@@ -1674,7 +1681,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                           child: const Icon(
                                             Icons.close,
                                             size: 14,
-                                            color: Color(0xFF9CA3AF),
+                                            color: Color(0xFF8A968D),
                                           ),
                                         ),
                                       ],
@@ -1689,19 +1696,19 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       decoration: InputDecoration(
                                         hintText: 'e.g. Gift wrap, table 3',
                                         hintStyle: const TextStyle(
-                                          color: Color(0xFFD1D5DB),
+                                          color: Color(0xFFC3CEC0),
                                         ),
                                         contentPadding: const EdgeInsets.all(
                                           12,
                                         ),
                                         filled: true,
-                                        fillColor: const Color(0xFFF9FAFB),
+                                        fillColor: const Color(0xFFF4F7F2),
                                         border: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(
                                             12,
                                           ),
                                           borderSide: const BorderSide(
-                                            color: Color(0xFFE5E7EB),
+                                            color: Color(0xFFDCE4D8),
                                           ),
                                         ),
                                         enabledBorder: OutlineInputBorder(
@@ -1709,7 +1716,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                             12,
                                           ),
                                           borderSide: const BorderSide(
-                                            color: Color(0xFFE5E7EB),
+                                            color: Color(0xFFDCE4D8),
                                           ),
                                         ),
                                         focusedBorder: OutlineInputBorder(
@@ -1717,7 +1724,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                             12,
                                           ),
                                           borderSide: const BorderSide(
-                                            color: Color(0xFF468432),
+                                            color: Color(0xFF0E5023),
                                             width: 1.5,
                                           ),
                                         ),
@@ -1737,9 +1744,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                         margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF9FAFB),
+                          color: const Color(0xFFF4F7F2),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE5E7EB)),
+                          border: Border.all(color: const Color(0xFFDCE4D8)),
                         ),
                         child: Column(
                           children: [
@@ -1749,7 +1756,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                               'Paid',
                               _totalPaid,
                               valueColor: _totalPaid > 0
-                                  ? const Color(0xFF16A34A)
+                                  ? const Color(0xFF2E8B3E)
                                   : null,
                             ),
                             const SizedBox(height: 4),
@@ -1764,14 +1771,14 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                               _summaryRow(
                                 'Remaining',
                                 remaining,
-                                valueColor: const Color(0xFFDC2626),
+                                valueColor: const Color(0xFFD93A2B),
                                 bold: true,
                               )
                             else
                               _summaryRow(
                                 'Change',
                                 change,
-                                valueColor: const Color(0xFF16A34A),
+                                valueColor: const Color(0xFF2E8B3E),
                                 bold: true,
                               ),
                           ],
@@ -1789,8 +1796,8 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                 ? null
                                 : () => _complete(cart),
                             style: FilledButton.styleFrom(
-                              backgroundColor: const Color(0xFF468432),
-                              disabledBackgroundColor: const Color(0xFFD1D5DB),
+                              backgroundColor: const Color(0xFF0E5023),
+                              disabledBackgroundColor: const Color(0xFFC3CEC0),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
@@ -1871,7 +1878,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
         fontSize: 11,
         fontWeight: FontWeight.w600,
         letterSpacing: 1.2,
-        color: Color(0xFF9CA3AF),
+        color: Color(0xFF8A968D),
       ),
     );
   }
@@ -1890,7 +1897,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
-            color: bold ? const Color(0xFF111827) : const Color(0xFF6B7280),
+            color: bold ? const Color(0xFF14261A) : const Color(0xFF4E5E52),
           ),
         ),
         MoneyText(
@@ -1898,7 +1905,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
           style: TextStyle(
             fontSize: bold ? 14 : 13,
             fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
-            color: valueColor ?? const Color(0xFF374151),
+            color: valueColor ?? const Color(0xFF2E3D33),
           ),
         ),
       ],
@@ -1912,10 +1919,10 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
         child: Container(
           height: 36,
           decoration: BoxDecoration(
-            color: const Color(0xFF468432).withValues(alpha: 0.08),
+            color: const Color(0xFF0E5023).withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: const Color(0xFF468432).withValues(alpha: 0.2),
+              color: const Color(0xFF0E5023).withValues(alpha: 0.2),
             ),
           ),
           alignment: Alignment.center,
@@ -1924,7 +1931,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF468432),
+              color: Color(0xFF0E5023),
             ),
           ),
         ),

@@ -21,6 +21,8 @@ class CheckoutPricing {
         .toList(),
     'discountAmount': cart.discount,
     if (couponCode != null && couponCode.isNotEmpty) 'couponCode': couponCode,
+    if (cart.charges.isNotEmpty)
+      'additionalCharges': cart.charges.map((c) => c.toJson()).toList(),
   };
 
   /// Identifies a cart + coupon combination; a new key means re-price.

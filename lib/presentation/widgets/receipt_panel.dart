@@ -345,6 +345,9 @@ class _ReceiptPanelState extends State<ReceiptPanel> {
         _amountRow('Tax', sale.taxAmount, valueStyle),
         if (sale.discountAmount > 0)
           _amountRow('Discount', -sale.discountAmount, valueStyle),
+        // Charge tax is part of the tax line, as on the server.
+        for (final c in sale.additionalCharges)
+          _amountRow(c.name, c.amount, valueStyle),
 
         const SizedBox(height: 4),
         Row(

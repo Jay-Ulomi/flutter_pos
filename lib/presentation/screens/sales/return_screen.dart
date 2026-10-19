@@ -114,6 +114,15 @@ class _ReturnScreenState extends State<ReturnScreen> {
                         ),
                         if (widget.sale.customerName != null)
                           Text('Customer: ${widget.sale.customerName}'),
+                        if (widget.sale.additionalCharges.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(
+                              'Additional charges (${widget.sale.additionalCharges.map((c) => c.name).join(', ')}) are not refunded.',
+                              key: const ValueKey('charges-not-refunded'),
+                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.secondary),
+                            ),
+                          ),
                       ],
                     ),
                   ),

@@ -126,6 +126,9 @@ Future<Uint8List> buildReceiptPdf(
                 baseStyle,
                 baseStyle,
               ),
+            // Charge tax is part of the tax line, as on the server.
+            for (final c in sale.additionalCharges)
+              _totalRow(c.name, money(c.amount), baseStyle, baseStyle),
             pw.SizedBox(height: 2),
             _totalRow('TOTAL', money(sale.totalAmount), totalStyle, totalStyle),
             pw.SizedBox(height: 4),

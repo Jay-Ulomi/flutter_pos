@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../data/models/product_models.dart';
+import '../../../data/models/sale_models.dart';
 import 'cart_state.dart';
 
 abstract class CartEvent extends Equatable {
@@ -91,14 +92,16 @@ class CartRestored extends CartEvent {
   final double discount;
   final String? customerId;
   final String? customerName;
+  final List<SaleCharge> charges;
   const CartRestored({
     required this.lines,
     this.discount = 0,
     this.customerId,
     this.customerName,
+    this.charges = const [],
   });
   @override
-  List<Object?> get props => [lines, discount, customerId, customerName];
+  List<Object?> get props => [lines, discount, customerId, customerName, charges];
 }
 
 class CartCustomerCleared extends CartEvent {
@@ -120,4 +123,19 @@ class CartItemTierChanged extends CartEvent {
   const CartItemTierChanged(this.productId, this.tier);
   @override
   List<Object?> get props => [productId, tier];
+}
+
+/// Adds an additional charge (ignored past [SaleCharge.maxPerSale]).
+class CartChargeAdded extends CartEvent {
+  final SaleCharge charge;
+  const CartChargeAdded(this.charge);
+  @override
+  List<Object?> get props => [charge];
+}
+
+class CartChargeRemoved extends CartEvent {
+  final int index;
+  const CartChargeRemoved(this.index);
+  @override
+  List<Object?> get props => [index];
 }

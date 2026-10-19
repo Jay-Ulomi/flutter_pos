@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../data/models/product_models.dart';
+import '../../../data/models/sale_models.dart';
 import '../cart/cart_state.dart';
 
 class HeldSale extends Equatable {
@@ -15,6 +16,7 @@ class HeldSale extends Equatable {
   final String? customerId;
   final String? customerName;
   final DateTime heldAt;
+  final List<SaleCharge> charges;
 
   const HeldSale({
     required this.id,
@@ -24,6 +26,7 @@ class HeldSale extends Equatable {
     this.customerId,
     this.customerName,
     required this.heldAt,
+    this.charges = const [],
   });
 
   int get itemCount => lines.length;
@@ -31,7 +34,7 @@ class HeldSale extends Equatable {
   double get total {
     final subtotal = lines.fold(0.0, (sum, l) => sum + l.lineSubtotal);
     final tax = lines.fold(0.0, (sum, l) => sum + l.lineTax);
-    return subtotal + tax - discount;
+    return subtotal + tax - discount + charges.fold(0.0, (sum, c) => sum + c.total);
   }
 
   Map<String, dynamic> toJson() => {
@@ -42,6 +45,7 @@ class HeldSale extends Equatable {
     'customerId': customerId,
     'customerName': customerName,
     'heldAt': heldAt.toIso8601String(),
+    if (charges.isNotEmpty) 'charges': charges.map((c) => c.toJson()).toList(),
   };
 
   factory HeldSale.fromJson(Map<String, dynamic> json) {
@@ -53,6 +57,7 @@ class HeldSale extends Equatable {
       customerId: json['customerId'] as String?,
       customerName: json['customerName'] as String?,
       heldAt: DateTime.parse(json['heldAt'] as String),
+      charges: SaleCharge.listFrom(json['charges']),
     );
   }
 
@@ -160,6 +165,7 @@ class HeldSalesCubit extends Cubit<List<HeldSale>> {
       customerId: cart.selectedCustomerId,
       customerName: cart.selectedCustomerName,
       heldAt: DateTime.now(),
+      charges: cart.charges,
     );
     emit([...state, sale]);
     await _persist();

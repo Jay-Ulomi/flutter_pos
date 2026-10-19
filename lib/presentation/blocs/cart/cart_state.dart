@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../data/models/product_models.dart';
+import '../../../data/models/sale_models.dart';
 
 class CartLine extends Equatable {
   final Product product;
@@ -105,6 +106,8 @@ class CartState extends Equatable {
   final double customerBalance;
   /// Loyalty points of the selected customer (spendable at checkout).
   final int customerLoyaltyPoints;
+  /// Delivery, packaging… added at Confirm Sale.
+  final List<SaleCharge> charges;
 
   const CartState({
     this.lines = const [],
@@ -113,6 +116,7 @@ class CartState extends Equatable {
     this.selectedCustomerName,
     this.customerBalance = 0,
     this.customerLoyaltyPoints = 0,
+    this.charges = const [],
   });
 
   double get subtotal => lines.fold(0, (sum, l) => sum + l.lineSubtotal);
@@ -123,11 +127,15 @@ class CartState extends Equatable {
 
   double get taxAmount => lines.fold(0, (sum, l) => sum + l.lineTax);
 
+  /// Additional charges including their tax.
+  double get chargesTotal => charges.fold(0, (sum, c) => sum + c.total);
+
   double get total {
-    // = Σ lineTotal − sale-level discount. Mirrors the backend's authoritative
-    // computation and, crucially, includes per-line discounts.
-    final value = subtotal - lineDiscountTotal + taxAmount - discount;
-    return value < 0 ? 0 : value;
+    // = Σ lineTotal − sale-level discount + charges. Mirrors the backend's
+    // authoritative computation and, crucially, includes per-line discounts.
+    // The discount never eats into the charges.
+    final goods = subtotal - lineDiscountTotal + taxAmount - discount;
+    return (goods < 0 ? 0 : goods) + chargesTotal;
   }
 
   int get itemCount => lines.fold(0, (sum, l) => sum + l.quantity.toInt());
@@ -142,6 +150,7 @@ class CartState extends Equatable {
     String? selectedCustomerName,
     double? customerBalance,
     int? customerLoyaltyPoints,
+    List<SaleCharge>? charges,
     bool clearCustomer = false,
   }) {
     return CartState(
@@ -157,6 +166,7 @@ class CartState extends Equatable {
       customerLoyaltyPoints: clearCustomer
           ? 0
           : (customerLoyaltyPoints ?? this.customerLoyaltyPoints),
+      charges: charges ?? this.charges,
     );
   }
 
@@ -168,5 +178,6 @@ class CartState extends Equatable {
     selectedCustomerName,
     customerBalance,
     customerLoyaltyPoints,
+    charges,
   ];
 }

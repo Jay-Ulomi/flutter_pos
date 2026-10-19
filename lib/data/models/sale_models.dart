@@ -130,6 +130,42 @@ class SalePayment extends Equatable {
   List<Object?> get props => [method, amount, reference];
 }
 
+/// An extra charge on a sale (delivery, packaging…). Not refunded on returns.
+class SaleCharge extends Equatable {
+  final String name;
+  final double amount;
+
+  /// Percent, e.g. 18.
+  final double taxRate;
+
+  /// As computed by the server; locally amount × taxRate.
+  final double? serverTaxAmount;
+
+  const SaleCharge({required this.name, required this.amount, this.taxRate = 0, this.serverTaxAmount});
+
+  /// Server limit per sale.
+  static const maxPerSale = 10;
+
+  double get taxAmount => serverTaxAmount ?? double.parse((amount * taxRate / 100).toStringAsFixed(2));
+  double get total => amount + taxAmount;
+
+  Map<String, dynamic> toJson() => {'name': name, 'amount': amount, 'taxRate': taxRate};
+
+  factory SaleCharge.fromJson(Map<String, dynamic> json) => SaleCharge(
+    name: json['name']?.toString() ?? '',
+    amount: (json['amount'] ?? 0).toDouble(),
+    taxRate: (json['taxRate'] ?? 0).toDouble(),
+    serverTaxAmount: (json['taxAmount'] as num?)?.toDouble(),
+  );
+
+  static List<SaleCharge> listFrom(Object? json) => (json as List? ?? const [])
+      .map((e) => SaleCharge.fromJson(e as Map<String, dynamic>))
+      .toList();
+
+  @override
+  List<Object?> get props => [name, amount, taxRate, serverTaxAmount];
+}
+
 class Sale extends Equatable {
   final String? id;
   final String? clientId;
@@ -149,6 +185,7 @@ class Sale extends Equatable {
   final String? couponCode;
   final String status;
   final DateTime? createdAt;
+  final List<SaleCharge> additionalCharges;
 
   const Sale({
     this.id,
@@ -169,7 +206,11 @@ class Sale extends Equatable {
     this.couponCode,
     this.status = 'COMPLETED',
     this.createdAt,
+    this.additionalCharges = const [],
   });
+
+  /// Charges including their tax.
+  double get chargesTotal => additionalCharges.fold(0, (sum, c) => sum + c.total);
 
   Sale copyWith({
     String? id,
@@ -190,6 +231,7 @@ class Sale extends Equatable {
     String? couponCode,
     String? status,
     DateTime? createdAt,
+    List<SaleCharge>? additionalCharges,
   }) {
     return Sale(
       id: id ?? this.id,
@@ -210,6 +252,7 @@ class Sale extends Equatable {
       couponCode: couponCode ?? this.couponCode,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
+      additionalCharges: additionalCharges ?? this.additionalCharges,
     );
   }
 
@@ -222,6 +265,8 @@ class Sale extends Equatable {
     'discountAmount': discountAmount,
     if (couponCode != null) 'couponCode': couponCode,
     if (notes != null) 'notes': notes,
+    if (additionalCharges.isNotEmpty)
+      'additionalCharges': additionalCharges.map((c) => c.toJson()).toList(),
   };
 
   // Full representation used for local pending-sale persistence.
@@ -244,6 +289,8 @@ class Sale extends Equatable {
     'changeAmount': changeAmount,
     'status': status,
     if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
+    if (additionalCharges.isNotEmpty)
+      'additionalCharges': additionalCharges.map((c) => c.toJson()).toList(),
   };
 
   factory Sale.fromJson(Map<String, dynamic> json) {
@@ -273,6 +320,7 @@ class Sale extends Equatable {
       notes: json['notes'],
       couponCode: json['couponCode'],
       status: json['status'] ?? 'COMPLETED',
+      additionalCharges: SaleCharge.listFrom(json['additionalCharges']),
       createdAt: (json['createdAt'] ?? json['saleDate']) != null
           ? DateTime.tryParse(
               (json['createdAt'] ?? json['saleDate']).toString(),
@@ -308,6 +356,9 @@ class SalePreview {
   final double taxAmount;
   final double totalAmount;
   final List<AppliedPromotion> appliedPromotions;
+  /// Charges as priced by the server (with their tax) and their sum.
+  final List<SaleCharge> additionalCharges;
+  final double chargesTotal;
   /// Value of one loyalty point in currency (backend app.loyalty.point-value).
   final double loyaltyPointValue;
 
@@ -317,6 +368,8 @@ class SalePreview {
     required this.taxAmount,
     required this.totalAmount,
     this.appliedPromotions = const [],
+    this.additionalCharges = const [],
+    this.chargesTotal = 0,
     this.loyaltyPointValue = 10,
   });
 
@@ -328,6 +381,8 @@ class SalePreview {
     appliedPromotions: (json['appliedPromotions'] as List? ?? const [])
         .map((e) => AppliedPromotion.fromJson(e as Map<String, dynamic>))
         .toList(),
+    additionalCharges: SaleCharge.listFrom(json['additionalCharges']),
+    chargesTotal: (json['chargesTotal'] ?? 0).toDouble(),
     loyaltyPointValue: (json['loyaltyPointValue'] ?? 10).toDouble(),
   );
 
