@@ -103,6 +103,7 @@ class AppStrings {
       'tx.partial': 'Partial',
       'tx.receive_payment': 'Receive payment',
       'tx.transfer': 'Transfer',
+      'tx.new_sale': 'New Sale',
       // Parties
       'party.title': 'Parties',
       'party.new': 'New Party',
@@ -266,6 +267,7 @@ class AppStrings {
       'tx.partial': 'Sehemu',
       'tx.receive_payment': 'Pokea malipo',
       'tx.transfer': 'Hamisha',
+      'tx.new_sale': 'Mauzo Mapya',
       'party.title': 'Wahusika',
       'party.new': 'Mhusika Mpya',
       'party.customers': 'Wateja',

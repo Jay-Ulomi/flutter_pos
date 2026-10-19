@@ -22,7 +22,14 @@ import '../screens/laundry/laundry_receipt_screen.dart';
 import '../screens/pos/checkout_screen.dart';
 import '../screens/pos/pos_screen.dart';
 import '../screens/pos/receipt_screen.dart';
+import '../screens/parties/parties_screen.dart';
+import '../screens/products/add_product_screen.dart';
 import '../screens/products/product_list_screen.dart';
+import '../screens/profile/profile_screen.dart';
+import '../screens/reports/sales_report_screen.dart';
+import '../screens/settings/app_settings_screen.dart';
+import '../screens/transactions/payment_forms.dart';
+import '../screens/transactions/transactions_screen.dart';
 import '../screens/sales/return_screen.dart';
 import '../screens/sales/sale_detail_screen.dart';
 import '../screens/sales/sales_history_screen.dart';
@@ -224,6 +231,15 @@ class AppRouter {
           builder: (_, s) => CustomerDetailScreen(customerId: s.pathParameters['id']!),
         ),
         GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
+        // Redesign screens
+        GoRoute(path: '/transactions', builder: (_, _) => const TransactionsScreen()),
+        GoRoute(path: '/payment-in', builder: (_, _) => const PaymentInScreen()),
+        GoRoute(path: '/party-transfer', builder: (_, _) => const PartyTransferScreen()),
+        GoRoute(path: '/parties', builder: (_, _) => const PartiesScreen()),
+        GoRoute(path: '/products/new', builder: (_, _) => const AddProductScreen()),
+        GoRoute(path: '/reports', builder: (_, _) => const SalesReportScreen()),
+        GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
+        GoRoute(path: '/app-settings', builder: (_, _) => const AppSettingsScreen()),
       ],
     );
   }

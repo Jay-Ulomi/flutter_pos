@@ -218,11 +218,13 @@ class StatusPill extends StatelessWidget {
       case 'COMPLETED':
       case 'SETTLED':
       case 'RECEIVED':
+      case 'CONVERTED':
         return PillTone.paid;
       case 'UNPAID':
       case 'OVERDUE':
       case 'VOIDED':
       case 'CANCELLED':
+      case 'REJECTED':
         return PillTone.unpaid;
       case 'PARTIAL':
       case 'PARTIALLY_PAID':

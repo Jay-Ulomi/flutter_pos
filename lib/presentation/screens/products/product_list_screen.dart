@@ -2,10 +2,13 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../data/models/product_models.dart';
+import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/product/product_bloc.dart';
 import '../../blocs/product/product_event.dart';
 import '../../blocs/product/product_state.dart';
@@ -13,6 +16,7 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/loading_indicator.dart';
 import '../../widgets/responsive_shell.dart';
+import 'add_product_screen.dart';
 
 class ProductListScreen extends StatefulWidget {
   const ProductListScreen({super.key});
@@ -89,9 +93,21 @@ class _ProductListScreenState extends State<ProductListScreen> {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
 
+    final canAdd = context.select<AuthBloc, bool>(
+      (b) => b.state.can(AddProductScreen.permission),
+    );
     return ResponsiveShell(
+      floatingActionButton: canAdd
+          ? FloatingActionButton.extended(
+              heroTag: 'add-product',
+              shape: const StadiumBorder(),
+              onPressed: () => context.push('/products/new'),
+              icon: const Icon(Icons.add_rounded),
+              label: Text(context.tr('inv.add_product')),
+            )
+          : null,
       appBar: AppBar(
-        title: const Text('Products'),
+        title: Text(context.tr('inv.title')),
         actions: [
           IconButton(
             icon: const Icon(Icons.qr_code_scanner),

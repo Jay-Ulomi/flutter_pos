@@ -91,12 +91,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
-                  child: Form(
-                    key: _formKey,
-                    child: AutofillGroup(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: _form(loading),
+                  // White rounded card on the gradient, as in the design.
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: cs.surface,
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(22, 32, 22, 24),
+                      child: Form(
+                        key: _formKey,
+                        child: AutofillGroup(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: _form(loading),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -114,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final cs = theme.colorScheme;
     return [
       const Center(child: BrandWordmark(height: 48)),
-      const SizedBox(height: 40),
+      const SizedBox(height: 28),
       Text(context.tr('auth.welcome'),
           textAlign: TextAlign.center, style: theme.textTheme.headlineMedium),
       const SizedBox(height: 6),
@@ -123,7 +133,8 @@ class _LoginScreenState extends State<LoginScreen> {
         textAlign: TextAlign.center,
         style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
       ),
-      const SizedBox(height: 32),
+      const SizedBox(height: 28),
+      _label(context.tr('auth.login_field')),
       TextFormField(
         key: const ValueKey('login-field'),
         controller: _emailCtrl,
@@ -140,6 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
             v == null || v.trim().isEmpty ? context.tr('auth.login_field') : null,
       ),
       const SizedBox(height: 14),
+      _label(context.tr('auth.password')),
       TextFormField(
         key: const ValueKey('password-field'),
         controller: _passCtrl,
@@ -198,4 +210,9 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     ];
   }
+
+  Widget _label(String text) => Padding(
+        padding: const EdgeInsets.only(left: 4, bottom: 8),
+        child: Text(text, style: Theme.of(context).textTheme.titleSmall),
+      );
 }

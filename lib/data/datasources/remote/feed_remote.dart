@@ -155,6 +155,32 @@ class FeedRemoteDataSource {
     );
   }
 
+  /// Creates a product (needs `manage_products`).
+  Future<void> createProduct({
+    required String name,
+    required double sellingPrice,
+    double? costPrice,
+    String? sku,
+    String? barcode,
+    String? categoryId,
+    double? taxRate,
+    bool trackInventory = true,
+  }) async {
+    await _send(
+      () => _dio.post(ApiConstants.products, data: {
+        'name': name.trim(),
+        'sellingPrice': sellingPrice,
+        'costPrice': ?costPrice,
+        if (sku != null && sku.trim().isNotEmpty) 'sku': sku.trim(),
+        if (barcode != null && barcode.trim().isNotEmpty) 'barcode': barcode.trim(),
+        'categoryId': ?categoryId,
+        'taxRate': ?taxRate,
+        'trackInventory': trackInventory,
+      }),
+      'Could not save the product',
+    );
+  }
+
   /// Downloads an export. [format] is `pdf` or `xlsx`.
   Future<DownloadedFile> download(
     String path, {

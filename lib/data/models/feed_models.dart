@@ -23,11 +23,19 @@ class PageResult<T> {
     }
     final map = (data as Map?)?.cast<String, dynamic>() ?? const {};
     final content = (map['content'] as List?) ?? const [];
+    final page = (map['number'] as num?)?.toInt() ?? 0;
+    final total = (map['totalElements'] as num?)?.toInt();
+    final size = (map['size'] as num?)?.toInt();
+    // Prefer totalPages; derive it from totalElements/size when absent.
+    var pages = (map['totalPages'] as num?)?.toInt();
+    if (pages == null && total != null && size != null && size > 0) {
+      pages = (total + size - 1) ~/ size;
+    }
     return PageResult(
       items: content.map((e) => fromJson(e as Map<String, dynamic>)).toList(),
-      page: (map['number'] as num?)?.toInt() ?? 0,
-      totalPages: (map['totalPages'] as num?)?.toInt() ?? 1,
-      totalElements: (map['totalElements'] as num?)?.toInt(),
+      page: page,
+      totalPages: pages ?? 1,
+      totalElements: total,
     );
   }
 }
@@ -53,6 +61,9 @@ enum TxType {
     }
     return null;
   }
+
+  /// What users without `view_reports` (cashiers) may list.
+  static const cashierTypes = {sale, saleReturn, quotation};
 
   /// Money flowing out of the business (shown in orange).
   bool get isOutflow =>
