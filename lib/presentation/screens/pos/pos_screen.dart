@@ -34,7 +34,6 @@ import 'customer_display_screen.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/loading_indicator.dart';
 import '../../widgets/money_text.dart';
-import '../../widgets/product_card.dart';
 import '../../widgets/aduinola/sale_product_tile.dart';
 import '../../widgets/aduinola/ui.dart';
 import '../../widgets/responsive_shell.dart';
