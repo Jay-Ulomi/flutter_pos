@@ -133,9 +133,9 @@ class _CartItemTileState extends State<CartItemTile> {
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F7F2),
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFDCE4D8)),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,10 +149,10 @@ class _CartItemTileState extends State<CartItemTile> {
                   line.product.name,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF14261A),
+                    color: Theme.of(context).colorScheme.onSurface,
                     height: 1.3,
                   ),
                 ),
@@ -167,13 +167,13 @@ class _CartItemTileState extends State<CartItemTile> {
                     width: 30,
                     height: 30,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFEE2E2),
+                      color: Theme.of(context).colorScheme.errorContainer,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.delete_outline_rounded,
                       size: 16,
-                      color: Color(0xFFD93A2B),
+                      color: Theme.of(context).colorScheme.error,
                     ),
                   ),
                 ),
@@ -213,9 +213,9 @@ class _CartItemTileState extends State<CartItemTile> {
                 height: 40,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFDCE4D8)),
+                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                 ),
                 child: TextSelectionTheme(
                   data: TextSelectionThemeData(
@@ -235,10 +235,10 @@ class _CartItemTileState extends State<CartItemTile> {
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                     ],
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF14261A),
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                     decoration: InputDecoration(
                       isDense: true,
@@ -256,10 +256,10 @@ class _CartItemTileState extends State<CartItemTile> {
                       focusedBorder: InputBorder.none,
                       disabledBorder: InputBorder.none,
                       hintText: _qtyText(line.quantity),
-                      hintStyle: const TextStyle(
+                      hintStyle: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF14261A),
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     onTap: () {
@@ -274,11 +274,11 @@ class _CartItemTileState extends State<CartItemTile> {
                 ),
               ),
               const SizedBox(width: 10),
-              const Text(
+              Text(
                 '×',
                 style: TextStyle(
                   fontSize: 15,
-                  color: Color(0xFF8A968D),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -290,12 +290,12 @@ class _CartItemTileState extends State<CartItemTile> {
                   height: 40,
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: line.hasPriceOverride
                           ? const Color(0xFFFCD34D)
-                          : const Color(0xFFDCE4D8),
+                          : Theme.of(context).colorScheme.outlineVariant,
                     ),
                   ),
                   child: Row(
@@ -306,7 +306,7 @@ class _CartItemTileState extends State<CartItemTile> {
                           fontSize: 11,
                           color: line.hasPriceOverride
                               ? const Color(0xFF92400E)
-                              : const Color(0xFF8A968D),
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -320,7 +320,7 @@ class _CartItemTileState extends State<CartItemTile> {
                                   fontSize: 15,
                                   color: line.hasPriceOverride
                                       ? const Color(0xFF92400E)
-                                      : const Color(0xFF14261A),
+                                      : Theme.of(context).colorScheme.onSurface,
                                   fontWeight: FontWeight.w700,
                                 ),
                               )
@@ -348,7 +348,7 @@ class _CartItemTileState extends State<CartItemTile> {
                                     fontSize: 15,
                                     color: line.hasPriceOverride
                                         ? const Color(0xFF92400E)
-                                        : const Color(0xFF14261A),
+                                        : Theme.of(context).colorScheme.onSurface,
                                     fontWeight: FontWeight.w700,
                                   ),
                                   decoration: InputDecoration(
@@ -370,9 +370,9 @@ class _CartItemTileState extends State<CartItemTile> {
                                     focusedBorder: InputBorder.none,
                                     disabledBorder: InputBorder.none,
                                     hintText: _priceText(line.effectivePrice),
-                                    hintStyle: const TextStyle(
+                                    hintStyle: TextStyle(
                                       fontSize: 15,
-                                      color: Color(0xFF14261A),
+                                      color: Theme.of(context).colorScheme.onSurface,
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
@@ -397,21 +397,21 @@ class _CartItemTileState extends State<CartItemTile> {
                 ),
               ),
               const SizedBox(width: 10),
-              const Text(
+              Text(
                 '=',
                 style: TextStyle(
                   fontSize: 15,
-                  color: Color(0xFF8A968D),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(width: 10),
               MoneyText(
                 line.lineTotal,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF14261A),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -429,7 +429,7 @@ class _CartItemTileState extends State<CartItemTile> {
                       vertical: 1,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFDCFCE7),
+                      color: Theme.of(context).colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -467,18 +467,18 @@ class _CartItemTileState extends State<CartItemTile> {
             const SizedBox(height: 6),
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.warning_amber_rounded,
                   size: 13,
-                  color: Color(0xFFD93A2B),
+                  color: Theme.of(context).colorScheme.error,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   'Only ${_stockText(line.product.stockQuantity)} in stock',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFFD93A2B),
+                    color: Theme.of(context).colorScheme.error,
                   ),
                 ),
               ],

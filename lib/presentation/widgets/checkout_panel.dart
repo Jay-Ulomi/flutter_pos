@@ -445,7 +445,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
               child: Text(
                 _couponError!,
                 key: const Key('coupon-error'),
-                style: const TextStyle(fontSize: 11, color: Color(0xFFD93A2B)),
+                style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.error),
               ),
             ),
           if (cart.hasCustomer && cart.customerLoyaltyPoints > 0 && !hasPointsPayment)
@@ -795,13 +795,13 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                   width: 36,
                                   height: 36,
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFEDF2EB),
+                                    color: Theme.of(context).colorScheme.surfaceContainer,
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.arrow_back,
                                     size: 18,
-                                    color: Color(0xFF4E5E52),
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                               ),
@@ -809,10 +809,10 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                             ],
                             Text(
                               context.tr('sale.title'),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF14261A),
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             const Spacer(),
@@ -825,13 +825,13 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: cart.hasCustomer
-                                      ? const Color(0xFFDCFCE7)
-                                      : const Color(0xFFEDF2EB),
+                                      ? Theme.of(context).colorScheme.primaryContainer
+                                      : Theme.of(context).colorScheme.surfaceContainer,
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
                                     color: cart.hasCustomer
-                                        ? const Color(0xFFBBF7D0)
-                                        : const Color(0xFFDCE4D8),
+                                        ? Theme.of(context).colorScheme.primaryContainer
+                                        : Theme.of(context).colorScheme.outlineVariant,
                                   ),
                                 ),
                                 child: Row(
@@ -844,7 +844,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       size: 13,
                                       color: cart.hasCustomer
                                           ? const Color(0xFF2E8B3E)
-                                          : const Color(0xFF8A968D),
+                                          : Theme.of(context).colorScheme.onSurfaceVariant,
                                     ),
                                     const SizedBox(width: 5),
                                     Text(
@@ -858,8 +858,8 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                             ? FontWeight.w600
                                             : FontWeight.w400,
                                         color: cart.hasCustomer
-                                            ? const Color(0xFF166534)
-                                            : const Color(0xFF4E5E52),
+                                            ? Theme.of(context).colorScheme.onPrimaryContainer
+                                            : Theme.of(context).colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                   ],
@@ -869,7 +869,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                           ],
                         ),
                       ),
-                      const Divider(height: 1, color: Color(0xFFDCE4D8)),
+                      Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
 
                       // ── Body ──
                       Expanded(
@@ -899,10 +899,10 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                               Container(
                                 padding: const EdgeInsets.all(14),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF4F7F2),
+                                  color: Theme.of(context).colorScheme.surfaceContainerLow,
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
-                                    color: const Color(0xFFDCE4D8),
+                                    color: Theme.of(context).colorScheme.outlineVariant,
                                   ),
                                 ),
                                 child: Column(
@@ -928,10 +928,10 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                               child: Text(
                                                 '${cart.lines.length} item'
                                                 '${cart.lines.length == 1 ? '' : 's'}',
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontSize: 13,
                                                   fontWeight: FontWeight.w600,
-                                                  color: Color(0xFF2E3D33),
+                                                  color: Theme.of(context).colorScheme.onSurface,
                                                 ),
                                               ),
                                             ),
@@ -939,10 +939,10 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                               _itemsExpanded
                                                   ? 'Hide'
                                                   : 'View items',
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w600,
-                                                color: Color(0xFF0E5023),
+                                                color: Theme.of(context).colorScheme.primary,
                                               ),
                                             ),
                                             Icon(
@@ -950,7 +950,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                                   ? Icons.keyboard_arrow_up
                                                   : Icons.keyboard_arrow_down,
                                               size: 18,
-                                              color: const Color(0xFF0E5023),
+                                              color: Theme.of(context).colorScheme.primary,
                                             ),
                                           ],
                                         ),
@@ -1010,11 +1010,11 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                                   ),
                                                   MoneyText(
                                                     line.lineTotal,
-                                                    style: const TextStyle(
+                                                    style: TextStyle(
                                                       fontSize: 13,
                                                       fontWeight:
                                                           FontWeight.w600,
-                                                      color: Color(0xFF14261A),
+                                                      color: Theme.of(context).colorScheme.onSurface,
                                                     ),
                                                   ),
                                                 ],
@@ -1056,9 +1056,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                         );
                                       }),
                                     ],
-                                    const Divider(
+                                    Divider(
                                       height: 16,
-                                      color: Color(0xFFDCE4D8),
+                                      color: Theme.of(context).colorScheme.outlineVariant,
                                     ),
                                     _summaryRow('Subtotal', cart.subtotal),
                                     if ((fresh?.taxAmount ?? cart.taxAmount) > 0) ...[
@@ -1086,33 +1086,33 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       priced: fresh?.additionalCharges ?? const [],
                                     ),
                                     _couponAndPointsSection(cart, effectiveTotal),
-                                    const Padding(
+                                    Padding(
                                       padding: EdgeInsets.symmetric(
                                         vertical: 8,
                                       ),
                                       child: Divider(
                                         height: 1,
-                                        color: Color(0xFFDCE4D8),
+                                        color: Theme.of(context).colorScheme.outlineVariant,
                                       ),
                                     ),
                                     Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
                                       children: [
-                                        const Text(
+                                        Text(
                                           'Total',
                                           style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.w700,
-                                            color: Color(0xFF14261A),
+                                            color: Theme.of(context).colorScheme.onSurface,
                                           ),
                                         ),
                                         MoneyText(
                                           effectiveTotal,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.w800,
-                                            color: Color(0xFF0E5023),
+                                            color: Theme.of(context).colorScheme.primary,
                                           ),
                                         ),
                                       ],
@@ -1137,10 +1137,10 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                     vertical: 10,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFDCFCE7),
+                                    color: Theme.of(context).colorScheme.primaryContainer,
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: const Color(0xFFBBF7D0),
+                                      color: Theme.of(context).colorScheme.primaryContainer,
                                     ),
                                   ),
                                   child: Row(
@@ -1154,9 +1154,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       Expanded(
                                         child: Text(
                                           'Store credit available: TZS ${availableCredit.toStringAsFixed(0)}',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 12,
-                                            color: Color(0xFF166534),
+                                            color: Theme.of(context).colorScheme.onPrimaryContainer,
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
@@ -1228,13 +1228,13 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       ),
                                       decoration: BoxDecoration(
                                         color: selected
-                                            ? const Color(0xFF0E5023)
-                                            : Colors.white,
+                                            ? Theme.of(context).colorScheme.primary
+                                            : Theme.of(context).colorScheme.surface,
                                         borderRadius: BorderRadius.circular(10),
                                         border: Border.all(
                                           color: selected
-                                              ? const Color(0xFF0E5023)
-                                              : const Color(0xFFDCE4D8),
+                                              ? Theme.of(context).colorScheme.primary
+                                              : Theme.of(context).colorScheme.outlineVariant,
                                           width: selected ? 1.5 : 1,
                                         ),
                                         boxShadow: selected
@@ -1258,7 +1258,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                             size: 14,
                                             color: selected
                                                 ? Colors.white
-                                                : const Color(0xFF4E5E52),
+                                                : Theme.of(context).colorScheme.onSurfaceVariant,
                                           ),
                                           const SizedBox(width: 5),
                                           Text(
@@ -1268,7 +1268,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                               fontWeight: FontWeight.w600,
                                               color: selected
                                                   ? Colors.white
-                                                  : const Color(0xFF2E3D33),
+                                                  : Theme.of(context).colorScheme.onSurface,
                                             ),
                                           ),
                                         ],
@@ -1296,8 +1296,8 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                         _addMethod == PaymentMethod.giftCard
                                         ? 'Gift card code'
                                         : 'Reference / Transaction ID',
-                                    hintStyle: const TextStyle(
-                                      color: Color(0xFFC3CEC0),
+                                    hintStyle: TextStyle(
+                                      color: Theme.of(context).colorScheme.outline,
                                       fontSize: 14,
                                     ),
                                     contentPadding: const EdgeInsets.symmetric(
@@ -1305,23 +1305,23 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       vertical: 12,
                                     ),
                                     filled: true,
-                                    fillColor: const Color(0xFFF4F7F2),
+                                    fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                        color: Color(0xFFDCE4D8),
+                                      borderSide: BorderSide(
+                                        color: Theme.of(context).colorScheme.outlineVariant,
                                       ),
                                     ),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                        color: Color(0xFFDCE4D8),
+                                      borderSide: BorderSide(
+                                        color: Theme.of(context).colorScheme.outlineVariant,
                                       ),
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                        color: Color(0xFF0E5023),
+                                      borderSide: BorderSide(
+                                        color: Theme.of(context).colorScheme.primary,
                                         width: 1.5,
                                       ),
                                     ),
@@ -1336,12 +1336,12 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Amount',
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,
-                                        color: Color(0xFF8A968D),
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                     Container(
@@ -1350,7 +1350,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                         vertical: 3,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFFEF2F2),
+                                        color: Theme.of(context).colorScheme.errorContainer,
                                         borderRadius: BorderRadius.circular(20),
                                       ),
                                       child: Row(
@@ -1365,10 +1365,10 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                           ),
                                           MoneyText(
                                             remaining,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w700,
-                                              color: Color(0xFFD93A2B),
+                                              color: Theme.of(context).colorScheme.error,
                                             ),
                                           ),
                                         ],
@@ -1391,46 +1391,46 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       RegExp(r'[0-9.]'),
                                     ),
                                   ],
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xFF14261A),
+                                    color: Theme.of(context).colorScheme.onSurface,
                                   ),
                                   textAlign: TextAlign.center,
                                   decoration: InputDecoration(
                                     hintText: '0',
-                                    hintStyle: const TextStyle(
+                                    hintStyle: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w700,
-                                      color: Color(0xFFC3CEC0),
+                                      color: Theme.of(context).colorScheme.outline,
                                     ),
                                     prefixText: 'TZS  ',
-                                    prefixStyle: const TextStyle(
+                                    prefixStyle: TextStyle(
                                       fontSize: 13,
-                                      color: Color(0xFF8A968D),
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                                       fontWeight: FontWeight.w500,
                                     ),
                                     contentPadding: const EdgeInsets.symmetric(
                                       vertical: 10,
                                     ),
                                     filled: true,
-                                    fillColor: const Color(0xFFF4F7F2),
+                                    fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                        color: Color(0xFFDCE4D8),
+                                      borderSide: BorderSide(
+                                        color: Theme.of(context).colorScheme.outlineVariant,
                                       ),
                                     ),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                        color: Color(0xFFDCE4D8),
+                                      borderSide: BorderSide(
+                                        color: Theme.of(context).colorScheme.outlineVariant,
                                       ),
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                        color: Color(0xFF0E5023),
+                                      borderSide: BorderSide(
+                                        color: Theme.of(context).colorScheme.primary,
                                         width: 1.5,
                                       ),
                                     ),
@@ -1561,9 +1561,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       padding: const EdgeInsets.only(top: 4),
                                       child: Text(
                                         _terminalError!,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 11,
-                                          color: Color(0xFFD93A2B),
+                                          color: Theme.of(context).colorScheme.error,
                                         ),
                                         textAlign: TextAlign.center,
                                       ),
@@ -1575,8 +1575,8 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                     child: OutlinedButton.icon(
                                       onPressed: () => _addPayment(effectiveTotal),
                                       style: OutlinedButton.styleFrom(
-                                        side: const BorderSide(
-                                          color: Color(0xFFDCE4D8),
+                                        side: BorderSide(
+                                          color: Theme.of(context).colorScheme.outlineVariant,
                                         ),
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
@@ -1634,10 +1634,10 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       vertical: 10,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFF4F7F2),
+                                      color: Theme.of(context).colorScheme.surfaceContainerLow,
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: const Color(0xFFDCE4D8),
+                                        color: Theme.of(context).colorScheme.outlineVariant,
                                       ),
                                     ),
                                     child: Row(
@@ -1656,7 +1656,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                           child: Icon(
                                             _payments[i].method.icon,
                                             size: 16,
-                                            color: const Color(0xFF0E5023),
+                                            color: Theme.of(context).colorScheme.primary,
                                           ),
                                         ),
                                         const SizedBox(width: 10),
@@ -1667,19 +1667,19 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                             children: [
                                               Text(
                                                 _payments[i].method.label,
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontSize: 13,
                                                   fontWeight: FontWeight.w600,
-                                                  color: Color(0xFF14261A),
+                                                  color: Theme.of(context).colorScheme.onSurface,
                                                 ),
                                               ),
                                               if ((_payments[i].reference ?? '')
                                                   .isNotEmpty)
                                                 Text(
                                                   '#${_payments[i].reference}',
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     fontSize: 11,
-                                                    color: Color(0xFF8A968D),
+                                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                                                   ),
                                                 ),
                                             ],
@@ -1687,10 +1687,10 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                         ),
                                         MoneyText(
                                           _payments[i].amount,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w700,
-                                            color: Color(0xFF14261A),
+                                            color: Theme.of(context).colorScheme.onSurface,
                                           ),
                                         ),
                                         const SizedBox(width: 8),
@@ -1700,14 +1700,14 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                             width: 24,
                                             height: 24,
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFFFEE2E2),
+                                              color: Theme.of(context).colorScheme.errorContainer,
                                               borderRadius:
                                                   BorderRadius.circular(6),
                                             ),
-                                            child: const Icon(
+                                            child: Icon(
                                               Icons.close,
                                               size: 13,
-                                              color: Color(0xFFD93A2B),
+                                              color: Theme.of(context).colorScheme.error,
                                             ),
                                           ),
                                         ),
@@ -1723,19 +1723,19 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                 GestureDetector(
                                   onTap: () =>
                                       setState(() => _showNotes = true),
-                                  child: const Row(
+                                  child: Row(
                                     children: [
                                       Icon(
                                         Icons.note_add_outlined,
                                         size: 15,
-                                        color: Color(0xFF8A968D),
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                                       ),
                                       SizedBox(width: 6),
                                       Text(
                                         'Add note',
                                         style: TextStyle(
                                           fontSize: 13,
-                                          color: Color(0xFF4E5E52),
+                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                                         ),
                                       ),
                                     ],
@@ -1754,10 +1754,10 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                             _notesCtrl.clear();
                                             setState(() => _showNotes = false);
                                           },
-                                          child: const Icon(
+                                          child: Icon(
                                             Icons.close,
                                             size: 14,
-                                            color: Color(0xFF8A968D),
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                                           ),
                                         ),
                                       ],
@@ -1771,36 +1771,36 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       style: const TextStyle(fontSize: 14),
                                       decoration: InputDecoration(
                                         hintText: 'e.g. Gift wrap, table 3',
-                                        hintStyle: const TextStyle(
-                                          color: Color(0xFFC3CEC0),
+                                        hintStyle: TextStyle(
+                                          color: Theme.of(context).colorScheme.outline,
                                         ),
                                         contentPadding: const EdgeInsets.all(
                                           12,
                                         ),
                                         filled: true,
-                                        fillColor: const Color(0xFFF4F7F2),
+                                        fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
                                         border: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(
                                             12,
                                           ),
-                                          borderSide: const BorderSide(
-                                            color: Color(0xFFDCE4D8),
+                                          borderSide: BorderSide(
+                                            color: Theme.of(context).colorScheme.outlineVariant,
                                           ),
                                         ),
                                         enabledBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(
                                             12,
                                           ),
-                                          borderSide: const BorderSide(
-                                            color: Color(0xFFDCE4D8),
+                                          borderSide: BorderSide(
+                                            color: Theme.of(context).colorScheme.outlineVariant,
                                           ),
                                         ),
                                         focusedBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(
                                             12,
                                           ),
-                                          borderSide: const BorderSide(
-                                            color: Color(0xFF0E5023),
+                                          borderSide: BorderSide(
+                                            color: Theme.of(context).colorScheme.primary,
                                             width: 1.5,
                                           ),
                                         ),
@@ -1820,9 +1820,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                         margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF4F7F2),
+                          color: Theme.of(context).colorScheme.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFDCE4D8)),
+                          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                         ),
                         child: Column(
                           children: [
@@ -1847,7 +1847,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                               _summaryRow(
                                 'Remaining',
                                 remaining,
-                                valueColor: const Color(0xFFD93A2B),
+                                valueColor: Theme.of(context).colorScheme.error,
                                 bold: true,
                               )
                             else
@@ -1872,8 +1872,8 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                 ? null
                                 : () => _complete(cart),
                             style: FilledButton.styleFrom(
-                              backgroundColor: const Color(0xFF0E5023),
-                              disabledBackgroundColor: const Color(0xFFC3CEC0),
+                              backgroundColor: Theme.of(context).colorScheme.primary,
+                              disabledBackgroundColor: Theme.of(context).colorScheme.outline,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
@@ -1950,11 +1950,11 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
   Widget _sectionLabel(String text) {
     return Text(
       text.toUpperCase(),
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.w600,
         letterSpacing: 1.2,
-        color: Color(0xFF8A968D),
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
       ),
     );
   }
@@ -1973,7 +1973,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
-            color: bold ? const Color(0xFF14261A) : const Color(0xFF4E5E52),
+            color: bold ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
         MoneyText(
@@ -1981,7 +1981,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
           style: TextStyle(
             fontSize: bold ? 14 : 13,
             fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
-            color: valueColor ?? const Color(0xFF2E3D33),
+            color: valueColor ?? Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ],
@@ -1995,19 +1995,19 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
         child: Container(
           height: 36,
           decoration: BoxDecoration(
-            color: const Color(0xFF0E5023).withValues(alpha: 0.08),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: const Color(0xFF0E5023).withValues(alpha: 0.2),
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
             ),
           ),
           alignment: Alignment.center,
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF0E5023),
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
         ),
