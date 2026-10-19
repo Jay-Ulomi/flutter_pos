@@ -16,6 +16,7 @@ import '../../../di/injection.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/feeds/feed_cubits.dart';
 import '../../widgets/aduinola/date_range_card.dart';
+import '../../widgets/aduinola/app_page.dart';
 import '../../widgets/aduinola/ui.dart';
 import '../../widgets/money_text.dart';
 import '../transactions/transactions_screen.dart' show TransactionTile;
@@ -151,15 +152,16 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return GradientScaffold(
+    return AppPage(
       title: context.tr('report.title'),
+      padBody: false,
       body: RefreshIndicator(
         onRefresh: _reload,
         child: BlocBuilder<TransactionsCubit, FeedState<TransactionItem>>(
           bloc: _list,
           builder: (context, state) {
             return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+              padding: AppPage.insets(context, top: 4),
               children: [
                 DateRangeCard(
                   value: _range,

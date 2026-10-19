@@ -8,7 +8,7 @@ import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/business/business_bloc.dart';
 import '../../widgets/aduinola/ui.dart';
-import '../../widgets/responsive_shell.dart';
+import '../../widgets/aduinola/app_page.dart';
 
 /// Profile tab: who is signed in, and the menu for everything else.
 class ProfileScreen extends StatelessWidget {
@@ -33,10 +33,32 @@ class ProfileScreen extends StatelessWidget {
           ),
         );
 
-    return ResponsiveShell(
-      appBar: AppBar(title: Text(context.tr('profile.title'))),
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+    final menu = <Widget>[
+      if (auth.can('view_reports'))
+        item(Icons.bar_chart_rounded, context.tr('profile.reports'), () => context.push('/reports'),
+            key: const ValueKey('menu-reports')),
+      item(Icons.point_of_sale_outlined, context.tr('profile.shift'), () => context.push('/session/close')),
+      item(Icons.sync_rounded, context.tr('profile.sync'), () => context.go('/sync')),
+      item(Icons.storefront_outlined, context.tr('profile.business_settings'), () => context.go('/settings')),
+      item(Icons.tune_rounded, context.tr('profile.app_settings'), () => context.push('/app-settings'),
+          key: const ValueKey('menu-app-settings')),
+      SoftCard(
+        padding: EdgeInsets.zero,
+        child: SwitchListTile(
+          secondary: Icon(privacy ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+          title: Text(context.tr('settings.privacy_mode')),
+          subtitle: Text(context.tr('settings.privacy_mode_sub')),
+          value: privacy,
+          onChanged: (_) => context.read<AppSettingsCubit>().togglePrivacy(),
+        ),
+      ),
+    ];
+
+    return AppPage(
+      title: context.tr('profile.title'),
+      padBody: false,
+      body: ListView(
+        padding: AppPage.insets(context, top: 4),
         children: [
           SoftCard(
             child: Row(
@@ -57,41 +79,27 @@ class ProfileScreen extends StatelessWidget {
                     ],
                   ),
                 ),
+                const SizedBox(width: 12),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(foregroundColor: theme.colorScheme.error),
+                  onPressed: () => context.read<AuthBloc>().add(const AuthLogoutRequested()),
+                  icon: const Icon(Icons.logout_rounded),
+                  label: Text(context.tr('profile.sign_out')),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          if (auth.can('view_reports')) ...[
-            item(Icons.bar_chart_rounded, context.tr('profile.reports'), () => context.push('/reports'),
-                key: const ValueKey('menu-reports')),
-            const SizedBox(height: 8),
-          ],
-          item(Icons.point_of_sale_outlined, context.tr('profile.shift'), () => context.push('/session/close')),
-          const SizedBox(height: 8),
-          item(Icons.sync_rounded, context.tr('profile.sync'), () => context.go('/sync')),
-          const SizedBox(height: 8),
-          item(Icons.storefront_outlined, context.tr('profile.business_settings'), () => context.go('/settings')),
-          const SizedBox(height: 8),
-          item(Icons.tune_rounded, context.tr('profile.app_settings'), () => context.push('/app-settings'),
-              key: const ValueKey('menu-app-settings')),
-          const SizedBox(height: 8),
-          SoftCard(
-            padding: EdgeInsets.zero,
-            child: SwitchListTile(
-              secondary: Icon(privacy ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-              title: Text(context.tr('settings.privacy_mode')),
-              subtitle: Text(context.tr('settings.privacy_mode_sub')),
-              value: privacy,
-              onChanged: (_) => context.read<AppSettingsCubit>().togglePrivacy(),
-            ),
-          ),
-          const SizedBox(height: 24),
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(foregroundColor: theme.colorScheme.error),
-            onPressed: () => context.read<AuthBloc>().add(const AuthLogoutRequested()),
-            icon: const Icon(Icons.logout_rounded),
-            label: Text(context.tr('profile.sign_out')),
-          ),
+          // Menu: one column on phones, two from 900, three from 1280.
+          LayoutBuilder(builder: (context, c) {
+            final cols = responsiveColumns(c.maxWidth);
+            final w = (c.maxWidth - 12 * (cols - 1)) / cols;
+            return Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              children: [for (final m in menu) SizedBox(width: w, child: m)],
+            );
+          }),
         ],
       ),
     );

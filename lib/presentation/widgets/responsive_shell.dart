@@ -98,6 +98,12 @@ List<_NavDest> _extras({required bool isLaundry}) => [
   ),
 ];
 
+/// Page gutter (same rule as AppBreakpoints.gutter: 16 / 24 / 32).
+double _gutter(BuildContext context) {
+  final w = MediaQuery.sizeOf(context).width;
+  return w < 600 ? 16 : (w < 1024 ? 24 : 32);
+}
+
 int _tabIndex(String location) {
   for (var i = 0; i < _tabs.length; i++) {
     if (_tabs[i].matches(location)) return i;
@@ -197,7 +203,8 @@ class ResponsiveShell extends StatelessWidget {
                 children: [
                   if (actionBar != null)
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+                      padding: EdgeInsets.fromLTRB(
+                          _gutter(context), 8, _gutter(context), 10),
                       child: actionBar,
                     ),
                   if (showBottomNav)
@@ -438,16 +445,19 @@ class _DesktopShell extends StatelessWidget {
             Expanded(
               child: Row(
                 children: [
-                  BlocSelector<
-                    SyncBloc,
-                    SyncBlocState,
-                    ({int pending, int failed})
-                  >(
-                    selector: (s) => (
-                      pending: s.status.pendingCount,
-                      failed: s.status.failedCount,
-                    ),
-                    builder: (context, sync) {
+                  Builder(
+                    builder: (context) {
+                      // Optional so the shell also renders without sync
+                      // (widget tests, previews).
+                      final sync = context.select<SyncBloc?,
+                          ({int pending, int failed})>(
+                        (b) => b == null
+                            ? (pending: 0, failed: 0)
+                            : (
+                                pending: b.state.status.pendingCount,
+                                failed: b.state.status.failedCount,
+                              ),
+                      );
                       final colors = Theme.of(context).colorScheme;
                       return NavigationRail(
                         selectedIndex: selectedIndex < 0 ? null : selectedIndex,
@@ -492,12 +502,11 @@ class _DesktopShell extends StatelessWidget {
                       children: [
                         Expanded(child: child),
                         if (actionBar != null)
+                          // Spans the content area, on the page gutter.
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 560),
-                              child: actionBar,
-                            ),
+                            padding: EdgeInsets.fromLTRB(
+                              _gutter(context), 8, _gutter(context), 16),
+                            child: actionBar,
                           ),
                       ],
                     ),

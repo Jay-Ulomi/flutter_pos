@@ -8,6 +8,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../data/datasources/remote/feed_remote.dart';
 import '../../../data/models/feed_models.dart';
 import '../../../di/injection.dart';
+import '../../widgets/aduinola/app_page.dart';
 import '../../widgets/aduinola/ui.dart';
 import '../../widgets/money_text.dart';
 import '../parties/party_picker_sheet.dart';
@@ -56,53 +57,22 @@ class _FormShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GradientScaffold(
+    return AppPage(
       title: title,
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 24), children: children),
-          ),
-        ),
+      showBottomNav: false,
+      padBody: false,
+      actionBar: FormActions(
+        saving: saving,
+        onSave: onSave,
+        onCancel: () => context.canPop() ? context.pop() : context.go('/transactions'),
       ),
-      bottomBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => context.canPop() ? context.pop() : context.go('/transactions'),
-                  child: Text(context.tr('common.cancel')),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: FilledButton(
-                  key: const ValueKey('form-save'),
-                  onPressed: saving ? null : onSave,
-                  child: saving
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                        )
-                      : Text(context.tr('common.save')),
-                ),
-              ),
-            ],
-          ),
-        ),
+      body: ListView(
+        padding: AppPage.insets(context),
+        children: [PageCard(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children))],
       ),
     );
   }
 }
-
-Widget _fieldLabel(BuildContext context, String text) => Padding(
-      padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
-      child: Text(text, style: Theme.of(context).textTheme.titleSmall),
-    );
 
 class _PartyField extends StatelessWidget {
   const _PartyField({required this.party, required this.hint, required this.onTap, this.fieldKey});
@@ -288,61 +258,78 @@ class _PaymentInScreenState extends State<PaymentInScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _fieldLabel(context, context.tr('party.customer')),
-              _PartyField(
-                fieldKey: const ValueKey('pick-customer'),
-                party: _customer,
-                hint: context.tr('party.select'),
-                onTap: _pickCustomer,
-              ),
-              if (_loadingReceivables)
-                const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator())),
-              if (_receivables != null && _receivables!.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Text(context.tr('common.nothing_here'), style: theme.textTheme.bodySmall),
+              FormGrid(children: [
+                LabeledField(
+                  label: context.tr('party.customer'),
+                  child: _PartyField(
+                    fieldKey: const ValueKey('pick-customer'),
+                    party: _customer,
+                    hint: context.tr('party.select'),
+                    onTap: _pickCustomer,
+                  ),
                 ),
-              if (_receivables != null && _receivables!.length > 1) ...[
-                _fieldLabel(context, 'Invoice'),
-                DropdownButtonFormField<ReceivableItem>(
-                  initialValue: _receivable,
-                  isExpanded: true,
-                  items: [
-                    for (final r in _receivables!)
-                      DropdownMenuItem(
-                        value: r,
-                        child: Text(
-                          '${r.dueDate == null ? '' : '${Formatters.date(r.dueDate!)}  ·  '}'
-                          '${Formatters.currency(r.balance)}',
-                        ),
-                      ),
-                  ],
-                  onChanged: (r) => setState(() {
-                    _receivable = r;
-                    if (r != null) _amount.text = Formatters.money(r.balance).replaceAll(',', '');
+                LabeledField(
+                  label: 'Invoice',
+                  child: _loadingReceivables
+                      ? const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()))
+                      : _receivables == null
+                          ? Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Text(context.tr('party.select'), style: theme.textTheme.bodySmall),
+                            )
+                          : _receivables!.isEmpty
+                              ? Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Text(context.tr('common.nothing_here'), style: theme.textTheme.bodySmall),
+                                )
+                              : DropdownButtonFormField<ReceivableItem>(
+                                  initialValue: _receivable,
+                                  isExpanded: true,
+                                  items: [
+                                    for (final r in _receivables!)
+                                      DropdownMenuItem(
+                                        value: r,
+                                        child: Text(
+                                          '${r.dueDate == null ? '' : '${Formatters.date(r.dueDate!)}  ·  '}'
+                                          '${Formatters.currency(r.balance)}',
+                                        ),
+                                      ),
+                                  ],
+                                  onChanged: (r) => setState(() {
+                                    _receivable = r;
+                                    if (r != null) _amount.text = Formatters.money(r.balance).replaceAll(',', '');
+                                  }),
+                                ),
+                ),
+                LabeledField(
+                  label: context.tr('common.amount'),
+                  child: _amountField(_amount, validator: (v) {
+                    final a = parseAmount(v ?? '');
+                    if (a == null || a <= 0) return context.tr('common.amount');
+                    final max = _receivable?.balance;
+                    if (max != null && a > max + 0.001) return '≤ ${Formatters.currency(max)}';
+                    return null;
                   }),
                 ),
-              ],
-              _fieldLabel(context, context.tr('common.amount')),
-              _amountField(_amount, validator: (v) {
-                final a = parseAmount(v ?? '');
-                if (a == null || a <= 0) return context.tr('common.amount');
-                final max = _receivable?.balance;
-                if (max != null && a > max + 0.001) return '≤ ${Formatters.currency(max)}';
-                return null;
-              }),
-              _fieldLabel(context, context.tr('sale.payment_mode')),
-              DropdownButtonFormField<String>(
-                initialValue: _method,
-                items: [
-                  for (final e in paymentMethods.entries) DropdownMenuItem(value: e.key, child: Text(e.value)),
-                ],
-                onChanged: (v) => setState(() => _method = v ?? 'CASH'),
-              ),
-              _fieldLabel(context, context.tr('common.date')),
-              _dateField(context, _date, (d) => setState(() => _date = d)),
-              _fieldLabel(context, context.tr('common.notes')),
-              TextFormField(controller: _reference, maxLength: 255),
+                LabeledField(
+                  label: context.tr('sale.payment_mode'),
+                  child: DropdownButtonFormField<String>(
+                    initialValue: _method,
+                    items: [
+                      for (final e in paymentMethods.entries) DropdownMenuItem(value: e.key, child: Text(e.value)),
+                    ],
+                    onChanged: (v) => setState(() => _method = v ?? 'CASH'),
+                  ),
+                ),
+                LabeledField(
+                  label: context.tr('common.date'),
+                  child: _dateField(context, _date, (d) => setState(() => _date = d)),
+                ),
+                LabeledField(
+                  label: context.tr('common.notes'),
+                  child: TextFormField(controller: _reference, maxLength: 255),
+                ),
+              ]),
               if (_error != null)
                 Text(_error!, key: const ValueKey('form-error'), style: TextStyle(color: theme.colorScheme.error)),
             ],
@@ -464,45 +451,60 @@ class _PartyTransferScreenState extends State<PartyTransferScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _fieldLabel(context, context.tr('common.from')),
-              _PartyField(
-                fieldKey: const ValueKey('pick-from'),
-                party: _from,
-                hint: context.tr('party.select'),
-                onTap: _pickFrom,
-              ),
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: Icon(Icons.south_rounded),
-              ),
-              _fieldLabel(context, context.tr('common.to')),
-              _PartyField(
-                fieldKey: const ValueKey('pick-to'),
-                party: _to,
-                hint: context.tr('party.select'),
-                onTap: _pickTo,
-              ),
-              _fieldLabel(context, context.tr('common.amount')),
-              _amountField(_amount, validator: (v) {
-                final a = parseAmount(v ?? '');
-                if (a == null || a <= 0) return context.tr('common.amount');
-                if (limit != null && a > limit + 0.001) return '≤ ${Formatters.currency(limit)}';
-                return null;
-              }),
-              if (limit != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
-                  child: Text(
-                    'Up to ${Formatters.currency(limit)}'
-                    '${_from?.type == PartyType.customer && _to?.type == PartyType.supplier ? ' (the smaller of what the customer owes and what you owe the supplier)' : ''}',
-                    key: const ValueKey('transfer-limit'),
-                    style: theme.textTheme.bodySmall,
+              FormGrid(children: [
+                LabeledField(
+                  label: context.tr('common.from'),
+                  child: _PartyField(
+                    fieldKey: const ValueKey('pick-from'),
+                    party: _from,
+                    hint: context.tr('party.select'),
+                    onTap: _pickFrom,
                   ),
                 ),
-              _fieldLabel(context, context.tr('common.date')),
-              _dateField(context, _date, (d) => setState(() => _date = d)),
-              _fieldLabel(context, context.tr('common.notes')),
-              TextFormField(controller: _notes, maxLines: 3, minLines: 2),
+                LabeledField(
+                  label: context.tr('common.to'),
+                  child: _PartyField(
+                    fieldKey: const ValueKey('pick-to'),
+                    party: _to,
+                    hint: context.tr('party.select'),
+                    onTap: _pickTo,
+                  ),
+                ),
+                LabeledField(
+                  label: context.tr('common.amount'),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _amountField(_amount, validator: (v) {
+                        final a = parseAmount(v ?? '');
+                        if (a == null || a <= 0) return context.tr('common.amount');
+                        if (limit != null && a > limit + 0.001) return '≤ ${Formatters.currency(limit)}';
+                        return null;
+                      }),
+                      if (limit != null)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
+                          child: Text(
+                            'Up to ${Formatters.currency(limit)}'
+                            '${_from?.type == PartyType.customer && _to?.type == PartyType.supplier ? ' (the smaller of what the customer owes and what you owe the supplier)' : ''}',
+                            key: const ValueKey('transfer-limit'),
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                LabeledField(
+                  label: context.tr('common.date'),
+                  child: _dateField(context, _date, (d) => setState(() => _date = d)),
+                ),
+                FormSpan(
+                  child: LabeledField(
+                    label: context.tr('common.notes'),
+                    child: TextFormField(controller: _notes, maxLines: 3, minLines: 2),
+                  ),
+                ),
+              ]),
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 12),

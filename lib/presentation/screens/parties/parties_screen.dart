@@ -13,7 +13,7 @@ import '../../../di/injection.dart';
 import '../../blocs/feeds/feed_cubits.dart';
 import '../../widgets/aduinola/ui.dart';
 import '../../widgets/money_text.dart';
-import '../../widgets/responsive_shell.dart';
+import '../../widgets/aduinola/app_page.dart';
 
 /// Customers and suppliers in one list with what each owes / is owed.
 class PartiesScreen extends StatelessWidget {
@@ -65,8 +65,9 @@ class _PartiesViewState extends State<_PartiesView> {
       _PartyFilter.customers: context.tr('party.customers'),
       _PartyFilter.suppliers: context.tr('party.suppliers'),
     };
-    return ResponsiveShell(
-      appBar: AppBar(title: Text(context.tr('party.title'))),
+    return AppPage(
+      title: context.tr('party.title'),
+      padBody: false,
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'new-party',
         onPressed: _newParty,
@@ -74,7 +75,7 @@ class _PartiesViewState extends State<_PartiesView> {
         icon: const Icon(Icons.person_add_alt_1_outlined),
         label: Text(context.tr('party.new')),
       ),
-      child: BlocBuilder<PartiesCubit, FeedState<PartySummary>>(
+      body: BlocBuilder<PartiesCubit, FeedState<PartySummary>>(
         builder: (context, state) {
           return RefreshIndicator(
             onRefresh: _cubit.refresh,
@@ -87,7 +88,7 @@ class _PartiesViewState extends State<_PartiesView> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                    padding: AppPage.insets(context, top: 4, bottom: 12),
                     sliver: SliverToBoxAdapter(
                       child: SearchPill(
                         hint: context.tr('common.search'),
@@ -100,6 +101,7 @@ class _PartiesViewState extends State<_PartiesView> {
                   ),
                   SliverToBoxAdapter(
                     child: PillChips<_PartyFilter>(
+                      padding: EdgeInsets.symmetric(horizontal: AppPage.gutterOf(context)),
                       items: _PartyFilter.values,
                       selected: _filter,
                       labelOf: (f) => labels[f]!,
@@ -135,10 +137,16 @@ class _PartiesViewState extends State<_PartiesView> {
                     )
                   else
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
-                      sliver: SliverList.separated(
+                      padding: AppPage.insets(context, top: 0, bottom: 96),
+                      // More columns on wide screens instead of side gutters.
+                      sliver: SliverGrid.builder(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: responsiveColumns(MediaQuery.sizeOf(context).width),
+                          mainAxisSpacing: 8,
+                          crossAxisSpacing: 12,
+                          mainAxisExtent: 84,
+                        ),
                         itemCount: state.items.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 8),
                         itemBuilder: (context, i) => PartyTile(party: state.items[i]),
                       ),
                     ),

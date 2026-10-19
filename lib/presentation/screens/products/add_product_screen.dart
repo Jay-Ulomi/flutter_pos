@@ -12,6 +12,7 @@ import '../../../di/injection.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/product/product_bloc.dart';
 import '../../blocs/product/product_event.dart';
+import '../../widgets/aduinola/app_page.dart';
 import '../../widgets/aduinola/ui.dart';
 import '../transactions/payment_forms.dart' show parseAmount;
 
@@ -79,11 +80,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
     }
   }
 
-  Widget _label(String text) => Padding(
-        padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
-        child: Text(text, style: Theme.of(context).textTheme.titleSmall),
-      );
-
   TextFormField _money(TextEditingController c, {bool required = false, Key? key}) => TextFormField(
         key: key,
         controller: c,
@@ -106,45 +102,49 @@ class _AddProductScreenState extends State<AddProductScreen> {
       (b) => b?.state.categories ?? const [],
     );
     final cs = Theme.of(context).colorScheme;
-    return GradientScaffold(
+    void cancel() => context.canPop() ? context.pop() : context.go('/products');
+    return AppPage(
       title: context.tr('inv.add_product'),
+      showBottomNav: false,
+      padBody: false,
+      actionBar: allowed
+          ? FormActions(
+              saving: _saving,
+              onSave: _save,
+              onCancel: cancel,
+              saveKey: const ValueKey('product-save'),
+            )
+          : null,
       body: !allowed
           ? MessageView(icon: Icons.lock_outline_rounded, message: context.tr('inv.no_permission'))
-          : SafeArea(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 560),
-                  child: Form(
-                    key: _form,
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                      children: [
-                        _label(context.tr('inv.product_name')),
-                        TextFormField(
-                          key: const ValueKey('product-name'),
-                          controller: _name,
-                          textCapitalization: TextCapitalization.sentences,
-                          validator: (v) =>
-                              (v ?? '').trim().isEmpty ? context.tr('inv.product_name') : null,
+          : Form(
+              key: _form,
+              child: ListView(
+                padding: AppPage.insets(context),
+                children: [
+                  PageCard(
+                    child: FormGrid(children: [
+                      FormSpan(
+                        child: LabeledField(
+                          label: context.tr('inv.product_name'),
+                          child: TextFormField(
+                            key: const ValueKey('product-name'),
+                            controller: _name,
+                            textCapitalization: TextCapitalization.sentences,
+                            validator: (v) =>
+                                (v ?? '').trim().isEmpty ? context.tr('inv.product_name') : null,
+                          ),
                         ),
-                        Row(children: [
-                          Expanded(
-                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              _label(context.tr('inv.price')),
-                              _money(_price, required: true, key: const ValueKey('product-price')),
-                            ]),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              _label(context.tr('inv.cost')),
-                              _money(_cost),
-                            ]),
-                          ),
-                        ]),
-                        if (categories.isNotEmpty) ...[
-                          _label(context.tr('inv.category')),
-                          DropdownButtonFormField<String?>(
+                      ),
+                      LabeledField(
+                        label: context.tr('inv.price'),
+                        child: _money(_price, required: true, key: const ValueKey('product-price')),
+                      ),
+                      LabeledField(label: context.tr('inv.cost'), child: _money(_cost)),
+                      if (categories.isNotEmpty)
+                        LabeledField(
+                          label: context.tr('inv.category'),
+                          child: DropdownButtonFormField<String?>(
                             initialValue: _categoryId,
                             isExpanded: true,
                             items: [
@@ -153,66 +153,36 @@ class _AddProductScreenState extends State<AddProductScreen> {
                             ],
                             onChanged: (v) => setState(() => _categoryId = v),
                           ),
-                        ],
-                        Row(children: [
-                          Expanded(
-                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              _label(context.tr('inv.sku')),
-                              TextFormField(controller: _sku),
-                            ]),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              _label(context.tr('inv.barcode')),
-                              TextFormField(controller: _barcode, keyboardType: TextInputType.number),
-                            ]),
-                          ),
-                        ]),
-                        _label(context.tr('sale.charge_tax')),
-                        TextFormField(
+                        ),
+                      LabeledField(
+                        label: context.tr('sale.charge_tax'),
+                        child: TextFormField(
                           controller: _tax,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           decoration: const InputDecoration(suffixText: '%', hintText: '18'),
                         ),
-                        const SizedBox(height: 8),
-                        SwitchListTile(
-                          value: _track,
-                          onChanged: (v) => setState(() => _track = v),
-                          title: const Text('Track stock'),
+                      ),
+                      LabeledField(label: context.tr('inv.sku'), child: TextFormField(controller: _sku)),
+                      LabeledField(
+                        label: context.tr('inv.barcode'),
+                        child: TextFormField(controller: _barcode, keyboardType: TextInputType.number),
+                      ),
+                      FormSpan(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: SwitchListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                            value: _track,
+                            onChanged: (v) => setState(() => _track = v),
+                            title: const Text('Track stock'),
+                          ),
                         ),
-                        if (_error != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text(_error!, style: TextStyle(color: cs.error)),
-                          ),
-                        const SizedBox(height: 20),
-                        Row(children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => context.canPop() ? context.pop() : context.go('/products'),
-                              child: Text(context.tr('common.cancel')),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: FilledButton(
-                              key: const ValueKey('product-save'),
-                              onPressed: _saving ? null : _save,
-                              child: _saving
-                                  ? const SizedBox(
-                                      width: 22,
-                                      height: 22,
-                                      child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                                    )
-                                  : Text(context.tr('common.save')),
-                            ),
-                          ),
-                        ]),
-                      ],
-                    ),
+                      ),
+                      if (_error != null)
+                        FormSpan(child: Text(_error!, style: TextStyle(color: cs.error))),
+                    ]),
                   ),
-                ),
+                ],
               ),
             ),
     );

@@ -23,7 +23,8 @@ void main() {
     ]);
     expect(find.text('TZS 1,234,567.50'), findsOneWidget);
 
-    await tester.scrollUntilVisible(find.text('Number format'), 200);
+    await tester.ensureVisible(find.text('Number format'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Number format'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('1.234.567,89').last);
@@ -31,7 +32,8 @@ void main() {
     expect(settings.state.numberStyle, NumberStyle.dotComma);
     expect(find.text('TZS 1.234.567,50'), findsOneWidget);
 
-    await tester.scrollUntilVisible(find.byKey(const ValueKey('set-privacy')), 200);
+    await tester.ensureVisible(find.byKey(const ValueKey('set-privacy')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('set-privacy')));
     await tester.pumpAndSettle();
     expect(settings.state.privacyMode, isTrue);
@@ -47,7 +49,8 @@ void main() {
       GoRoute(path: '/s', builder: (_, _) => const AppSettingsScreen()),
     ]);
 
-    await tester.scrollUntilVisible(find.byKey(const ValueKey('set-app-lock')), 200);
+    await tester.ensureVisible(find.byKey(const ValueKey('set-app-lock')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('set-app-lock')));
     await tester.pumpAndSettle();
     expect(find.text('Create a 4–6 digit PIN'), findsOneWidget);

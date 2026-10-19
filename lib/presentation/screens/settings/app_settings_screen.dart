@@ -7,6 +7,7 @@ import '../../../core/settings/app_settings.dart';
 import '../../../core/utils/formatters.dart';
 import '../../blocs/app_lock/app_lock_cubit.dart';
 import '../../blocs/app_settings/app_settings_cubit.dart';
+import '../../widgets/aduinola/app_page.dart';
 import '../../widgets/aduinola/ui.dart';
 import '../lock/app_lock_screen.dart';
 
@@ -42,10 +43,10 @@ class AppSettingsScreen extends StatelessWidget {
             m == 0 ? context.tr('settings.immediately') : context.tr('settings.minutes', {'n': m});
         final sample = DateTime(2026, 2, 26, 16, 20);
 
-        return GradientScaffold(
+        return AppPage(
           title: context.tr('settings.title'),
-          body: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+          padBody: false,
+          body: _SectionColumns(
             children: [
               SectionLabel(context.tr('settings.appearance')),
               _Group(children: [
@@ -222,6 +223,35 @@ class AppSettingsScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Lays (label, group) pairs out full width: one column on phones, two
+/// side by side from 900 px.
+class _SectionColumns extends StatelessWidget {
+  const _SectionColumns({required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final sections = <Widget>[
+      for (var i = 0; i + 1 < children.length; i += 2)
+        Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [children[i], children[i + 1]]),
+    ];
+    return ListView(
+      padding: AppPage.insets(context, top: 0),
+      children: [
+        LayoutBuilder(builder: (context, c) {
+          final cols = responsiveColumns(c.maxWidth, max: 2);
+          final w = (c.maxWidth - 16 * (cols - 1)) / cols;
+          return Wrap(
+            spacing: 16,
+            crossAxisAlignment: WrapCrossAlignment.start,
+            children: [for (final s in sections) SizedBox(width: w, child: s)],
+          );
+        }),
+      ],
     );
   }
 }

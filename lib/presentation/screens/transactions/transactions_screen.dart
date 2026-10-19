@@ -15,6 +15,7 @@ import '../../widgets/aduinola/date_range_card.dart';
 import '../../widgets/aduinola/transaction_hub.dart';
 import '../../widgets/aduinola/ui.dart';
 import '../../widgets/money_text.dart';
+import '../../widgets/aduinola/app_page.dart';
 import '../../widgets/responsive_shell.dart';
 
 /// Label key for a transaction type.
@@ -118,10 +119,10 @@ class _TransactionsViewState extends State<_TransactionsView> {
       TxStatusFilter.unpaid: context.tr('tx.unpaid'),
       TxStatusFilter.partial: context.tr('tx.partial'),
     };
-    return ResponsiveShell(
-      appBar: AppBar(
-        title: Text(context.tr('tx.title')),
-        actions: [
+    return AppPage(
+      title: context.tr('tx.title'),
+      padBody: false,
+      actions: [
           PopupMenuButton<TxType?>(
             tooltip: 'Filter by type',
             icon: Icon(_type == null ? Icons.tune_rounded : Icons.filter_alt_rounded),
@@ -132,9 +133,7 @@ class _TransactionsViewState extends State<_TransactionsView> {
                 PopupMenuItem(value: t, child: Text(ctx.tr(txLabelKey(t.code)))),
             ],
           ),
-          const SizedBox(width: 4),
-        ],
-      ),
+      ],
       actionBar: TwoActionBar(
         leftLabel: context.tr('tx.payment_in'),
         leftIcon: Icons.move_to_inbox_outlined,
@@ -144,7 +143,7 @@ class _TransactionsViewState extends State<_TransactionsView> {
         onRight: () => context.go('/pos'),
         onPlus: () => showTransactionHub(context),
       ),
-      child: BlocBuilder<TransactionsCubit, FeedState<TransactionItem>>(
+      body: BlocBuilder<TransactionsCubit, FeedState<TransactionItem>>(
         builder: (context, state) {
           final items = state.items.where(_status.accepts).toList();
           return RefreshIndicator(
@@ -158,7 +157,7 @@ class _TransactionsViewState extends State<_TransactionsView> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                    padding: AppPage.insets(context, top: 4, bottom: 8),
                     sliver: SliverList.list(children: [
                       SearchPill(
                         controller: _search,
@@ -172,6 +171,7 @@ class _TransactionsViewState extends State<_TransactionsView> {
                   ),
                   SliverToBoxAdapter(
                     child: PillChips<TxStatusFilter>(
+                      padding: EdgeInsets.symmetric(horizontal: AppPage.gutterOf(context)),
                       items: TxStatusFilter.values,
                       selected: _status,
                       labelOf: (s) => statusLabels[s]!,
@@ -200,7 +200,7 @@ class _TransactionsViewState extends State<_TransactionsView> {
                     )
                   else
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      padding: AppPage.insets(context, top: 0, bottom: 16),
                       sliver: SliverList.separated(
                         itemCount: items.length + (state.loadingMore ? 1 : 0),
                         separatorBuilder: (_, _) => const Divider(height: 1),
