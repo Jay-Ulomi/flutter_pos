@@ -1,72 +1,85 @@
 import 'package:flutter/material.dart';
 
-/// Unified brand palette for the NexPOS product.
+/// Aduinola brand palette (POS • Inventory • Accounting).
 ///
-/// Mirrors the React landing page CSS variables exactly:
-///   --primary:       #468432
-///   --primary-light: #9AD872
-///   --orange:        #FFA02E
-///   --yellow:        #FFEF91
-///   --bg:            #FFFFFF
-///   --bg-2:          #F5F5F2
-///   --border:        #E0E0DB
+/// Sampled from the brand files (poslogo.png wordmark, poslogoapp.png icon):
+///   deep green  #0E5023  wordmark  — primary (buttons, active tab, headings)
+///   icon green  #3E7E22  emblem    — secondary green / accents
+///   orange      #EC880C  "A" leg   — secondary actions (e.g. Purchase)
+///   gold        #FCB408  sales bars — highlights
+/// Surfaces follow the redesign: white rounded cards on a soft green-grey
+/// gradient, pill-shaped inputs and buttons.
 class BrandColors {
   BrandColors._();
 
-  // ── Primary — Forest Green ───────────────────────────────────────────────
-  // Matches --primary (#468432) on the landing page.
-  static const Color primary      = Color(0xFF468432); // --primary
-  static const Color primaryLight = Color(0xFF9AD872); // --primary-light
-  static const Color primaryDark  = Color(0xFF2D6020); // darker shade (used in stats section)
+  // ── Primary — Aduinola deep green ────────────────────────────────────────
+  static const Color primary      = Color(0xFF0E5023);
+  static const Color primaryMid   = Color(0xFF3E7E22); // emblem green
+  static const Color primaryLight = Color(0xFF8CC26A);
+  static const Color primaryDark  = Color(0xFF08381A);
   static const Color onPrimary    = Color(0xFFFFFFFF);
-  static const Color primaryContainer    = Color(0xFFEEF5E9); // very light green tint
-  static const Color onPrimaryContainer  = Color(0xFF2D6020);
+  static const Color primaryContainer   = Color(0xFFE2EEDC);
+  static const Color onPrimaryContainer = Color(0xFF08381A);
 
-  // ── Secondary — Orange (CTA / highlights) ───────────────────────────────
-  // Matches --orange (#FFA02E) — used for all CTAs on the landing page.
-  static const Color secondary      = Color(0xFFFFA02E); // --orange
-  static const Color secondaryLight = Color(0xFFFFF3E0); // --orange-light
+  // ── Secondary — Aduinola orange (secondary actions) ─────────────────────
+  static const Color secondary      = Color(0xFFEC880C);
+  static const Color secondaryLight = Color(0xFFFDEFD9);
   static const Color onSecondary    = Color(0xFFFFFFFF);
 
-  // ── Tertiary — Yellow (accent) ───────────────────────────────────────────
-  // Matches --yellow (#FFEF91) — used for star ratings and highlights.
-  static const Color tertiary      = Color(0xFFFFEF91); // --yellow
-  static const Color onTertiary    = Color(0xFF111111); // dark text on yellow
+  // ── Tertiary — gold (highlights) ─────────────────────────────────────────
+  static const Color tertiary   = Color(0xFFFCB408);
+  static const Color onTertiary = Color(0xFF2A1E00);
 
   // ── Semantic status ──────────────────────────────────────────────────────
-  static const Color success = Color(0xFF468432); // brand primary green
-  static const Color warning = Color(0xFFFFA02E); // brand orange
-  static const Color error   = Color(0xFFDC2626); // red-600 — universal error
-  static const Color info    = Color(0xFF2563EB); // blue-600 — universal info
+  static const Color success = Color(0xFF2E8B3E);
+  static const Color warning = Color(0xFFEC880C);
+  static const Color error   = Color(0xFFD93A2B);
+  static const Color info    = Color(0xFF2563EB);
+
+  // ── Status pills ("Paid", "Unpaid", ...) ─────────────────────────────────
+  static const Color paidBg      = Color(0xFFDDF1DE);
+  static const Color paidFg      = Color(0xFF237A33);
+  static const Color unpaidBg    = Color(0xFFFDE3E0);
+  static const Color unpaidFg    = Color(0xFFC0392B);
+  static const Color partialBg   = Color(0xFFFDEFD9);
+  static const Color partialFg   = Color(0xFFB8650A);
+  static const Color neutralBg   = Color(0xFFEAEFE8);
+  static const Color neutralFg   = Color(0xFF4E5E52);
 
   // ── Connectivity / sync status (POS-specific) ───────────────────────────
-  static const Color online     = Color(0xFF9AD872); // --primary-light
-  static const Color syncing    = Color(0xFFFFA02E); // --orange
-  static const Color offline    = Color(0xFF8A8A8A); // --text-muted (neutral, not error)
-  static const Color syncFailed = Color(0xFFDC2626); // red-600
+  static const Color online     = Color(0xFF3E7E22);
+  static const Color syncing    = Color(0xFFEC880C);
+  static const Color offline    = Color(0xFF8A968D);
+  static const Color syncFailed = Color(0xFFD93A2B);
 
-  // ── Neutrals — matched to landing page CSS variables ────────────────────
-  static const Color surfaceLight    = Color(0xFFFFFFFF); // --bg
-  static const Color backgroundLight = Color(0xFFF5F5F2); // --bg-2
-  static const Color surfaceAlt      = Color(0xFFEEEEEB); // --surface
-  static const Color surfaceDark     = Color(0xFF111827);
-  static const Color backgroundDark  = Color(0xFF0B1220);
-  static const Color onSurfaceLight  = Color(0xFF111111); // --text
-  static const Color onSurfaceDark   = Color(0xFFE2E8F0);
-  static const Color divider         = Color(0xFFE0E0DB); // --border
-  static const Color dividerStrong   = Color(0xFFC4C4BF); // --border-strong
-  static const Color dividerDark     = Color(0xFF1F2937);
+  // ── Neutrals — soft green-grey ───────────────────────────────────────────
+  static const Color surfaceLight    = Color(0xFFFFFFFF);
+  static const Color backgroundLight = Color(0xFFEEF3EC);
+  static const Color surfaceAlt      = Color(0xFFF4F7F2);
+  static const Color surfaceDark     = Color(0xFF14211A);
+  static const Color backgroundDark  = Color(0xFF0B1510);
+  static const Color onSurfaceLight  = Color(0xFF14261A);
+  static const Color onSurfaceDark   = Color(0xFFE4ECE5);
+  static const Color divider         = Color(0xFFDCE4D8);
+  static const Color dividerStrong   = Color(0xFFC3CEC0);
+  static const Color dividerDark     = Color(0xFF243329);
+
+  // ── Background gradient (top → bottom) ───────────────────────────────────
+  static const Color gradientTop       = Color(0xFFDCE9D8);
+  static const Color gradientBottom    = Color(0xFFF5F8F3);
+  static const Color gradientTopDark   = Color(0xFF10201A);
+  static const Color gradientBottomDark= Color(0xFF0B1510);
 
   // ── Text scale ───────────────────────────────────────────────────────────
-  static const Color textPrimary = Color(0xFF111111); // --text
-  static const Color textDim     = Color(0xFF525252); // --text-dim
-  static const Color textMuted   = Color(0xFF8A8A8A); // --text-muted
+  static const Color textPrimary = Color(0xFF14261A);
+  static const Color textDim     = Color(0xFF4E5E52);
+  static const Color textMuted   = Color(0xFF8A968D);
 
   // ── POS-specific accents ────────────────────────────────────────────────
-  static const Color cartBadge  = Color(0xFFDC2626); // red for item count
-  static const Color receiptBg  = Color(0xFFF5F5F2); // --bg-2 for printable receipt
-  static const Color lowStock   = Color(0xFFFFA02E); // --orange warning
-  static const Color outOfStock = Color(0xFFDC2626); // red alert
+  static const Color cartBadge  = Color(0xFFD93A2B);
+  static const Color receiptBg  = Color(0xFFF4F7F2);
+  static const Color lowStock   = Color(0xFFEC880C);
+  static const Color outOfStock = Color(0xFFD93A2B);
 }
 
 /// Custom theme extension exposing brand colors via Theme.of(context).
@@ -117,10 +130,10 @@ class BrandTheme extends ThemeExtension<BrandTheme> {
   );
 
   static const dark = BrandTheme(
-    success:    Color(0xFF9AD872), // --primary-light — brighter on dark bg
-    warning:    Color(0xFFFFBF5E), // lighter orange for dark bg
+    success:    Color(0xFF8CC26A),
+    warning:    Color(0xFFF5A84A),
     info:       Color(0xFF60A5FA),
-    online:     Color(0xFF9AD872),
+    online:     Color(0xFF8CC26A),
     syncing:    Color(0xFFFFBF5E),
     offline:    Color(0xFF8A8A8A),
     syncFailed: Color(0xFFEF4444),

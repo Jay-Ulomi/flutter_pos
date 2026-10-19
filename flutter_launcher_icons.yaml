@@ -1,0 +1,21 @@
+# Launcher icon config (Aduinola). Generate with:
+#   dart pub global activate flutter_launcher_icons 0.14.3
+#   dart pub global run flutter_launcher_icons -f flutter_launcher_icons.yaml
+flutter_launcher_icons:
+  image_path: "assets/app_icon.png"
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/brand/aduinola_mark.png"
+  web:
+    generate: true
+    image_path: "assets/app_icon.png"
+    background_color: "#EEF3EC"
+    theme_color: "#0E5023"
+  macos:
+    generate: true
+    image_path: "assets/app_icon.png"
+  windows:
+    generate: true
+    image_path: "assets/app_icon.png"

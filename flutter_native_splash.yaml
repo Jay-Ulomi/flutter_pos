@@ -1,0 +1,12 @@
+# Native splash config (Aduinola). Generate with:
+#   dart pub global activate flutter_native_splash 2.4.4
+#   dart pub global run flutter_native_splash:create --path=flutter_native_splash.yaml
+flutter_native_splash:
+  color: "#EEF3EC"
+  image: assets/brand/aduinola_mark.png
+  color_dark: "#0B1510"
+  android_12:
+    color: "#EEF3EC"
+    image: assets/brand/aduinola_mark.png
+    color_dark: "#0B1510"
+  web: true

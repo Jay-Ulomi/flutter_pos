@@ -73,8 +73,19 @@ flutter:
   uses-material-design: true
   assets:
     - assets/app_icon.png
+    - assets/brand/
 
   fonts:
+    - family: Outfit
+      fonts:
+        - asset: assets/fonts/Outfit-400.ttf
+          weight: 400
+        - asset: assets/fonts/Outfit-500.ttf
+          weight: 500
+        - asset: assets/fonts/Outfit-600.ttf
+          weight: 600
+        - asset: assets/fonts/Outfit-700.ttf
+          weight: 700
     - family: Inter
       fonts:
         - asset: assets/fonts/Inter-400.ttf
