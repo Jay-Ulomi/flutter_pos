@@ -142,11 +142,15 @@ class _PastDueBanner extends StatelessWidget {
 
 /// A responsive navigation shell on the brand gradient.
 ///
-/// - Mobile (width < 720): bottom pill navigation (Home, Transactions,
-///   Parties, Inventory, Profile) plus a drawer for the remaining routes.
-///   [actionBar] (e.g. the two-action "New Sale  +  Purchase" bar) sits
-///   above the navigation.
-/// - Desktop (width >= 720): a [NavigationRail] on the left.
+/// - Mobile (shortest side < 720): bottom pill navigation (Home,
+///   Transactions, Parties, Inventory, Profile) plus a drawer for the
+///   remaining routes. [actionBar] (e.g. the two-action "New Sale  +
+///   Purchase" bar) sits above the navigation.
+/// - Desktop (shortest side >= 720): a [NavigationRail] on the left.
+///
+/// Classified by the screen's shortest side, not its current width — a
+/// phone rotated to landscape is still a phone (its width alone can exceed
+/// 720 there) and must keep the bottom nav, not jump to the desktop rail.
 class ResponsiveShell extends StatelessWidget {
   const ResponsiveShell({
     super.key,
@@ -170,7 +174,7 @@ class ResponsiveShell extends StatelessWidget {
     final businessType = business?.type ?? auth.selectedBusinessType ?? '';
     final isLaundry = businessType.trim().toUpperCase() == 'LAUNDRY';
     final extras = _extras(isLaundry: isLaundry);
-    final isDesktop = MediaQuery.sizeOf(context).width >= 720;
+    final isDesktop = MediaQuery.sizeOf(context).shortestSide >= 720;
     final location = GoRouterState.of(context).matchedLocation;
 
     if (isDesktop) {
