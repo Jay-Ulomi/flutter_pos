@@ -572,42 +572,45 @@ class _ShellDrawer extends StatelessWidget {
     final user = context.watch<AuthBloc>().state.user;
     final theme = Theme.of(context);
 
+    // Same card style as Profile's menu (they list mostly the same
+    // destinations) instead of the plain default-Material drawer list.
     return Drawer(
-      child: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-              child: Row(
-                children: [
-                  InitialsAvatar(user?.fullName ?? 'U'),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          user?.fullName ?? 'Unknown user',
-                          style: theme.textTheme.titleMedium,
-                        ),
-                        Text(
-                          user?.email ?? '',
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ],
+      backgroundColor: Colors.transparent,
+      child: GradientBackground(
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              SoftCard(
+                child: Row(
+                  children: [
+                    InitialsAvatar(user?.fullName ?? 'U'),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user?.fullName ?? 'Unknown user',
+                            style: theme.textTheme.titleMedium,
+                          ),
+                          Text(
+                            user?.email ?? '',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const Divider(),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(8),
-                children: destinations.map((d) => _item(context, d)).toList(),
-              ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              for (final d in destinations) ...[
+                _item(context, d),
+                const SizedBox(height: 8),
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -628,24 +631,32 @@ class _ShellDrawer extends StatelessWidget {
           final hasActivity = sync.pending > 0 || sync.failed > 0;
           final badgeColor = sync.failed > 0 ? colors.error : colors.secondary;
           final label = sync.failed > 0 ? '${sync.failed}' : '${sync.pending}';
-          return ListTile(
-            leading: hasActivity
-                ? Badge(
-                    backgroundColor: badgeColor,
-                    label: Text(label),
-                    child: Icon(d.icon),
-                  )
-                : Icon(d.icon),
-            title: Text(d.label(context)),
+          return SoftCard(
+            padding: EdgeInsets.zero,
             onTap: go,
+            child: ListTile(
+              leading: hasActivity
+                  ? Badge(
+                      backgroundColor: badgeColor,
+                      label: Text(label),
+                      child: Icon(d.icon),
+                    )
+                  : Icon(d.icon),
+              title: Text(d.label(context)),
+              trailing: const Icon(Icons.chevron_right_rounded),
+            ),
           );
         },
       );
     }
-    return ListTile(
-      leading: Icon(d.icon),
-      title: Text(d.label(context)),
+    return SoftCard(
+      padding: EdgeInsets.zero,
       onTap: go,
+      child: ListTile(
+        leading: Icon(d.icon),
+        title: Text(d.label(context)),
+        trailing: const Icon(Icons.chevron_right_rounded),
+      ),
     );
   }
 }

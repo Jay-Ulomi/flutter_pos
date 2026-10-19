@@ -12,6 +12,7 @@ import '../../blocs/customer_group/customer_group_state.dart';
 import '../../widgets/aduinola/app_page.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/loading_indicator.dart';
+import '../../widgets/money_text.dart';
 import 'customer_form_sheet.dart';
 
 class CustomerSearchScreen extends StatefulWidget {
@@ -123,29 +124,12 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> {
                 final padding = EdgeInsets.symmetric(
                   horizontal: AppPage.gutterOf(context),
                 );
-                // Very wide screens: two cards per row instead of gutters.
-                if (MediaQuery.sizeOf(context).width < AppBreakpoints.wide) {
-                  return ListView.builder(
-                    padding: padding,
-                    itemCount: list.length,
-                    itemBuilder: (_, i) => _CustomerCard(customer: list[i]),
-                  );
-                }
-                return ListView.builder(
+                // Same flat list-with-divider style as TransactionTile.
+                return ListView.separated(
                   padding: padding,
-                  itemCount: (list.length + 1) ~/ 2,
-                  itemBuilder: (_, row) => Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: _CustomerCard(customer: list[row * 2])),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: row * 2 + 1 < list.length
-                            ? _CustomerCard(customer: list[row * 2 + 1])
-                            : const SizedBox.shrink(),
-                      ),
-                    ],
-                  ),
+                  itemCount: list.length,
+                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  itemBuilder: (_, i) => _CustomerTile(customer: list[i]),
                 );
               },
             ),
@@ -156,9 +140,12 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> {
   }
 }
 
-class _CustomerCard extends StatelessWidget {
+/// One row: same shape as [TransactionTile] in the Transactions feed \u2014 a
+/// "Customer" label line, the name, then phone/email/group on the left;
+/// balance and loyalty points on the right.
+class _CustomerTile extends StatelessWidget {
   final Customer customer;
-  const _CustomerCard({required this.customer});
+  const _CustomerTile({required this.customer});
 
   @override
   Widget build(BuildContext context) {
@@ -178,108 +165,48 @@ class _CustomerCard extends StatelessWidget {
             }
           }
         }
+        final subtitle = [
+          if (c.phone != null && c.phone!.isNotEmpty) c.phone!,
+          if (c.email != null && c.email!.isNotEmpty) c.email!,
+          ?groupName,
+        ].join(' \u00B7 ');
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: InkWell(
-            onTap: () => context.go('/customers/${c.id}'),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  // Avatar
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundColor: colors.primaryContainer,
-                    child: Text(
-                      c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: colors.onPrimaryContainer,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  // Info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          c.name,
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          [
-                            if (c.phone != null && c.phone!.isNotEmpty)
-                              c.phone!,
-                            if (c.email != null && c.email!.isNotEmpty)
-                              c.email!,
-                          ].join(' \u00B7 '),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (groupName != null) ...[
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.secondaryContainer,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              groupName,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: colors.onSecondaryContainer,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  // Balance & points
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+        return InkWell(
+          onTap: () => context.go('/customers/${c.id}'),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (c.currentBalance != 0)
-                        Text(
-                          'Bal: ${c.currentBalance.toStringAsFixed(0)}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: c.currentBalance > 0
-                                ? colors.error
-                                : colors.primary,
-                          ),
-                        ),
-                      if (c.loyaltyPoints > 0)
-                        Text(
-                          '${c.loyaltyPoints} pts',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
-                          ),
-                        ),
+                      Text('Customer', style: theme.textTheme.labelSmall?.copyWith(color: colors.primary)),
+                      const SizedBox(height: 2),
+                      Text(c.name, style: theme.textTheme.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      if (subtitle.isNotEmpty)
+                        Text(subtitle, style: theme.textTheme.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
                     ],
                   ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.chevron_right,
-                    size: 20,
-                    color: colors.onSurfaceVariant,
-                  ),
-                ],
-              ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (c.currentBalance != 0)
+                      MoneyText(
+                        c.currentBalance.abs(),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: c.currentBalance > 0 ? colors.error : colors.primary,
+                        ),
+                      ),
+                    if (c.loyaltyPoints > 0)
+                      Text(
+                        '${c.loyaltyPoints} pts',
+                        style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+                      ),
+                  ],
+                ),
+              ],
             ),
           ),
         );

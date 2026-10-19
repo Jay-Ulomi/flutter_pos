@@ -9,6 +9,7 @@ import '../../blocs/customer_group/customer_group_bloc.dart';
 import '../../blocs/customer_group/customer_group_event.dart';
 import '../../blocs/customer_group/customer_group_state.dart';
 import '../../widgets/aduinola/app_page.dart';
+import '../../widgets/aduinola/ui.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/loading_indicator.dart';
@@ -200,19 +201,13 @@ class _DetailBody extends StatelessWidget {
                     Text(c.code!, style: theme.textTheme.bodySmall),
                   Row(
                     children: [
-                      Chip(
-                        label: Text(c.isActive ? 'Active' : 'Inactive'),
-                        visualDensity: VisualDensity.compact,
-                        backgroundColor: c.isActive
-                            ? theme.colorScheme.primaryContainer
-                            : theme.colorScheme.errorContainer,
+                      StatusPill(
+                        c.isActive ? 'Active' : 'Inactive',
+                        tone: c.isActive ? PillTone.paid : PillTone.unpaid,
                       ),
                       if (c.customerType != null) ...[
                         const SizedBox(width: 6),
-                        Chip(
-                          label: Text(c.customerType!),
-                          visualDensity: VisualDensity.compact,
-                        ),
+                        StatusPill(c.customerType!, tone: PillTone.neutral),
                       ],
                     ],
                   ),

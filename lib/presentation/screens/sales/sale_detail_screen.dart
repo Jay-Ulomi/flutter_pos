@@ -14,8 +14,15 @@ import '../../blocs/business/business_bloc.dart';
 import '../../blocs/sale/sale_bloc.dart';
 import '../../blocs/sale/sale_state.dart';
 import '../../widgets/aduinola/app_page.dart';
+import '../../widgets/aduinola/ui.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/money_text.dart';
+
+/// "PARTIALLY_PAID" -> "Partially paid".
+String _humanizeStatus(String status) {
+  final s = status.replaceAll('_', ' ').toLowerCase();
+  return s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+}
 
 class SaleDetailScreen extends StatefulWidget {
   final String? saleId;
@@ -132,18 +139,27 @@ class _SaleDetailScreenState extends State<SaleDetailScreen> {
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(14),
-                  child: Column(
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        sale.saleNumber ?? '#${sale.id ?? ''}',
-                        style: Theme.of(context).textTheme.titleLarge,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              sale.saleNumber ?? '#${sale.id ?? ''}',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            Text(sale.customerName ?? 'Cash Sale'),
+                            if (sale.createdAt != null)
+                              Text(
+                                Formatters.dateTime(sale.createdAt!),
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                          ],
+                        ),
                       ),
-                      if (sale.createdAt != null)
-                        Text(Formatters.dateTime(sale.createdAt!)),
-                      if (sale.customerName != null)
-                        Text('Customer: ${sale.customerName}'),
-                      Text('Status: ${sale.status}'),
+                      StatusPill(_humanizeStatus(sale.status), tone: StatusPill.toneFor(sale.status)),
                     ],
                   ),
                 ),

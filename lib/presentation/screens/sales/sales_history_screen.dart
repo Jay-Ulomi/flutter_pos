@@ -13,9 +13,11 @@ import '../../blocs/sync/sync_bloc.dart';
 import '../../blocs/sync/sync_state.dart';
 import '../laundry/laundry_orders_screen.dart';
 import '../../widgets/aduinola/app_page.dart';
+import '../../widgets/aduinola/ui.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/loading_indicator.dart';
+import '../../widgets/money_text.dart';
 
 class SalesHistoryScreen extends StatefulWidget {
   const SalesHistoryScreen({super.key});
@@ -111,10 +113,12 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
 
                   if (i >= pendingStart && i < pendingEnd) {
                     final pending = state.pending[i - pendingStart];
-                    return _SaleCard(
+                    final isLast = i == pendingEnd - 1 && !hasRecent;
+                    return _SaleTile(
                       sale: pending.sale,
                       isPending: true,
                       status: pending.status.name,
+                      showDivider: !isLast,
                     );
                   }
 
@@ -126,7 +130,8 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
                   final recentStart =
                       completedHeaderIndex + (hasRecent ? 1 : 0);
                   final recentIndex = i - recentStart;
-                  return _SaleCard(sale: state.recent[recentIndex]);
+                  final isLast = i == totalCount - 1;
+                  return _SaleTile(sale: state.recent[recentIndex], showDivider: !isLast);
                 },
               ),
             );
@@ -150,12 +155,21 @@ class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
   }
 }
 
-class _SaleCard extends StatelessWidget {
+/// One row: same shape as [TransactionTile] in the Transactions feed \u2014 a
+/// small coloured label line, the sale's title, then a summary/date line
+/// on the left; amount and a status pill on the right.
+class _SaleTile extends StatelessWidget {
   final Sale sale;
   final bool isPending;
   final String? status;
+  final bool showDivider;
 
-  const _SaleCard({required this.sale, this.isPending = false, this.status});
+  const _SaleTile({
+    required this.sale,
+    this.isPending = false,
+    this.status,
+    this.showDivider = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -167,129 +181,60 @@ class _SaleCard extends StatelessWidget {
     final itemSummary = itemCount == 1
         ? sale.items.first.productName
         : '$itemCount items';
+    final subtitle = [
+      itemSummary,
+      if (sale.createdAt != null) Formatters.dateTime(sale.createdAt!),
+    ].join(' \u00B7 ');
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: isPending
-            ? null
-            : () {
-                final id = sale.id ?? sale.saleNumber;
-                if (id != null) context.push('/sales/detail?saleId=$id');
-              },
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              // Status icon
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: isPending
-                      ? colors.secondaryContainer
-                      : colors.primaryContainer,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  isPending ? Icons.cloud_upload_outlined : Icons.receipt_long,
-                  color: isPending
-                      ? colors.onTertiaryContainer
-                      : colors.onPrimaryContainer,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 14),
-              // Sale info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            '#$saleLabel',
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        if (isPending) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.secondary.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              status ?? 'pending',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: colors.secondary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      [
-                        itemSummary,
-                        if (sale.customerName != null) sale.customerName!,
-                        if (sale.createdAt != null)
-                          Formatters.dateTime(sale.createdAt!),
-                      ].join(' \u00B7 '),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colors.onSurfaceVariant,
+    return Column(
+      children: [
+        InkWell(
+          onTap: isPending
+              ? null
+              : () {
+                  final id = sale.id ?? sale.saleNumber;
+                  if (id != null) context.push('/sales/detail?saleId=$id');
+                },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Sale #$saleLabel', style: theme.textTheme.labelSmall?.copyWith(color: colors.primary)),
+                      const SizedBox(height: 2),
+                      Text(
+                        sale.customerName ?? 'Cash Sale',
+                        style: theme.textTheme.titleMedium,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      Text(subtitle, style: theme.textTheme.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    MoneyText(sale.totalAmount, style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 4),
+                    if (isPending)
+                      StatusPill(status ?? 'Pending', tone: PillTone.partial)
+                    else if (sale.payments.isNotEmpty)
+                      Text(
+                        sale.payments.map((p) => p.method).join(', '),
+                        style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+                      ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              // Amount
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    Formatters.currency(sale.totalAmount),
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  if (sale.payments.isNotEmpty)
-                    Text(
-                      sale.payments.map((p) => p.method).join(', '),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colors.onSurfaceVariant,
-                        fontSize: 11,
-                      ),
-                    ),
-                ],
-              ),
-              if (!isPending) ...[
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.chevron_right,
-                  size: 20,
-                  color: colors.onSurfaceVariant,
-                ),
               ],
-            ],
+            ),
           ),
         ),
-      ),
+        if (showDivider) const Divider(height: 1),
+      ],
     );
   }
 }
