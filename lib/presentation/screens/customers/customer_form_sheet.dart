@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../widgets/aduinola/ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../data/models/customer_models.dart';
@@ -101,28 +103,18 @@ class _CustomerFormSheetState extends State<CustomerFormSheet> {
       child: SafeArea(
         top: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
           child: Form(
             key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      isEdit ? 'Edit customer' : 'New customer',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      tooltip: 'Close',
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
+                SheetHeader(
+                  title: isEdit ? 'Edit customer' : 'New customer',
+                  icon: Icons.person_outline_rounded,
+                  onClose: () => Navigator.of(context).pop(),
                 ),
-                const SizedBox(height: 8),
                 TextFormField(
                   controller: _name,
                   decoration: const InputDecoration(labelText: 'Name'),

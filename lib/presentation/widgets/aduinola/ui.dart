@@ -382,3 +382,38 @@ class MessageView extends StatelessWidget {
     );
   }
 }
+
+/// Title row at the top of every bottom sheet (below the drag handle).
+class SheetHeader extends StatelessWidget {
+  const SheetHeader({super.key, required this.title, this.icon, this.trailing, this.onClose});
+  final String title;
+  final IconData? icon;
+  final Widget? trailing;
+
+  /// Shows a round close button when set.
+  final VoidCallback? onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 12, 12),
+      child: Row(
+        children: [
+          if (icon != null) ...[
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: cs.primaryContainer,
+              child: Icon(icon, size: 20, color: cs.primary),
+            ),
+            const SizedBox(width: 12),
+          ],
+          Expanded(child: Text(title, style: Theme.of(context).textTheme.titleLarge)),
+          ?trailing,
+          if (onClose != null)
+            RoundIconButton(icon: Icons.close_rounded, tooltip: 'Close', size: 38, onPressed: onClose),
+        ],
+      ),
+    );
+  }
+}

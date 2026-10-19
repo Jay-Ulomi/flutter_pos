@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_theme.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:printing/printing.dart';
@@ -795,9 +796,9 @@ class _LaundryOrdersScreenState extends State<LaundryOrdersScreen> {
                     : '-';
                 final next = _nextStatuses(order.status);
                 return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
+                  margin: const EdgeInsets.only(bottom: 10),
                   child: Padding(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -951,7 +952,6 @@ class _LaundryOrdersScreenState extends State<LaundryOrdersScreen> {
               return Card(
                 margin: EdgeInsets.zero,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
                   onTap: () => _addDraftProduct(p),
                   child: Padding(
                     padding: const EdgeInsets.all(10),
@@ -1500,28 +1500,17 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Status tones from the theme's AppDecor pills, so they follow dark mode.
     final colors = Theme.of(context).colorScheme;
-    late final Color bg;
-    late final Color fg;
-    if (status == LaundryOrderStatus.received) {
-      bg = colors.primaryContainer;
-      fg = colors.onPrimaryContainer;
-    } else if (status == LaundryOrderStatus.washing) {
-      bg = colors.tertiaryContainer;
-      fg = colors.onTertiaryContainer;
-    } else if (status == LaundryOrderStatus.ironing) {
-      bg = Colors.amber.shade100;
-      fg = Colors.amber.shade900;
-    } else if (status == LaundryOrderStatus.ready) {
-      bg = Colors.green.shade100;
-      fg = Colors.green.shade900;
-    } else if (status == LaundryOrderStatus.collected) {
-      bg = Colors.blueGrey.shade100;
-      fg = Colors.blueGrey.shade900;
-    } else {
-      bg = colors.errorContainer;
-      fg = colors.onErrorContainer;
-    }
+    final d = context.decor;
+    final (Color bg, Color fg) = switch (status) {
+      LaundryOrderStatus.received => (colors.primaryContainer, colors.onPrimaryContainer),
+      LaundryOrderStatus.washing => (colors.tertiaryContainer, colors.onTertiaryContainer),
+      LaundryOrderStatus.ironing => (d.partialBg, d.partialFg),
+      LaundryOrderStatus.ready => (d.paidBg, d.paidFg),
+      LaundryOrderStatus.collected => (d.neutralBg, d.neutralFg),
+      _ => (d.unpaidBg, d.unpaidFg),
+    };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -1849,8 +1838,9 @@ class _CreateLaundryTicketDialogState
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(8),
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../blocs/cart/cart_bloc.dart';
 import '../blocs/cart/cart_event.dart';
 import '../blocs/held_sales/held_sales_cubit.dart';
+import 'aduinola/ui.dart';
 import 'money_text.dart';
 
 Future<void> showHeldSalesSheet(BuildContext context) {
@@ -30,24 +31,15 @@ class _HeldSalesSheet extends StatelessWidget {
           heightFactor: 0.5,
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    const Icon(Icons.pause_circle_outline),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Held Sales (${held.length})',
-                      style: theme.textTheme.titleMedium,
-                    ),
-                  ],
-                ),
+              SheetHeader(
+                title: 'Held Sales (${held.length})',
+                icon: Icons.pause_circle_outline,
               ),
-              const Divider(height: 1),
               Expanded(
                 child: held.isEmpty
                     ? const Center(child: Text('No held sales'))
                     : ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                         itemCount: held.length,
                         separatorBuilder: (_, _) => const Divider(height: 1),
                         itemBuilder: (context, i) {
@@ -55,6 +47,8 @@ class _HeldSalesSheet extends StatelessWidget {
                           final time = DateFormat.jm().format(sale.heldAt);
                           return ListTile(
                             leading: CircleAvatar(
+                              backgroundColor: theme.colorScheme.primaryContainer,
+                              foregroundColor: theme.colorScheme.primary,
                               child: Text('${sale.itemCount}'),
                             ),
                             title: Text(sale.label),

@@ -83,13 +83,13 @@ class _PartyPickerState extends State<_PartyPicker> {
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Column(
         children: [
+          SheetHeader(title: context.tr('party.select'), icon: Icons.groups_outlined),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(context.tr('party.select'), style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 12),
+
                 SearchPill(
                   autofocus: false,
                   onChanged: (v) {
@@ -108,7 +108,7 @@ class _PartyPickerState extends State<_PartyPicker> {
                     : _items.isEmpty
                         ? MessageView(icon: Icons.groups_outlined, message: context.tr('common.nothing_here'))
                         : ListView.separated(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                             itemCount: _items.length,
                             separatorBuilder: (_, _) => const SizedBox(height: 8),
                             itemBuilder: (context, i) => PartyTile(

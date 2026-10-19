@@ -282,8 +282,7 @@ class _NewPartySheetState extends State<_NewPartySheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(context.tr('party.new'), style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 16),
+                SheetHeader(title: context.tr('party.new'), icon: Icons.person_add_alt_1_outlined),
                 SegmentedButton<PartyType>(
                   segments: [
                     ButtonSegment(value: PartyType.customer, label: Text(context.tr('party.customer'))),

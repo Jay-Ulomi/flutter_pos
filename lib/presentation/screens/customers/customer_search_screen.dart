@@ -119,11 +119,33 @@ class _CustomerSearchScreenState extends State<CustomerSearchScreen> {
                     icon: Icons.people_outline,
                   );
                 }
+                final list = state.customers;
+                final padding = EdgeInsets.symmetric(
+                  horizontal: AppPage.gutterOf(context),
+                );
+                // Very wide screens: two cards per row instead of gutters.
+                if (MediaQuery.sizeOf(context).width < AppBreakpoints.wide) {
+                  return ListView.builder(
+                    padding: padding,
+                    itemCount: list.length,
+                    itemBuilder: (_, i) => _CustomerCard(customer: list[i]),
+                  );
+                }
                 return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: state.customers.length,
-                  itemBuilder: (_, i) =>
-                      _CustomerCard(customer: state.customers[i]),
+                  padding: padding,
+                  itemCount: (list.length + 1) ~/ 2,
+                  itemBuilder: (_, row) => Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: _CustomerCard(customer: list[row * 2])),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: row * 2 + 1 < list.length
+                            ? _CustomerCard(customer: list[row * 2 + 1])
+                            : const SizedBox.shrink(),
+                      ),
+                    ],
+                  ),
                 );
               },
             ),
@@ -160,7 +182,6 @@ class _CustomerCard extends StatelessWidget {
         return Card(
           margin: const EdgeInsets.only(bottom: 8),
           child: InkWell(
-            borderRadius: BorderRadius.circular(12),
             onTap: () => context.go('/customers/${c.id}'),
             child: Padding(
               padding: const EdgeInsets.all(14),
