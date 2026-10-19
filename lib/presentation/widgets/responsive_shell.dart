@@ -111,6 +111,13 @@ int _tabIndex(String location) {
   return -1;
 }
 
+/// True only for the five tab roots themselves (exact path), never for a
+/// route `also` highlights the tab for (e.g. `/sales` under Transactions).
+/// Drives whether the drawer's edge-swipe gesture is live: pushed screens
+/// already show a back button, not the drawer's hamburger icon, so the
+/// hidden edge-swipe there only steals the swipe-to-go-back gesture.
+bool _isTabRoot(String location) => _tabs.any((t) => t.path == location);
+
 class _PastDueBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -188,11 +195,16 @@ class ResponsiveShell extends StatelessWidget {
       );
     }
 
+    final isTabRoot = _isTabRoot(location);
     return GradientBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: appBar,
-        drawer: _ShellDrawer(destinations: extras),
+        // Only the tab roots show the hamburger that opens this, so only
+        // they get the edge-swipe gesture too — otherwise it silently wins
+        // over a pushed screen's swipe-to-go-back.
+        drawer: isTabRoot ? _ShellDrawer(destinations: extras) : null,
+        drawerEnableOpenDragGesture: isTabRoot,
         floatingActionButton: floatingActionButton,
         body: Column(
           children: [
