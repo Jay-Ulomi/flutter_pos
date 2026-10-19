@@ -158,7 +158,15 @@ class AppRouter {
             return ShiftReportScreen(sessionId: sessionId);
           },
         ),
-        GoRoute(path: '/pos', builder: (_, _) => const PosScreen()),
+        GoRoute(
+          path: '/pos',
+          // NoTransitionPage on all five tab roots: they're siblings switched
+          // via the bottom nav/rail, not a drill-down, so the normal
+          // slide-in push animation (which would also drag the nav bar
+          // along, since nothing here is a persistent ShellRoute) looked
+          // wrong. Pushed sub-screens keep their animation as usual.
+          pageBuilder: (_, _) => const NoTransitionPage(child: PosScreen()),
+        ),
         GoRoute(path: '/checkout', builder: (_, _) => const CheckoutScreen()),
         GoRoute(path: '/receipt', builder: (_, _) => const ReceiptScreen()),
         GoRoute(
@@ -179,7 +187,7 @@ class AppRouter {
         ),
         GoRoute(
           path: '/products',
-          builder: (_, _) => const ProductListScreen(),
+          pageBuilder: (_, _) => const NoTransitionPage(child: ProductListScreen()),
         ),
         GoRoute(path: '/sales', builder: (_, _) => const SalesHistoryScreen()),
         GoRoute(
@@ -230,13 +238,22 @@ class AppRouter {
           builder: (_, s) => CustomerDetailScreen(customerId: s.pathParameters['id']!),
         ),
         // Redesign screens
-        GoRoute(path: '/transactions', builder: (_, _) => const TransactionsScreen()),
+        GoRoute(
+          path: '/transactions',
+          pageBuilder: (_, _) => const NoTransitionPage(child: TransactionsScreen()),
+        ),
         GoRoute(path: '/payment-in', builder: (_, _) => const PaymentInScreen()),
         GoRoute(path: '/party-transfer', builder: (_, _) => const PartyTransferScreen()),
-        GoRoute(path: '/parties', builder: (_, _) => const PartiesScreen()),
+        GoRoute(
+          path: '/parties',
+          pageBuilder: (_, _) => const NoTransitionPage(child: PartiesScreen()),
+        ),
         GoRoute(path: '/products/new', builder: (_, _) => const AddProductScreen()),
         GoRoute(path: '/reports', builder: (_, _) => const SalesReportScreen()),
-        GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
+        GoRoute(
+          path: '/profile',
+          pageBuilder: (_, _) => const NoTransitionPage(child: ProfileScreen()),
+        ),
         GoRoute(path: '/app-settings', builder: (_, _) => const AppSettingsScreen()),
       ],
     );
