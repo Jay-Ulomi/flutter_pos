@@ -6,7 +6,14 @@ class LoginRequest {
 
   LoginRequest({required this.email, required this.password});
 
-  Map<String, dynamic> toJson() => {'email': email, 'password': password};
+  /// [email] holds whatever was typed in "Email or username". The backend
+  /// takes it as `login`; `email` is also sent for addresses so older servers
+  /// that only know `email` keep working.
+  Map<String, dynamic> toJson() => {
+        'login': email,
+        if (email.contains('@')) 'email': email,
+        'password': password,
+      };
 }
 
 class AuthResponse {

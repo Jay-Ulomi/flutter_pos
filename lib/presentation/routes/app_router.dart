@@ -9,7 +9,9 @@ import '../blocs/sale/sale_bloc.dart';
 import '../blocs/auth/auth_state.dart';
 import '../blocs/session/session_bloc.dart';
 import '../blocs/session/session_state.dart';
+import '../screens/auth/forgot_password_screen.dart';
 import '../screens/auth/login_screen.dart';
+import '../screens/auth/splash_screen.dart';
 import '../screens/auth/trial_expired_screen.dart';
 import '../screens/business/select_branch_screen.dart';
 import '../screens/business/select_business_screen.dart';
@@ -42,7 +44,7 @@ class AppRouter {
     required SessionBloc sessionBloc,
   }) {
     return GoRouter(
-      initialLocation: '/login',
+      initialLocation: '/splash',
       refreshListenable: _BlocRefresh([
         authBloc.stream,
         businessBloc.stream,
@@ -73,14 +75,17 @@ class AppRouter {
           return null;
         }
 
-        final atLogin = loc == '/login';
+        // Splash and forgot-password count as auth screens.
+        final atLogin = loc == '/login' || loc == '/splash';
+        final atForgot = loc == '/forgot-password';
         final atBiz = loc == '/select-business';
         final atBranch = loc == '/select-branch';
         final atSessionOpen = loc == '/session/open';
         final atSessionReport = loc == '/session/report';
 
         if (auth.status == AuthStatus.unauthenticated) {
-          return atLogin ? null : '/login';
+          if (atForgot || loc == '/login') return null;
+          return '/login';
         }
 
         if (auth.status == AuthStatus.businessRequired ||
@@ -108,13 +113,18 @@ class AppRouter {
         }
 
         // If on an auth/setup screen but fully logged in → go to POS
-        if (atLogin || atBiz || atBranch || atSessionOpen) {
+        if (atLogin || atForgot || atBiz || atBranch || atSessionOpen) {
           return '/pos';
         }
         return null;
       },
       routes: [
+        GoRoute(path: '/splash', builder: (_, _) => const SplashScreen()),
         GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
+        GoRoute(
+          path: '/forgot-password',
+          builder: (_, _) => const ForgotPasswordScreen(),
+        ),
         GoRoute(
           path: '/trial-expired',
           builder: (_, _) => const TrialExpiredScreen(),

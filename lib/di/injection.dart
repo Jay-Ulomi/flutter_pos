@@ -17,6 +17,8 @@ import '../data/datasources/local/sale_local.dart';
 import '../data/datasources/local/session_local.dart';
 import '../data/datasources/remote/auth_remote.dart';
 import '../data/datasources/remote/customer_remote.dart';
+import '../data/datasources/remote/feed_remote.dart';
+import '../data/datasources/remote/password_reset_remote.dart';
 import '../data/datasources/remote/inventory_remote.dart';
 import '../data/datasources/remote/laundry_remote.dart';
 import '../data/datasources/remote/product_remote.dart';
@@ -95,6 +97,13 @@ Future<void> setupDependencies() async {
   );
   sl.registerLazySingleton<SyncRemoteDataSource>(
     () => SyncRemoteDataSource(sl()),
+  );
+
+  sl.registerLazySingleton<FeedRemoteDataSource>(
+    () => FeedRemoteDataSource.fromClient(sl()),
+  );
+  sl.registerLazySingleton<PasswordResetRemoteDataSource>(
+    () => PasswordResetRemoteDataSource.fromClient(sl()),
   );
 
   // Local datasources

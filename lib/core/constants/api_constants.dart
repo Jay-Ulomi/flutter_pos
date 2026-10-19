@@ -80,6 +80,9 @@ class ApiConstants {
   static const String switchContext = '$apiPrefix/auth/switch-context';
   static const String logout = '$apiPrefix/auth/logout';
   static const String me = '$apiPrefix/auth/me';
+  static const String forgotPassword = '$apiPrefix/auth/forgot-password';
+  static const String verifyResetOtp = '$apiPrefix/auth/verify-reset-otp';
+  static const String resetPassword = '$apiPrefix/auth/reset-password';
 
   // Business
   static const String businesses = '$apiPrefix/businesses';
@@ -118,6 +121,19 @@ class ApiConstants {
 
   // Subscriptions
   static const String subscriptionCurrent = '$apiPrefix/subscriptions/current';
+
+  // Redesign: unified feeds, parties, reports and file exports
+  static const String transactions = '$apiPrefix/transactions';
+  static const String parties = '$apiPrefix/parties';
+  static const String partyTransfers = '$apiPrefix/parties/transfers';
+  static const String suppliers = '$apiPrefix/suppliers';
+  static const String reportSummary = '$apiPrefix/reports/summary';
+  static const String exportSales = '$apiPrefix/exports/sales';
+  static const String exportSalesReport = '$apiPrefix/exports/sales-report';
+  static const String exportStatement = '$apiPrefix/exports/statement';
+  static String saleInvoicePdf(String saleId) => '$apiPrefix/pos/sales/$saleId/invoice.pdf';
+  static String receivablePayments(String receivableId) =>
+      '$apiPrefix/accounting/receivables/$receivableId/payments';
 
   // Laundry
   static const String laundryOrders = '$apiPrefix/laundry/orders';
