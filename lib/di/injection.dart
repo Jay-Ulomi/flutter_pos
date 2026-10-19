@@ -7,6 +7,7 @@ import 'package:get_it/get_it.dart';
 
 import '../core/network/api_client.dart';
 import '../core/network/network_info.dart';
+import '../core/security/app_lock_service.dart';
 import '../core/utils/token_manager.dart';
 import '../data/datasources/local/customer_local.dart';
 import '../data/datasources/local/database.dart';
@@ -131,6 +132,11 @@ Future<void> setupDependencies() async {
   );
   sl.registerLazySingleton<SyncRepository>(
     () => SyncRepositoryImpl(sl(), sl(), sl(), sl(), sl(), sl(), sl()),
+  );
+
+  // App lock PIN hash lives in secure storage.
+  sl.registerLazySingleton<AppLockService>(
+    () => AppLockService(SecurePinStore(sl())),
   );
 
   // Card terminal. The mock auto-approves, so it's DEBUG-only; release builds

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/constants/app_constants.dart';
+import 'core/l10n/app_strings.dart';
 import 'core/network/network_info.dart';
+import 'core/security/app_lock_service.dart';
+import 'core/settings/app_settings.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/token_manager.dart';
 import 'di/injection.dart';
@@ -14,8 +18,11 @@ import 'domain/repositories/product_repository.dart';
 import 'domain/repositories/sale_repository.dart';
 import 'domain/repositories/session_repository.dart';
 import 'domain/repositories/sync_repository.dart';
+import 'presentation/blocs/app_lock/app_lock_cubit.dart';
+import 'presentation/blocs/app_settings/app_settings_cubit.dart';
 import 'presentation/blocs/auth/auth_bloc.dart';
 import 'presentation/blocs/auth/auth_event.dart';
+import 'presentation/blocs/auth/auth_state.dart';
 import 'presentation/blocs/branch/branch_bloc.dart';
 import 'presentation/blocs/business/business_bloc.dart';
 import 'presentation/blocs/cart/cart_bloc.dart';
@@ -29,6 +36,7 @@ import 'presentation/blocs/sync/sync_bloc.dart';
 import 'presentation/blocs/sync/sync_event.dart';
 import 'presentation/blocs/theme/theme_cubit.dart';
 import 'presentation/routes/app_router.dart';
+import 'presentation/screens/lock/app_lock_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,7 +53,12 @@ class PosApp extends StatefulWidget {
 }
 
 class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
+  // Kept for code that still reads it; theme now comes from AppSettingsCubit.
   final _themeCubit = ThemeCubit();
+  final _settingsCubit = AppSettingsCubit();
+  final _lockCubit = AppLockCubit(sl.isRegistered<AppLockService>()
+      ? sl<AppLockService>()
+      : AppLockService(SecurePinStore()));
   AuthBloc? _authBloc;
   BusinessBloc? _businessBloc;
   BranchBloc? _branchBloc;
@@ -63,7 +76,11 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      _lockCubit.onBackgrounded();
+    }
     if (state == AppLifecycleState.resumed) {
+      _lockCubit.onResumed(lockAfterMinutes: _settingsCubit.state.lockAfterMinutes);
       // Flush any queued sales — covers the case where connectivity was
       // restored while the app was backgrounded (so the reconnect push never
       // fired).
@@ -80,6 +97,8 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
     if (!sl.isRegistered<AuthRepository>()) {
       await setupDependencies();
     }
+    await _settingsCubit.load();
+    await _lockCubit.init(enabled: _settingsCubit.state.appLockEnabled);
     _authBloc = AuthBloc(sl<AuthRepository>(), sl<TokenManager>())
       ..add(const AuthCheckRequested());
     _businessBloc = BusinessBloc(sl<AuthRepository>());
@@ -103,6 +122,8 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _themeCubit.close();
+    _settingsCubit.close();
+    _lockCubit.close();
     _authBloc?.close();
     _businessBloc?.close();
     _branchBloc?.close();
@@ -111,12 +132,60 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  /// MaterialApp settings shared by the boot, error and main apps.
+  static const _localizationsDelegates = [
+    GlobalMaterialLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+  ];
+  static final _supportedLocales =
+      AppStrings.supported.map((c) => Locale(c)).toList();
+
+  /// Applies the App Settings text size and draws the lock screen on top.
+  Widget _appBuilder(BuildContext context, Widget? child, AppSettings settings) {
+    final media = MediaQuery.of(context);
+    final scaled = MediaQuery(
+      data: media.copyWith(
+        textScaler: TextScaler.linear(
+          media.textScaler.scale(1) * settings.textScale,
+        ),
+      ),
+      child: child ?? const SizedBox.shrink(),
+    );
+    return BlocBuilder<AppLockCubit, AppLockState>(
+      builder: (context, lock) {
+        final signedOut = context.select<AuthBloc, bool>(
+          (b) => b.state.status == AuthStatus.unauthenticated,
+        );
+        if (!lock.locked || signedOut) return scaled;
+        return Stack(
+          children: [
+            Offstage(child: scaled),
+            AppLockScreen(
+              onForgot: () async {
+                await _lockCubit.reset();
+                await _settingsCubit.update(
+                  _settingsCubit.state.copyWith(appLockEnabled: false),
+                );
+                _authBloc?.add(const AuthLogoutRequested());
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<ThemeCubit>.value(
-      value: _themeCubit,
-      child: BlocBuilder<ThemeCubit, ThemeMode>(
-        builder: (context, _) {
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<ThemeCubit>.value(value: _themeCubit),
+        BlocProvider<AppSettingsCubit>.value(value: _settingsCubit),
+        BlocProvider<AppLockCubit>.value(value: _lockCubit),
+      ],
+      child: BlocBuilder<AppSettingsCubit, AppSettings>(
+        builder: (context, settings) {
           return FutureBuilder<void>(
             future: _bootstrapFuture,
             builder: (context, snapshot) {
@@ -126,12 +195,8 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
                   debugShowCheckedModeBanner: false,
                   theme: AppTheme.lightTheme,
                   darkTheme: AppTheme.darkTheme,
-                  // Forced light: POS screens are designed light-only; full
-                  // dark-mode support is a future design pass.
-                  themeMode: ThemeMode.light,
-                  home: const Scaffold(
-                    body: Center(child: CircularProgressIndicator()),
-                  ),
+                  themeMode: settings.themeMode,
+                  home: const _BootSplash(),
                 );
               }
 
@@ -141,9 +206,7 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
                   debugShowCheckedModeBanner: false,
                   theme: AppTheme.lightTheme,
                   darkTheme: AppTheme.darkTheme,
-                  // Forced light: POS screens are designed light-only; full
-                  // dark-mode support is a future design pass.
-                  themeMode: ThemeMode.light,
+                  themeMode: settings.themeMode,
                   home: Scaffold(
                     body: Center(
                       child: Padding(
@@ -186,15 +249,46 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
                   debugShowCheckedModeBanner: false,
                   theme: AppTheme.lightTheme,
                   darkTheme: AppTheme.darkTheme,
-                  // Forced light: POS screens are designed light-only; full
-                  // dark-mode support is a future design pass.
-                  themeMode: ThemeMode.light,
+                  themeMode: settings.themeMode,
+                  locale: settings.locale,
+                  supportedLocales: _supportedLocales,
+                  localizationsDelegates: _localizationsDelegates,
+                  builder: (context, child) =>
+                      _appBuilder(context, child, settings),
                   routerConfig: _router!,
                 ),
               );
             },
           );
         },
+      ),
+    );
+  }
+}
+
+/// Shown while dependencies load: wordmark on the brand gradient.
+class _BootSplash extends StatelessWidget {
+  const _BootSplash();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: DecoratedBox(
+        decoration: BoxDecoration(gradient: context.decor.background),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset('assets/brand/aduinola_wordmark.png', height: 56),
+              const SizedBox(height: 28),
+              const SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

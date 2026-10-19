@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   cupertino_icons: ^1.0.8
 
@@ -57,6 +59,9 @@ dependencies:
   pdf: ^3.11.1
   share_plus: ^10.1.2
   shared_preferences: ^2.5.5
+
+  # App-lock PIN hashing (PBKDF2-HMAC-SHA256)
+  crypto: 3.0.7
 
 dev_dependencies:
   flutter_test:

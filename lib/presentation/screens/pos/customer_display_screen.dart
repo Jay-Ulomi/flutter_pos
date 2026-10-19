@@ -326,6 +326,7 @@ class _Totals extends StatelessWidget {
                 ),
                 MoneyText(
                   cart.total,
+                  sensitive: false,
                   style: const TextStyle(
                     color: Color(0xFF3FB950),
                     fontSize: 28,
@@ -382,7 +383,7 @@ class _TotalRow extends StatelessWidget {
           Row(
             children: [
               if (negative) Text('−', style: TextStyle(color: textColor, fontSize: 14)),
-              MoneyText(value, style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w600)),
+              MoneyText(value, sensitive: false, style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w600)),
             ],
           ),
         ],
