@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/brand_colors.dart';
 import '../../../data/models/product_models.dart';
 import '../../blocs/cart/cart_bloc.dart';
@@ -34,6 +35,8 @@ import '../../widgets/error_view.dart';
 import '../../widgets/loading_indicator.dart';
 import '../../widgets/money_text.dart';
 import '../../widgets/product_card.dart';
+import '../../widgets/aduinola/sale_product_tile.dart';
+import '../../widgets/aduinola/ui.dart';
 import '../../widgets/responsive_shell.dart';
 
 // ---------------------------------------------------------------------------
@@ -401,7 +404,7 @@ class _PosScreenState extends State<PosScreen> {
     final isMobile = MediaQuery.sizeOf(context).width < 720;
 
     final appBar = AppBar(
-      title: const Text('POS'),
+      title: const BrandWordmark(height: 30),
       actions: [
         IconButton(
           icon: const Icon(Icons.tv_outlined),
@@ -530,177 +533,180 @@ class _PosScreenState extends State<PosScreen> {
   Widget _mobileLayout(ThemeData theme) {
     return Stack(
       children: [
-        // Products grid fills entire area
         Column(
           children: [
-            // Search bar
+            // Search pill + custom item
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
               child: Row(
                 children: [
                   Expanded(
-                    child: SizedBox(
-                      height: 44,
-                      child: TextField(
-                        controller: _searchCtrl,
-                        style: const TextStyle(fontSize: 14),
-                        decoration: InputDecoration(
-                          hintText: 'Search products...',
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          suffixIcon: IconButton(
-                            icon: const Icon(Icons.qr_code_scanner, size: 20),
-                            tooltip: 'Scan barcode',
-                            onPressed: _openScanner,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 0,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
-                              color: theme.colorScheme.outlineVariant,
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
-                              color: theme.colorScheme.outlineVariant,
-                            ),
-                          ),
-                          filled: true,
-                          fillColor: theme.colorScheme.surfaceContainerLow,
-                        ),
-                        onChanged: (v) => context.read<ProductBloc>().add(
-                          ProductSearchChanged(v),
-                        ),
+                    child: SearchPill(
+                      controller: _searchCtrl,
+                      hint: context.tr('home.search_products'),
+                      onChanged: (v) => context.read<ProductBloc>().add(
+                        ProductSearchChanged(v),
+                      ),
+                      trailing: IconButton(
+                        icon: Icon(Icons.qr_code_scanner_rounded, color: theme.colorScheme.primary),
+                        tooltip: 'Scan barcode',
+                        onPressed: _openScanner,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    height: 44,
-                    width: 44,
-                    child: IconButton.filled(
-                      tooltip: 'Add custom item',
-                      onPressed: () async {
-                        final cartBloc = context.read<CartBloc>();
-                        final result = await showCustomItemDialog(context);
-                        if (result != null) {
-                          cartBloc.add(
-                            CartCustomItemAdded(
-                              name: result.name,
-                              price: result.price,
-                              quantity: result.quantity,
-                            ),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.add, size: 20),
-                    ),
+                  const SizedBox(width: 10),
+                  RoundIconButton(
+                    icon: Icons.add_rounded,
+                    tooltip: 'Add custom item',
+                    filled: true,
+                    size: 50,
+                    onPressed: _addCustomItem,
                   ),
                 ],
               ),
             ),
-            // Category chips
             _categoryChips(),
-            // Products grid — padded at bottom so items aren't hidden behind cart bar
-            Expanded(
-              child: BlocBuilder<ProductBloc, ProductState>(
-                builder: (context, state) {
-                  if (state.status == ProductStatus.loading) {
-                    return const LoadingIndicator();
-                  }
-                  if (state.status == ProductStatus.error) {
-                    return ErrorView(
-                      message: state.errorMessage ?? 'Failed to load products',
-                      onRetry: () => context.read<ProductBloc>().add(
-                        const ProductLoadRequested(),
-                      ),
-                    );
-                  }
-                  if (state.products.isEmpty) {
-                    return const EmptyState(
-                      title: 'No products found',
-                      icon: Icons.inventory_2_outlined,
-                    );
-                  }
-                  return ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(0, 8, 0, 88),
-                    itemCount: state.products.length,
-                    itemBuilder: (_, i) {
-                      final p = state.products[i];
-                      return ProductListTile(
-                        product: p,
-                        onTap: () => _addProductToCart(context, p),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
+            const SizedBox(height: 8),
+            Expanded(child: _productGrid(bottomPadding: 96)),
           ],
         ),
-        // Floating cart button
-        Positioned(right: 16, bottom: 16, child: _mobileCartFab()),
+        // Cart summary bar: "⌃ 2 items · total   [Next]"
+        Positioned(left: 12, right: 12, bottom: 12, child: _cartSummaryBar()),
       ],
     );
   }
 
-  Widget _mobileCartFab() {
+  Future<void> _addCustomItem() async {
+    final cartBloc = context.read<CartBloc>();
+    final result = await showCustomItemDialog(context);
+    if (result != null) {
+      cartBloc.add(
+        CartCustomItemAdded(
+          name: result.name,
+          price: result.price,
+          quantity: result.quantity,
+        ),
+      );
+    }
+  }
+
+  /// Product grid shared by phone and desktop: tiles with quantity steppers.
+  Widget _productGrid({double bottomPadding = 12}) {
+    return BlocBuilder<ProductBloc, ProductState>(
+      builder: (context, state) {
+        if (state.status == ProductStatus.loading) {
+          return const LoadingIndicator();
+        }
+        if (state.status == ProductStatus.error) {
+          return ErrorView(
+            message: state.errorMessage ?? 'Failed to load products',
+            onRetry: () => context.read<ProductBloc>().add(
+              const ProductLoadRequested(),
+            ),
+          );
+        }
+        if (state.products.isEmpty) {
+          return const EmptyState(
+            title: 'No products found',
+            icon: Icons.inventory_2_outlined,
+          );
+        }
+        return BlocBuilder<CartBloc, CartState>(
+          buildWhen: (p, c) => p.lines != c.lines,
+          builder: (context, cart) {
+            // Quantity per product id; tracked (serial/lot) lines can't be
+            // stepped down from the grid.
+            final qty = <String, double>{};
+            final tracked = <String>{};
+            for (final l in cart.lines) {
+              qty[l.product.id] = (qty[l.product.id] ?? 0) + l.quantity;
+              if (l.serialNumber != null || l.lotNumber != null || l.product.variantId != null) {
+                tracked.add(l.product.id);
+              }
+            }
+            return GridView.builder(
+              padding: EdgeInsets.fromLTRB(16, 4, 16, bottomPadding),
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 210,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 0.78,
+              ),
+              itemCount: state.products.length,
+              itemBuilder: (_, i) {
+                final p = state.products[i];
+                final q = qty[p.id] ?? 0;
+                return SaleProductTile(
+                  product: p,
+                  quantity: q,
+                  onAdd: () => _addProductToCart(context, p),
+                  onRemove: q > 0 && !tracked.contains(p.id)
+                      ? () => context.read<CartBloc>().add(CartItemQtyChanged(p.id, q - 1))
+                      : null,
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _cartSummaryBar() {
     return BlocBuilder<CartBloc, CartState>(
       builder: (context, cart) {
         if (cart.isEmpty) return const SizedBox.shrink();
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // Circular FAB
-            GestureDetector(
-              onTap: () => _showCartSheet(context),
-              child: Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: BrandColors.primary,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: BrandColors.primary.withValues(alpha: 0.45),
-                      blurRadius: 18,
-                      offset: const Offset(0, 6),
+        final cs = Theme.of(context).colorScheme;
+        return Material(
+          color: cs.surface,
+          elevation: 6,
+          shadowColor: Colors.black26,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: cs.outlineVariant),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+            child: Row(
+              children: [
+                RoundIconButton(
+                  key: const ValueKey('open-cart'),
+                  icon: Icons.keyboard_arrow_up_rounded,
+                  tooltip: context.tr('home.view_cart'),
+                  onPressed: () => _showCartSheet(context),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: InkWell(
+                    onTap: () => _showCartSheet(context),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          context.tr('home.items', {'count': cart.itemCount}),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        MoneyText(
+                          cart.total,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color: cs.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.shopping_bag_outlined,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-            ),
-            // Orange item-count badge
-            Positioned(
-              top: -4,
-              right: -4,
-              child: Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  color: BrandColors.secondary,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  '${cart.lines.length}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
                   ),
                 ),
-              ),
+                FilledButton(
+                  key: const ValueKey('cart-next'),
+                  style: FilledButton.styleFrom(minimumSize: const Size(110, 46)),
+                  onPressed: _handleCheckout,
+                  child: Text(context.tr('common.continue')),
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
     );
@@ -716,67 +722,12 @@ class _PosScreenState extends State<PosScreen> {
           (categories: state.categories, selectedId: state.selectedCategoryId),
       builder: (context, data) {
         if (data.categories.isEmpty) return const SizedBox.shrink();
-        return SizedBox(
-          height: 40,
-          child: ShaderMask(
-            shaderCallback: (bounds) => const LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [Colors.white, Colors.white, Colors.transparent],
-              stops: [0.0, 0.92, 1.0],
-            ).createShader(bounds),
-            blendMode: BlendMode.dstIn,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              itemCount: data.categories.length + 1,
-              separatorBuilder: (_, _) => const SizedBox(width: 6),
-              itemBuilder: (context, i) {
-                final cs = Theme.of(context).colorScheme;
-                if (i == 0) {
-                  final selected = data.selectedId == null;
-                  return FilterChip(
-                    label: const Text('All'),
-                    selected: selected,
-                    selectedColor: cs.primary,
-                    checkmarkColor: cs.onPrimary,
-                    labelStyle: TextStyle(
-                      color: selected ? cs.onPrimary : cs.onSurfaceVariant,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                      fontSize: 12,
-                    ),
-                    side: BorderSide(
-                      color: selected ? cs.primary : cs.outlineVariant,
-                    ),
-                    visualDensity: VisualDensity.compact,
-                    onSelected: (_) => context.read<ProductBloc>().add(
-                      const ProductCategoryChanged(null),
-                    ),
-                  );
-                }
-                final cat = data.categories[i - 1];
-                final selected = data.selectedId == cat.id;
-                return FilterChip(
-                  label: Text(cat.name),
-                  selected: selected,
-                  selectedColor: cs.primary,
-                  checkmarkColor: cs.onPrimary,
-                  labelStyle: TextStyle(
-                    color: selected ? cs.onPrimary : cs.onSurfaceVariant,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                    fontSize: 12,
-                  ),
-                  side: BorderSide(
-                    color: selected ? cs.primary : cs.outlineVariant,
-                  ),
-                  visualDensity: VisualDensity.compact,
-                  onSelected: (_) => context.read<ProductBloc>().add(
-                    ProductCategoryChanged(cat.id),
-                  ),
-                );
-              },
-            ),
-          ),
+        final all = <Category?>[null, ...data.categories];
+        return PillChips<Category?>(
+          items: all,
+          selected: all.firstWhere((c) => c?.id == data.selectedId, orElse: () => null),
+          labelOf: (c) => c?.name ?? context.tr('common.all'),
+          onSelected: (c) => context.read<ProductBloc>().add(ProductCategoryChanged(c?.id)),
         );
       },
     );
@@ -788,145 +739,31 @@ class _PosScreenState extends State<PosScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
           child: Row(
             children: [
               Expanded(
-                child: TextField(
+                child: SearchPill(
                   controller: _searchCtrl,
-                  decoration: const InputDecoration(
-                    hintText: 'Search products or scan barcode',
-                    prefixIcon: Icon(Icons.search),
-                  ),
+                  hint: context.tr('home.search_products'),
                   onChanged: (v) =>
                       context.read<ProductBloc>().add(ProductSearchChanged(v)),
                 ),
               ),
-              const SizedBox(width: 8),
-              IconButton.filled(
+              const SizedBox(width: 10),
+              RoundIconButton(
+                icon: Icons.add_rounded,
                 tooltip: 'Add custom item',
-                onPressed: () async {
-                  final cartBloc = context.read<CartBloc>();
-                  final result = await showCustomItemDialog(context);
-                  if (result != null) {
-                    cartBloc.add(
-                      CartCustomItemAdded(
-                        name: result.name,
-                        price: result.price,
-                        quantity: result.quantity,
-                      ),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.add),
+                filled: true,
+                size: 50,
+                onPressed: _addCustomItem,
               ),
             ],
           ),
         ),
-        BlocSelector<
-          ProductBloc,
-          ProductState,
-          ({List<Category> categories, String? selectedId})
-        >(
-          selector: (state) => (
-            categories: state.categories,
-            selectedId: state.selectedCategoryId,
-          ),
-          builder: (context, data) {
-            if (data.categories.isEmpty) return const SizedBox.shrink();
-            return SizedBox(
-              height: 44,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                itemCount: data.categories.length + 1,
-                separatorBuilder: (_, _) => const SizedBox(width: 8),
-                itemBuilder: (context, i) {
-                  final cs = Theme.of(context).colorScheme;
-                  if (i == 0) {
-                    final selected = data.selectedId == null;
-                    return FilterChip(
-                      label: const Text('All'),
-                      selected: selected,
-                      selectedColor: cs.primary,
-                      checkmarkColor: cs.onPrimary,
-                      labelStyle: TextStyle(
-                        color: selected ? cs.onPrimary : cs.onSurfaceVariant,
-                        fontWeight: selected
-                            ? FontWeight.w600
-                            : FontWeight.w400,
-                      ),
-                      side: BorderSide(
-                        color: selected ? cs.primary : cs.outlineVariant,
-                      ),
-                      onSelected: (_) => context.read<ProductBloc>().add(
-                        const ProductCategoryChanged(null),
-                      ),
-                    );
-                  }
-                  final cat = data.categories[i - 1];
-                  final selected = data.selectedId == cat.id;
-                  return FilterChip(
-                    label: Text(cat.name),
-                    selected: selected,
-                    selectedColor: cs.primary,
-                    checkmarkColor: cs.onPrimary,
-                    labelStyle: TextStyle(
-                      color: selected ? cs.onPrimary : cs.onSurfaceVariant,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                    ),
-                    side: BorderSide(
-                      color: selected ? cs.primary : cs.outlineVariant,
-                    ),
-                    onSelected: (_) => context.read<ProductBloc>().add(
-                      ProductCategoryChanged(cat.id),
-                    ),
-                  );
-                },
-              ),
-            );
-          },
-        ),
-        Expanded(
-          child: BlocBuilder<ProductBloc, ProductState>(
-            builder: (context, state) {
-              if (state.status == ProductStatus.loading) {
-                return const LoadingIndicator();
-              }
-              if (state.status == ProductStatus.error) {
-                return ErrorView(
-                  message: state.errorMessage ?? 'Failed to load products',
-                  onRetry: () => context.read<ProductBloc>().add(
-                    const ProductLoadRequested(),
-                  ),
-                );
-              }
-              if (state.products.isEmpty) {
-                return const EmptyState(
-                  title: 'No products found',
-                  icon: Icons.inventory_2_outlined,
-                );
-              }
-              return GridView.builder(
-                padding: const EdgeInsets.all(12),
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 180,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 0.75,
-                ),
-                itemCount: state.products.length,
-                itemBuilder: (_, i) {
-                  final p = state.products[i];
-                  return ProductCard(
-                    product: p,
-                    onTap: () => _addProductToCart(context, p),
-                  );
-                },
-              );
-            },
-          ),
-        ),
+        _categoryChips(),
+        const SizedBox(height: 8),
+        Expanded(child: _productGrid()),
       ],
     );
   }

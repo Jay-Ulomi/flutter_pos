@@ -17,6 +17,8 @@ import '../blocs/sale/sale_bloc.dart';
 import '../blocs/sale/sale_event.dart';
 import '../blocs/sale/sale_state.dart';
 import '../blocs/session/session_bloc.dart';
+import '../../core/l10n/app_strings.dart';
+import '../../core/utils/formatters.dart';
 import 'additional_charges.dart';
 import 'checkout_pricing.dart';
 import 'customer_picker_sheet.dart';
@@ -319,6 +321,78 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
     );
     if (amount <= 0) return;
     setState(() => _payments.add(_PaymentEntry(method: PaymentMethod.loyaltyPoints, amount: amount)));
+  }
+
+  /// Invoice number/date and the customer with a Change button, as on the
+  /// design's Confirm Sale. The number is assigned by the server on save.
+  Widget _invoiceHeader(CartState cart) {
+    final cs = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    Widget box(String label, String value, {IconData? icon}) => Expanded(
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+            decoration: BoxDecoration(
+              color: cs.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: cs.outlineVariant),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: textTheme.bodySmall),
+                const SizedBox(height: 4),
+                Row(children: [
+                  Expanded(child: Text(value, style: textTheme.titleSmall)),
+                  if (icon != null) Icon(icon, size: 18, color: cs.onSurfaceVariant),
+                ]),
+              ],
+            ),
+          ),
+        );
+    return Column(
+      children: [
+        Row(children: [
+          box(context.tr('sale.invoice_no'), 'Auto'),
+          const SizedBox(width: 10),
+          box(context.tr('common.date'), Formatters.date(DateTime.now()),
+              icon: Icons.calendar_month_outlined),
+        ]),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+          decoration: BoxDecoration(
+            color: cs.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: cs.outlineVariant),
+          ),
+          child: Row(children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: cs.surfaceContainerLow,
+              child: Icon(cart.hasCustomer ? Icons.person_rounded : Icons.payments_outlined,
+                  size: 20, color: cs.primary),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                cart.hasCustomer ? (cart.selectedCustomerName ?? '') : context.tr('sale.walk_in'),
+                style: textTheme.titleSmall,
+              ),
+            ),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(0, 36),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                foregroundColor: cs.primary,
+              ),
+              onPressed: _pickCustomer,
+              icon: const Icon(Icons.sync_rounded, size: 16),
+              label: Text(context.tr('sale.change')),
+            ),
+          ]),
+        ),
+      ],
+    );
   }
 
   Widget _couponAndPointsSection(CartState cart, double total) {
@@ -733,9 +807,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                               ),
                               const SizedBox(width: 10),
                             ],
-                            const Text(
-                              'Checkout',
-                              style: TextStyle(
+                            Text(
+                              context.tr('sale.title'),
+                              style: const TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w700,
                                 color: Color(0xFF14261A),
@@ -817,8 +891,10 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                 ScrollViewKeyboardDismissBehavior.onDrag,
                             padding: const EdgeInsets.all(16),
                             children: [
+                              _invoiceHeader(cart),
+                              const SizedBox(height: 16),
                               // Order summary card
-                              _sectionLabel('Order Summary'),
+                              _sectionLabel(context.tr('sale.billing_items')),
                               const SizedBox(height: 8),
                               Container(
                                 padding: const EdgeInsets.all(14),
