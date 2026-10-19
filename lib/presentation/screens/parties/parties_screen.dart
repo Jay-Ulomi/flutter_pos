@@ -138,15 +138,10 @@ class _PartiesViewState extends State<_PartiesView> {
                   else
                     SliverPadding(
                       padding: AppPage.insets(context, top: 0, bottom: 96),
-                      // More columns on wide screens instead of side gutters.
-                      sliver: SliverGrid.builder(
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: responsiveColumns(MediaQuery.sizeOf(context).width),
-                          mainAxisSpacing: 8,
-                          crossAxisSpacing: 12,
-                          mainAxisExtent: 84,
-                        ),
+                      // Same flat list-with-divider style as TransactionTile.
+                      sliver: SliverList.separated(
                         itemCount: state.items.length,
+                        separatorBuilder: (_, _) => const Divider(height: 1),
                         itemBuilder: (context, i) => PartyTile(party: state.items[i]),
                       ),
                     ),
@@ -160,6 +155,8 @@ class _PartiesViewState extends State<_PartiesView> {
   }
 }
 
+/// One row of the list: same shape as [TransactionTile] — a type label,
+/// the party's name, then phone/last-activity … balance + a status pill.
 class PartyTile extends StatelessWidget {
   const PartyTile({super.key, required this.party, this.onTap});
   final PartySummary party;
@@ -169,44 +166,44 @@ class PartyTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    // `balance` is always positive; direction carries the sign.
-    final (label, color) = switch (party.direction) {
-      BalanceDirection.receivable => (context.tr('party.to_receive'), cs.primary),
-      BalanceDirection.payable => (context.tr('party.to_pay'), cs.secondary),
-      BalanceDirection.settled => (context.tr('party.settled'), cs.onSurfaceVariant),
+    final typeLabel = party.type == PartyType.customer ? context.tr('party.customer') : context.tr('party.supplier');
+    final (label, tone) = switch (party.direction) {
+      BalanceDirection.receivable => (context.tr('party.to_receive'), PillTone.paid),
+      BalanceDirection.payable => (context.tr('party.to_pay'), PillTone.partial),
+      BalanceDirection.settled => (context.tr('party.settled'), PillTone.neutral),
     };
     final subtitle = [
-      party.type == PartyType.customer ? context.tr('party.customer') : context.tr('party.supplier'),
       if (party.phone?.isNotEmpty == true) party.phone!,
+      if (party.lastActivityAt != null) Formatters.date(party.lastActivityAt!),
     ].join('  ·  ');
-    return SoftCard(
-      padding: const EdgeInsets.all(12),
+    return InkWell(
       onTap: onTap ??
           (party.type == PartyType.customer ? () => context.push('/customers/${party.id}') : null),
-      child: Row(
-        children: [
-          InitialsAvatar(party.name),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(typeLabel, style: theme.textTheme.labelSmall?.copyWith(color: cs.primary)),
+                  const SizedBox(height: 2),
+                  Text(party.name, style: theme.textTheme.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  if (subtitle.isNotEmpty) Text(subtitle, style: theme.textTheme.bodySmall),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(party.name, style: theme.textTheme.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
-                Text(subtitle, style: theme.textTheme.bodySmall),
-                if (party.lastActivityAt != null)
-                  Text(Formatters.date(party.lastActivityAt!), style: theme.textTheme.bodySmall),
+                if (party.direction != BalanceDirection.settled) MoneyText(party.balance, style: theme.textTheme.titleMedium),
+                const SizedBox(height: 4),
+                StatusPill(label, tone: tone),
               ],
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              if (party.direction != BalanceDirection.settled)
-                MoneyText(party.balance, style: theme.textTheme.titleMedium?.copyWith(color: color)),
-              Text(label, style: theme.textTheme.bodySmall?.copyWith(color: color)),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

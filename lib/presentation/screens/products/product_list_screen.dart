@@ -13,9 +13,11 @@ import '../../blocs/product/product_bloc.dart';
 import '../../blocs/product/product_event.dart';
 import '../../blocs/product/product_state.dart';
 import '../../widgets/aduinola/app_page.dart';
+import '../../widgets/aduinola/ui.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/loading_indicator.dart';
+import '../../widgets/money_text.dart';
 import 'add_product_screen.dart';
 
 class ProductListScreen extends StatefulWidget {
@@ -255,11 +257,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   onRefresh: () async => context.read<ProductBloc>().add(
                     const ProductSyncRequested(),
                   ),
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  // Same flat list-with-divider style as TransactionTile.
+                  child: ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
                     itemCount: state.products.length,
+                    separatorBuilder: (_, _) => const Divider(height: 1),
                     itemBuilder: (_, i) =>
-                        _ProductCard(product: state.products[i]),
+                        _ProductTile(product: state.products[i]),
                   ),
                 );
               },
@@ -313,138 +317,54 @@ class _ScannerPageState extends State<_ScannerPage> {
 
 // ---------------------------------------------------------------------------
 
-class _ProductCard extends StatelessWidget {
+/// One row of the list: same shape as [TransactionTile] \u2014 a category label,
+/// the product's name, then its SKU \u2026 price + a low/out-of-stock pill.
+class _ProductTile extends StatelessWidget {
   final Product product;
-  const _ProductCard({required this.product});
+  const _ProductTile({required this.product});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    // Category is already the label line above; don't repeat it here.
+    final subtitle = product.sku ?? '';
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            // Product icon/image
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: colors.primaryContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: product.imageUrl != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        product.imageUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Icon(
-                          Icons.inventory_2_outlined,
-                          color: colors.primary.withValues(alpha: 0.5),
-                        ),
-                      ),
-                    )
-                  : Icon(
-                      Icons.inventory_2_outlined,
-                      color: colors.primary.withValues(alpha: 0.5),
-                    ),
-            ),
-            const SizedBox(width: 14),
-            // Info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      if (product.sku != null)
-                        Flexible(
-                          child: Text(
-                            product.sku!,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      if (product.sku != null && product.categoryName != null)
-                        Text(
-                          ' \u00B7 ',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
-                          ),
-                        ),
-                      if (product.categoryName != null)
-                        Flexible(
-                          child: Text(
-                            product.categoryName!,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            // Price & stock
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+    // No edit screen to open yet, so this isn't wrapped in an InkWell —
+    // nothing to tap through to (Transactions/Parties rows navigate).
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  Formatters.currency(product.sellingPrice),
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colors.primary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                if (product.isOutOfStock)
-                  _badge('Out of stock', colors.error, colors)
-                else if (product.isLowStock)
-                  _badge('Low stock', colors.secondary, colors)
-                else if (product.stockQuantity != null)
-                  Text(
-                    '${Formatters.quantity(product.stockQuantity!)} in stock',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
-                  ),
+                if (product.categoryName != null)
+                  Text(product.categoryName!, style: theme.textTheme.labelSmall?.copyWith(color: colors.primary)),
+                const SizedBox(height: 2),
+                Text(product.name, style: theme.textTheme.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
+                if (subtitle.isNotEmpty) Text(subtitle, style: theme.textTheme.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
               ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _badge(String label, Color color, ColorScheme colors) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: color,
-        ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              MoneyText(product.sellingPrice, style: theme.textTheme.titleMedium),
+              const SizedBox(height: 4),
+              if (product.isOutOfStock)
+                const StatusPill('Out of stock', tone: PillTone.unpaid)
+              else if (product.isLowStock)
+                const StatusPill('Low stock', tone: PillTone.partial)
+              else if (product.stockQuantity != null)
+                Text(
+                  '${Formatters.quantity(product.stockQuantity!)} in stock',
+                  style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
