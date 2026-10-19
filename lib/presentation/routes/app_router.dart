@@ -36,7 +36,6 @@ import '../screens/sales/sales_history_screen.dart';
 import '../screens/session/close_session_screen.dart';
 import '../screens/session/open_session_screen.dart';
 import '../screens/session/shift_report_screen.dart';
-import '../screens/settings/settings_screen.dart';
 import '../screens/sync/sync_status_screen.dart';
 import '../widgets/error_view.dart';
 import '../widgets/responsive_shell.dart';
@@ -230,7 +229,6 @@ class AppRouter {
           path: '/customers/:id',
           builder: (_, s) => CustomerDetailScreen(customerId: s.pathParameters['id']!),
         ),
-        GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
         // Redesign screens
         GoRoute(path: '/transactions', builder: (_, _) => const TransactionsScreen()),
         GoRoute(path: '/payment-in', builder: (_, _) => const PaymentInScreen()),

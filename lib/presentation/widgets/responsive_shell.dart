@@ -64,7 +64,7 @@ const _tabs = <_NavDest>[
     Icons.person_rounded,
     'nav.profile',
     '/profile',
-    also: ['/app-settings', '/settings', '/reports', '/sync'],
+    also: ['/app-settings', '/reports', '/sync', '/select-business', '/select-branch'],
   ),
 ];
 
@@ -84,12 +84,6 @@ List<_NavDest> _extras({required bool isLaundry}) => [
     '/reports',
   ),
   const _NavDest(Icons.sync_outlined, Icons.sync, 'profile.sync', '/sync'),
-  const _NavDest(
-    Icons.storefront_outlined,
-    Icons.storefront,
-    'profile.business_settings',
-    '/settings',
-  ),
   const _NavDest(
     Icons.tune_outlined,
     Icons.tune,

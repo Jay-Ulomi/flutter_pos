@@ -421,8 +421,8 @@ class _PosScreenState extends State<PosScreen> {
         ),
         IconButton(
           icon: const Icon(Icons.settings_outlined),
-          tooltip: 'Settings',
-          onPressed: () => context.push('/settings'),
+          tooltip: 'Profile',
+          onPressed: () => context.push('/profile'),
         ),
     ];
 

@@ -10,6 +10,7 @@ import 'package:flutter_pos/presentation/blocs/app_lock/app_lock_cubit.dart';
 import 'package:flutter_pos/presentation/blocs/app_settings/app_settings_cubit.dart';
 import 'package:flutter_pos/presentation/blocs/auth/auth_bloc.dart';
 import 'package:flutter_pos/presentation/blocs/auth/auth_state.dart';
+import 'package:flutter_pos/presentation/blocs/branch/branch_bloc.dart';
 import 'package:flutter_pos/presentation/blocs/business/business_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -69,6 +70,9 @@ Future<GoRouter> pumpRoutes(
     providers: [
       BlocProvider<AuthBloc>.value(value: authBloc),
       BlocProvider<BusinessBloc>(create: (_) => BusinessBloc(_NoAuthRepo())),
+      // Always provided app-wide in main.dart — screens (Profile's
+      // business/branch rows) rely on it being here.
+      BlocProvider<BranchBloc>(create: (_) => BranchBloc(_NoAuthRepo())),
       BlocProvider<AppSettingsCubit>.value(value: settings ?? AppSettingsCubit()),
       BlocProvider<AppLockCubit>.value(
         value: lock ?? AppLockCubit(AppLockService(MemoryPinStore(), iterations: 10)),
